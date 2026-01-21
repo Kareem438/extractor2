@@ -1,9 +1,9 @@
 # Knowledge Extraction System - Project Summary
 
-**Project Name:** Knowledge Extraction System (12-extractor)  
+**Project Name:** Knowledge Extraction System (13-extractor2)  
 **Version:** 1.0  
 **Status:** 95% Complete - Production Ready (Core System)  
-**Last Updated:** 2026-01-21
+**Last Updated:** 2026-01-22
 
 ---
 
@@ -529,10 +529,10 @@ Structured Knowledge Output
 - **[backend-option-a.md](backend-option-a.md)** - Worker system requirements
 
 ### Access Points (when server running)
-- **Library**: http://localhost:7777/library
-- **API Docs**: http://localhost:7777/docs
-- **Pipeline Config**: http://localhost:7777/pipeline-config
-- **Pipeline Dashboard**: http://localhost:7777/pipeline-dashboard
+- **Library**: http://localhost:8888/library
+- **API Docs**: http://localhost:8888/docs
+- **Pipeline Config**: http://localhost:8888/pipeline-config
+- **Pipeline Dashboard**: http://localhost:8888/pipeline-dashboard
 
 ---
 
@@ -562,7 +562,7 @@ Structured Knowledge Output
 - **Python**: 3.9+
 - **PostgreSQL**: 16 (Windows service)
 - **GPU**: NVIDIA RTX 4070 (CUDA 12.6)
-- **Port**: 7777 (FastAPI server)
+- **Port**: 8888 (FastAPI server)
 
 ### Key Commands
 ```bash
@@ -570,8 +570,8 @@ Structured Knowledge Output
 sc query postgresql-x64-16
 
 # Start FastAPI server
-cd H:/12-extractor/03-code
-H:/12-extractor/venv/Scripts/python.exe -m uvicorn src.main:app --host 0.0.0.0 --port 7777
+cd H:/13-extractor2/03-code
+H:/13-extractor2/venv/Scripts/python.exe -m uvicorn src.main:app --host 0.0.0.0 --port 8888
 
 # Run tests
 pytest 04-tests/ -v
@@ -582,11 +582,11 @@ python "07-Chroma Backup.py"
 ```
 
 ### Important Paths
-- **Project Root**: `H:\12-extractor`
-- **Virtual Environment**: `H:\12-extractor\venv`
-- **Source Code**: `H:\12-extractor\03-code\src`
-- **Database Backups**: `H:\12-extractor\06-PostgreSQL BACKUP`
-- **ChromaDB Backups**: `H:\12-extractor\07-Chroma BACKUP`
+- **Project Root**: `H:\13-extractor2`
+- **Virtual Environment**: `H:\13-extractor2\venv`
+- **Source Code**: `H:\13-extractor2\03-code\src`
+- **Database Backups**: `H:\13-extractor2\06-PostgreSQL BACKUP`
+- **ChromaDB Backups**: `H:\13-extractor2\07-Chroma BACKUP`
 
 ---
 
