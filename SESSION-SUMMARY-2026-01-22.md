@@ -1,8 +1,29 @@
 # Session Summary - January 22, 2026
 
-**Session Duration:** ~3 hours (Session 11 + Session 12)  
+**Session Duration:** ~4 hours (Session 11 + Session 12 + Session 13)  
 **Project:** Knowledge Extraction System (13-extractor2)  
 **Status:** 95% Complete - Production Ready
+
+---
+
+## 🎯 Session 13 Objectives Completed
+
+### 1. ✅ Question/Answer Classes in Context Menu
+- **Issue**: Question and Answer classes not appearing in Layout Review right-click menu
+- **Root Cause**: DEFAULT_ENABLED_CLASSES didn't include question/answer, no explicit save mechanism
+- **Fix**: Added Save Classes button, API endpoint, and checkbox state persistence
+- **Result**: Users can now configure which classes appear in the context menu
+
+### 2. ✅ Save Classes Button Added to Auto-Slicer
+- **Feature**: "💾 Save Classes" button below YOLO Detection Classes checkboxes
+- **Behavior**: Saves enabled classes to database, shows visual feedback
+- **Warning**: Checkbox changes show "⚠️ Unsaved changes" until saved
+- **Files Modified**: auto-slicer.js, auto-slicer.html, layout_detection.py, layout-review.js
+
+### 3. ✅ Answer-to-Question Linking (Verified Working)
+- Right-click on Answer region → "Link to Question" option appears
+- Click a Question region to create the link
+- Orphan validation ensures all Answers have Question links before extraction
 
 ---
 
@@ -53,6 +74,13 @@
 
 ## 📝 Files Created/Modified
 
+### Session 13 Files Modified:
+- `03-code/src/frontend/static/js/layout-review.js` - Added question/answer to DEFAULT_ENABLED_CLASSES
+- `03-code/src/frontend/static/js/auto-slicer.js` - Added Save Classes functionality, checkbox listeners
+- `03-code/src/frontend/templates/auto-slicer.html` - Added Save Classes button and status message
+- `03-code/src/api/routes/layout_detection.py` - Added PUT endpoint for enabled classes
+- `NEXT-SESSION.md` - Updated with Session 13 changes
+
 ### Session 12 Files Modified:
 - `03-code/src/frontend/static/js/layout-review.js` - Fixed race condition, added page navigation
 - `03-code/src/frontend/static/js/auto-slicer.js` - Added openInLayoutReview function
@@ -71,6 +99,24 @@
 ---
 
 ## 🔧 Technical Changes
+
+### Session 13: Save Classes Button
+```javascript
+// New function in auto-slicer.js
+async function saveEnabledClassesWithFeedback() {
+    const success = await saveEnabledClasses();
+    if (success) {
+        btnEl.textContent = '✅ Saved!';
+        statusEl.textContent = 'Classes saved. Layout Review will now show these classes.';
+    }
+}
+
+// New API endpoint in layout_detection.py
+@router.put("/api/auto-slicer/{book_id}/layout-config/enabled-classes")
+async def update_enabled_classes(book_id: int, request: UpdateEnabledClassesRequest):
+    config["enabled_classes"] = request.enabled_classes
+    save_layout_detection_config(book_id, config)
+```
 
 ### Session 12: Race Condition Fix
 ```javascript
@@ -133,6 +179,12 @@ from src.services.layout_detection_service import layout_detection_service
 ---
 
 ## 📊 Commits Made
+
+### Session 13:
+| Hash | Message |
+|------|---------|
+| `f024a58` | feat: Add question/answer support to context menu and auto-save enabled classes |
+| `9e1a7d2` | feat: Add Save Classes button to auto-slicer for explicit class saving |
 
 ### Session 12:
 | Hash | Message |

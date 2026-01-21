@@ -12,14 +12,68 @@
 **Phase 3A:** COMPLETE - Enhanced Layout Review
 **Phase 3B:** ~85% COMPLETE - Extract Knowledge Units
 **Phase 3D:** COMPLETE - Extraction Dashboard
-**Status:** Dashboard implemented, bug fixes applied
+**Status:** Dashboard implemented, bug fixes applied, Q&A support added
 
 **Progress Tracking:** `02-architecture/PHASE3D-DASHBOARD-PROGRESS.md`
 **Phase 3D Requirements:** `02-architecture/PHASE3D-DASHBOARD-REQUIREMENTS.md`
 
 ---
 
-## 🚨 NEW REQUIREMENTS FOR NEXT SESSION (2026-01-22)
+## 🚨 Session 13 Completed (2026-01-22) - Question/Answer Support & Save Classes
+
+### ✅ COMPLETED: Question/Answer Classes in Context Menu
+
+**Issue:** Question and Answer classes were not appearing in the Layout Review right-click context menu even when enabled in Auto-Slicer.
+
+**Root Cause:** 
+1. `DEFAULT_ENABLED_CLASSES` in layout-review.js didn't include `question` and `answer`
+2. Enabled classes were only saved when detection was run, not when checkboxes changed
+3. No explicit "Save" button for class configuration
+
+**Solution Implemented:**
+1. Added `question` and `answer` to `DEFAULT_ENABLED_CLASSES` in layout-review.js
+2. Added "💾 Save Classes" button to Auto-Slicer below YOLO Detection Classes
+3. Added `saveEnabledClassesWithFeedback()` function with visual feedback
+4. Added `PUT /api/auto-slicer/{book_id}/layout-config/enabled-classes` API endpoint
+5. Checkbox changes now show "⚠️ Unsaved changes" warning
+6. Auto-Slicer loads and restores saved checkbox state on page load
+
+**Files Modified:**
+- `03-code/src/frontend/static/js/layout-review.js`:
+  - Added `question`, `answer` to DEFAULT_ENABLED_CLASSES
+- `03-code/src/frontend/static/js/auto-slicer.js`:
+  - Added `loadLayoutDetectionConfig()` to restore checkbox state
+  - Added `applyEnabledClassesToCheckboxes()` for checkbox restoration
+  - Added `saveEnabledClasses()` and `saveEnabledClassesWithFeedback()`
+  - Added `setupYoloClassCheckboxListeners()` for unsaved warning
+- `03-code/src/frontend/templates/auto-slicer.html`:
+  - Added "Save Classes" button with status message
+- `03-code/src/api/routes/layout_detection.py`:
+  - Added `PUT /api/auto-slicer/{book_id}/layout-config/enabled-classes` endpoint
+
+**User Flow:**
+```
+Auto-Slicer → Check/Uncheck class checkboxes → Click "Save Classes" → 
+Layout Review (refresh) → Right-click → Only saved classes appear in menu
+```
+
+**Commits:**
+- `f024a58` - feat: Add question/answer support to context menu and auto-save enabled classes
+- `9e1a7d2` - feat: Add Save Classes button to auto-slicer for explicit class saving
+
+---
+
+### ✅ Answer-to-Question Linking (Already Implemented)
+
+The answer-to-question linking was already implemented in previous sessions:
+- `startLinkToParagraph()` - handles both diagram→paragraph and answer→question linking
+- `handleLinkClick()` - validates target type based on source (answer requires question target)
+- `checkForOrphanRegions()` - validates that answers have question links before marking ready
+- Context menu shows "Link to Question" when an answer region is selected
+
+---
+
+## Previous Sessions
 
 ### ✅ COMPLETED: Priority 1 - L1/L2 Title Display Fixed
 
