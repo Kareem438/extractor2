@@ -1,6 +1,6 @@
 # Next Session Task Priority
 
-## Last Updated: 2026-01-21
+## Last Updated: 2026-01-22
 
 ---
 
@@ -16,6 +16,130 @@
 
 **Progress Tracking:** `02-architecture/PHASE3D-DASHBOARD-PROGRESS.md`
 **Phase 3D Requirements:** `02-architecture/PHASE3D-DASHBOARD-REQUIREMENTS.md`
+
+---
+
+## 🚨 NEW REQUIREMENTS FOR NEXT SESSION (2026-01-22)
+
+### Priority 1: Fix L1/L2 Title Display in Layout Review
+
+**Issue:** L1 and L2 titles are not displaying correctly in the layout review page.
+
+**Requirements:**
+1. Investigate why L1/L2 titles are empty or not showing
+2. Check the API endpoint that provides title data
+3. Verify the frontend JavaScript is correctly parsing and displaying titles
+4. Ensure the title hierarchy (L1 → L2 → L3) is properly maintained
+5. Test with actual book data to confirm fix
+
+**Files to Check:**
+- `03-code/src/api/routes/layout_detection.py` (API endpoint)
+- `03-code/src/frontend/templates/layout-review.html` (HTML template)
+- `03-code/src/frontend/static/js/layout-review.js` (JavaScript logic)
+
+**Expected Behavior:**
+- L1 titles should display at the top level
+- L2 titles should display as sub-items under L1
+- L3 titles should display as sub-items under L2
+- All titles should be clickable and navigate to the correct page
+
+---
+
+### Priority 2: Add Navigation from Auto-Slicer Thumbnails to Layout Review
+
+**Issue:** Users cannot navigate from paragraph thumbnails in auto-slicer to the layout review page.
+
+**Requirements:**
+1. Make paragraph thumbnails in auto-slicer clickable
+2. When clicked, open layout review page for that specific book
+3. Navigate to the page containing that paragraph
+4. Optionally: Highlight or select the clicked paragraph region in layout review
+
+**Implementation Details:**
+
+**Auto-Slicer Changes:**
+- Add click handler to thumbnail elements in preview grid
+- Extract book_id and page_number from thumbnail data
+- Navigate to: `/layout-review?book_id={book_id}&page={page_number}`
+- Optional: Add region_id parameter to highlight specific region
+
+**Layout Review Changes:**
+- Check URL parameters on page load
+- If `page` parameter exists, navigate to that page automatically
+- If `region_id` parameter exists, select/highlight that region
+- Provide visual feedback that navigation occurred (e.g., flash highlight)
+
+**Files to Modify:**
+- `03-code/src/frontend/static/js/auto-slicer.js` (add click handler)
+- `03-code/src/frontend/templates/auto-slicer.html` (make thumbnails clickable)
+- `03-code/src/frontend/static/js/layout-review.js` (handle URL parameters)
+
+**User Flow:**
+```
+Auto-Slicer Page
+    ↓ (user clicks paragraph thumbnail)
+Layout Review Page (book_id=X, page=Y)
+    ↓ (automatically navigates to page Y)
+Paragraph region highlighted/selected
+```
+
+---
+
+### Priority 3: Server Startup Model Loading (COMPLETED ✅)
+
+**Status:** COMPLETE - Implemented in Session 11 (2026-01-22)
+
+**What Was Done:**
+- ✅ Added automatic Surya OCR loading on server startup
+- ✅ Added automatic DocLayout-YOLO loading on server startup
+- ✅ Detailed logging for each model loading step
+- ✅ Auto-slicer page already has real-time model status checking (every 30s)
+- ✅ GPU status API correctly reports loaded models from service states
+
+**Files Modified:**
+- `03-code/src/main.py` - Added startup event handler with model loading
+
+**Commit:** `f0d1836` - feat: Auto-load Surya OCR and DocLayout-YOLO on server startup
+
+---
+
+## Session 11 Completed (2026-01-22) - Bug Fixes and Auto-Loading
+
+### Features Implemented:
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| Import Error Fix | Fixed `layout_service` → `layout_detection_service` | ✅ COMPLETE |
+| Model File Copy | Copied DocLayout-YOLO model from old project | ✅ COMPLETE |
+| Auto-Load Models | Surya OCR + DocLayout-YOLO load on startup | ✅ COMPLETE |
+| Documentation | Created PROJECT-SUMMARY.md | ✅ COMPLETE |
+
+### Bug Fixes:
+
+| Bug | Root Cause | Fix |
+|-----|------------|-----|
+| DocLayout-YOLO import error | Wrong import name `layout_service` | Changed to `layout_detection_service` in gpu.py (3 places) |
+| Model file missing | New project didn't have model | Copied from H:\12-extractor to H:\13-extractor2 |
+
+### Files Modified:
+
+| File | Changes |
+|------|---------|
+| `gpu.py` | Fixed 3 import statements |
+| `main.py` | Added startup model loading |
+| `PROJECT-SUMMARY.md` | Created comprehensive project overview |
+| `README.md` | Added link to PROJECT-SUMMARY.md |
+| `START-HERE.md` | Added link to PROJECT-SUMMARY.md |
+| `CLAUDE.md` | Added link to PROJECT-SUMMARY.md |
+| `PROJECT-STATUS.md` | Added link to PROJECT-SUMMARY.md |
+
+### Commits:
+
+| Hash | Message |
+|------|---------|
+| `66738e0` | fix: Correct layout_detection_service import name in gpu.py |
+| `f0d1836` | feat: Auto-load Surya OCR and DocLayout-YOLO on server startup |
+| `ee4f0fc` | docs: Add comprehensive PROJECT-SUMMARY.md and update documentation references |
 
 ---
 
