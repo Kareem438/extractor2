@@ -1,9 +1,24 @@
 # START HERE - Quick Resume Guide
 
-**Last Updated:** 2025-12-31
+**Last Updated:** 2026-01-21
 **Project:** Knowledge Extraction System (12-extractor)
 **Status:** Production Ready + Enhanced UI + Interactive OCR + Diagram Analysis
 **Working Directory:** `H:\12-extractor` (Windows) / `/mnt/h/12-extractor` (WSL)
+
+---
+
+## 📋 NEW: Comprehensive Project Summary
+
+**👉 [PROJECT-SUMMARY.md](PROJECT-SUMMARY.md) - READ THIS FIRST for complete project overview**
+
+This document provides:
+- Complete system architecture explanation
+- Current status and progress (95% complete)
+- Processing workflow details
+- Database design overview
+- AI integration details
+- Use cases and typical workflows
+- Quick links to all documentation
 
 ---
 
@@ -11,6 +26,7 @@
 
 | Document | Description |
 |----------|-------------|
+| **[PROJECT-SUMMARY.md](PROJECT-SUMMARY.md)** | **📋 Comprehensive project summary (START HERE)** |
 | [docs/ENVIRONMENT-CONFIG.md](docs/ENVIRONMENT-CONFIG.md) | Runtime setup, starting the system |
 | [docs/VENV-SETUP.md](docs/VENV-SETUP.md) | Virtual environment setup & backup |
 | [docs/QUICK-COMMANDS.md](docs/QUICK-COMMANDS.md) | Common commands reference |

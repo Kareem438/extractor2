@@ -8,6 +8,7 @@ A comprehensive PDF knowledge extraction system with multi-engine OCR, semantic 
 
 ## Quick Links
 
+- **[PROJECT-SUMMARY.md](PROJECT-SUMMARY.md)** - 📋 **Comprehensive project summary** (START HERE)
 - **[CLAUDE.md](CLAUDE.md)** - System startup guide and commands
 - **[WORKER_SYSTEM_IMPLEMENTATION.md](WORKER_SYSTEM_IMPLEMENTATION.md)** - Claude Pipeline system documentation
 - **[QUICK-START.md](QUICK-START.md)** - Quick start guide

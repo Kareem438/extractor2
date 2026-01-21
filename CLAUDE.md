@@ -2,6 +2,22 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+---
+
+## 📋 IMPORTANT: Read Project Summary First
+
+**👉 [PROJECT-SUMMARY.md](PROJECT-SUMMARY.md) - Complete project overview and architecture**
+
+Before starting any work, read the comprehensive project summary to understand:
+- System architecture and components
+- Current status (95% complete)
+- Processing workflow
+- Database design
+- AI integration details
+- What's working and what's pending
+
+---
+
 ## CRITICAL: Read PROJECT-CONFIGURATION.md First
 
 **This is a parallel instance of the project.** Before proceeding, understand:

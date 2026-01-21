@@ -355,13 +355,13 @@ A comprehensive system for extracting, processing, and managing knowledge from P
 
 ## 🔗 Quick Links
 
-- **Requirements:** `01-requirements/requirements-specification.md`
-- **Architecture:** `02-architecture/system-design.md`
-- **Database Schema:** `02-architecture/database-schema.md`
-- **Worker Requirements:** `backend-option-a.md`
-- **API Routes:** `03-code/src/api/routes/`
-- **Frontend Templates:** `03-code/src/frontend/templates/`
-- **Latest Session:** `SESSION-SUMMARY-2026-01-01.md`
+### Essential Documentation
+- **[PROJECT-SUMMARY.md](PROJECT-SUMMARY.md)** - 📋 **Comprehensive project summary (READ FIRST)**
+- **[README.md](README.md)** - Project overview
+- **[START-HERE.md](START-HERE.md)** - Quick start guide
+- **[CLAUDE.md](CLAUDE.md)** - System startup instructions
+- **[PROJECT-STATUS.md](PROJECT-STATUS.md)** - Detailed status
+- **[WORKER_SYSTEM_IMPLEMENTATION.md](WORKER_SYSTEM_IMPLEMENTATION.md)** - Pipeline system
 
 ---
 
