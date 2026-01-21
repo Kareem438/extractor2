@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup: Processing Dashboard with OCR Retry (UPDATED)</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .mockup { background: white; padding: 20px; border-radius: 8px; max-width: 1200px; margin: 0 auto; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #333; border-bottom: 2px solid #FF9800; padding-bottom: 10px; }
+        .progress-container { margin: 30px 0; }
+        .progress-bar-bg { width: 100%; height: 40px; background: #e0e0e0; border-radius: 20px; overflow: hidden; position: relative; }
+        .progress-bar-fill { height: 100%; background: linear-gradient(90deg, #4CAF50, #8BC34A); width: 47%; transition: width 0.5s; position: relative; }
+        .progress-text { position: absolute; width: 100%; text-align: center; line-height: 40px; font-weight: bold; color: #333; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 30px 0; }
+        .stat-card { padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 8px; text-align: center; }
+        .stat-card.green { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); }
+        .stat-card.blue { background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); }
+        .stat-card.orange { background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%); }
+        .stat-card.red { background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%); }
+        .stat-number { font-size: 36px; font-weight: bold; margin: 10px 0; }
+        .stat-label { font-size: 14px; opacity: 0.9; }
+        .agent-status { margin: 30px 0; }
+        .agent-card { display: flex; align-items: center; padding: 15px; margin: 10px 0; background: #f9f9f9; border-radius: 8px; border-left: 5px solid #4CAF50; }
+        .agent-card.inactive { border-left-color: #ccc; opacity: 0.6; }
+        .agent-card.warning { border-left-color: #FF9800; background: #fff3cd; }
+        .agent-card.error { border-left-color: #f44336; background: #ffebee; }
+        .agent-icon { width: 60px; height: 60px; background: #4CAF50; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; margin-right: 15px; }
+        .agent-card.inactive .agent-icon { background: #ccc; }
+        .agent-card.warning .agent-icon { background: #FF9800; }
+        .agent-card.error .agent-icon { background: #f44336; }
+        .agent-info { flex: 1; }
+        .agent-name { font-weight: bold; font-size: 16px; margin-bottom: 5px; }
+        .agent-activity { color: #666; font-size: 14px; }
+        .retry-info { background: #fff3cd; padding: 10px; border-radius: 4px; margin-top: 5px; border-left: 3px solid #FF9800; font-size: 12px; }
+        .log-container { background: #1e1e1e; color: #00ff00; padding: 20px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 12px; max-height: 200px; overflow-y: auto; }
+        .log-entry { margin: 3px 0; }
+        .log-warn { color: #FFC107; }
+        .log-error { color: #f44336; }
+        .log-success { color: #4CAF50; }
+        .action-buttons { margin-top: 30px; text-align: center; }
+        .btn { padding: 12px 30px; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; margin: 0 5px; }
+        .btn-pause { background: #FF9800; color: white; }
+        .btn-resume { background: #4CAF50; color: white; }
+        .btn-stop { background: #f44336; color: white; }
+        .btn-background { background: #2196F3; color: white; }
+        .btn-settings { background: #9C27B0; color: white; }
+        .checkpoint-info { background: #e3f2fd; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 5px solid #2196F3; }
+        .pause-warning { background: #fff3cd; padding: 15px; border-radius: 4px; margin: 20px 0; border-left: 5px solid #FF9800; }
+    </style>
+</head>
+<body>
+    <div class="mockup">
+        <h1>⚙️ Processing: "Machine Learning Fundamentals.pdf"</h1>
+
+        <!-- Overall Progress -->
+        <div class="progress-container">
+            <h2>Overall Progress</h2>
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill">
+                    <div class="progress-text">47% Complete - Page 142 of 300</div>
+                </div>
+            </div>
+            <p style="text-align: center; margin-top: 10px; color: #666;">
+                ⏱️ Elapsed: 18 minutes | Remaining: ~20 minutes | ETA: 3:55 PM
+            </p>
+        </div>
+
+        <!-- Checkpoint Information (NEW) -->
+        <div class="checkpoint-info">
+            <strong>💾 Checkpoint Saved:</strong> Page 140 (every 50 pages) |
+            <strong>Last Checkpoint:</strong> 2 minutes ago |
+            <strong>Recovery Point:</strong> Can resume from Page 140 if interrupted
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card blue">
+                <div class="stat-label">📄 Pages Processed</div>
+                <div class="stat-number">142</div>
+                <div class="stat-label">of 300 pages</div>
+            </div>
+            <div class="stat-card green">
+                <div class="stat-label">💡 Knowledge Units</div>
+                <div class="stat-number">487</div>
+                <div class="stat-label">extracted so far</div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-label">🖼️ Images Found</div>
+                <div class="stat-number">68</div>
+                <div class="stat-label">analyzed & described</div>
+            </div>
+            <div class="stat-card red">
+                <div class="stat-label">⚠️ OCR Retries</div>
+                <div class="stat-number">3</div>
+                <div class="stat-label">auto-enhanced & retried</div>
+            </div>
+        </div>
+
+        <!-- Agent Status -->
+        <div class="agent-status">
+            <h2>Agent Activity</h2>
+
+            <div class="agent-card">
+                <div class="agent-icon">📖</div>
+                <div class="agent-info">
+                    <div class="agent-name">Reader Agent</div>
+                    <div class="agent-activity">✅ Reading Page 142 | Extracting text with OCR (Arabic detected)</div>
+                </div>
+                <div style="color: #4CAF50; font-size: 24px;">●</div>
+            </div>
+
+            <!-- OCR Enhancement Agent (NEW - Shows Retry Logic) -->
+            <div class="agent-card warning">
+                <div class="agent-icon">🔬</div>
+                <div class="agent-info">
+                    <div class="agent-name">OCR Enhancement Agent</div>
+                    <div class="agent-activity">⚙️ Auto-retry on Page 138 | Initial OCR failed - Applying zoom enhancement</div>
+                    <div class="retry-info">
+                        <strong>Retry Strategy Active:</strong><br>
+                        • Attempt 1: Failed (poor quality scan detected)<br>
+                        • Attempt 2: Zooming to 200% + highest quality OCR...<br>
+                        • Attempt 3: If needed, will segment text regions individually
+                    </div>
+                </div>
+                <div style="color: #FF9800; font-size: 24px;">●</div>
+            </div>
+
+            <div class="agent-card">
+                <div class="agent-icon">✂️</div>
+                <div class="agent-info">
+                    <div class="agent-name">Splitter Agent</div>
+                    <div class="agent-activity">✅ Processing Page 140 | Identified 4 knowledge units | Semantic analysis complete</div>
+                </div>
+                <div style="color: #4CAF50; font-size: 24px;">●</div>
+            </div>
+
+            <div class="agent-card">
+                <div class="agent-icon">🎨</div>
+                <div class="agent-info">
+                    <div class="agent-name">Marker Agent</div>
+                    <div class="agent-activity">✅ Marking Page 136 | Creating highlighted image with 3 green rectangles</div>
+                </div>
+                <div style="color: #4CAF50; font-size: 24px;">●</div>
+            </div>
+
+            <div class="agent-card">
+                <div class="agent-icon">📸</div>
+                <div class="agent-info">
+                    <div class="agent-name">Image-Reader Agent</div>
+                    <div class="agent-activity">✅ Analyzing Figure 5.3 on Page 136 | Generating detailed JSON description</div>
+                </div>
+                <div style="color: #4CAF50; font-size: 24px;">●</div>
+            </div>
+
+            <div class="agent-card inactive">
+                <div class="agent-icon">💾</div>
+                <div class="agent-info">
+                    <div class="agent-name">Database Writer</div>
+                    <div class="agent-activity">⏸️ Standby | Last batch: Saved 50 records (Pages 120-135)</div>
+                </div>
+                <div style="color: #ccc; font-size: 24px;">●</div>
+            </div>
+
+            <!-- Similarity Engine (NEW - For Future Linking) -->
+            <div class="agent-card inactive">
+                <div class="agent-icon">🔗</div>
+                <div class="agent-info">
+                    <div class="agent-name">Similarity Engine</div>
+                    <div class="agent-activity">⏸️ Will activate after processing completes | Generating embeddings for cross-book linking</div>
+                </div>
+                <div style="color: #ccc; font-size: 24px;">●</div>
+            </div>
+        </div>
+
+        <!-- Processing Log -->
+        <div style="margin: 30px 0;">
+            <h2>Processing Log</h2>
+            <div class="log-container">
+                <div class="log-entry">[03:42:15] INFO: Processing page 142/300</div>
+                <div class="log-entry log-warn">[03:42:14] WARN: OCR retry initiated on page 138 - poor quality scan detected</div>
+                <div class="log-entry log-success">[03:42:13] SUCCESS: OCR retry successful on page 138 after zoom enhancement</div>
+                <div class="log-entry">[03:42:12] INFO: Splitter: Extracted 4 knowledge units from page 140</div>
+                <div class="log-entry">[03:42:10] INFO: Image-Reader: Analyzed diagram on page 136 (neural network architecture)</div>
+                <div class="log-entry">[03:42:08] WARN: Low confidence extraction on page 135 - flagged for review</div>
+                <div class="log-entry">[03:42:05] INFO: Database: Batch insert completed - 50 records to PostgreSQL</div>
+                <div class="log-entry">[03:42:05] INFO: Database: Batch insert completed - 50 embeddings to Chroma</div>
+                <div class="log-entry">[03:42:03] INFO: Reader: OCR completed for page 140 (Arabic text detected)</div>
+                <div class="log-entry log-success">[03:42:00] SUCCESS: Checkpoint saved - page_140.checkpoint</div>
+                <div class="log-entry">[03:41:58] INFO: Processing page 140/300</div>
+                <div class="log-entry log-warn">[03:41:55] WARN: OCR quality low on page 137 - initiating zoom + retry</div>
+                <div class="log-entry log-error">[03:41:50] ERROR: Initial OCR failed on page 135 - retrying with highest quality</div>
+                <div class="log-entry log-success">[03:41:48] SUCCESS: OCR retry successful after 2 attempts</div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="btn btn-background">📱 Continue in Background</button>
+            <button class="btn btn-pause">⏸️ Pause Processing</button>
+            <button class="btn btn-stop">⏹️ Stop & Save Progress</button>
+            <button class="btn btn-settings" onclick="window.location.href='06-book-settings.html'">⚙️ Book Settings</button>
+        </div>
+
+        <!-- Pause Warning (Shows when paused - hidden by default) -->
+        <div class="pause-warning" style="display: none;" id="pause-warning">
+            <strong>⏸️ Processing Paused</strong><br>
+            <span style="font-size: 13px;">Processing has been paused at Page 142. You can safely shut down your machine.
+            Progress has been saved to the database and can be resumed at any time by clicking the Resume button.</span>
+            <div style="margin-top: 15px;">
+                <button class="btn btn-resume">▶️ Resume Processing</button>
+            </div>
+        </div>
+
+        <!-- Information Messages -->
+        <div style="margin-top: 30px; padding: 15px; background: #fff3cd; border-left: 5px solid #FFC107; border-radius: 4px;">
+            <strong>ℹ️ OCR Retry Active:</strong> 3 pages have been auto-enhanced with zoom and retried with highest quality OCR for better text extraction.
+        </div>
+
+        <div style="margin-top: 15px; padding: 15px; background: #e3f2fd; border-left: 5px solid #2196F3; border-radius: 4px;">
+            <strong>💾 Crash Recovery Enabled:</strong> Processing is checkpointed every 50 pages. If interrupted, the system will resume from page 140 (last checkpoint).
+        </div>
+
+        <div style="margin-top: 15px; padding: 15px; background: #f3e5f5; border-left: 5px solid #9C27B0; border-radius: 4px;">
+            <strong>🔗 Post-Processing:</strong> After extraction completes, the Similarity Engine will analyze all text for cross-book linking opportunities (medium threshold: 70-90%).
+        </div>
+
+        <div style="margin-top: 15px; padding: 15px; background: #e8f5e9; border-left: 5px solid #4CAF50; border-radius: 4px;">
+            <strong>💾 Database Persistence:</strong> All processing progress (current page, extracted records, agent states) is continuously saved to the database.
+            This allows you to pause processing and resume later, even after system shutdown or crashes.
+        </div>
+    </div>
+
+    <script>
+        // Simulated pause/resume functionality for mockup demonstration
+        let isPaused = false;
+
+        document.querySelector('.btn-pause').addEventListener('click', function() {
+            isPaused = true;
+            document.getElementById('pause-warning').style.display = 'block';
+            this.style.display = 'none';
+        });
+
+        // Add event listener to resume button (when it appears)
+        setTimeout(() => {
+            const resumeBtn = document.querySelector('.btn-resume');
+            if (resumeBtn) {
+                resumeBtn.addEventListener('click', function() {
+                    isPaused = false;
+                    document.getElementById('pause-warning').style.display = 'none';
+                    document.querySelector('.btn-pause').style.display = 'inline-block';
+                });
+            }
+        }, 100);
+    </script>
+</body>
+</html>

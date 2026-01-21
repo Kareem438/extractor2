@@ -1,0 +1,376 @@
+{
+  "handoff_metadata": {
+    "from_agent": "business_analyst",
+    "to_agent": "architect",
+    "handoff_date": "2025-11-03",
+    "session_id": "ses-20251103-025443",
+    "confidence_level": 95,
+    "status": "approved"
+  },
+
+  "project_overview": {
+    "project_name": "Knowledge Extraction System",
+    "project_type": "Desktop Application with Networked Database",
+    "primary_goal": "Extract, organize, and verify knowledge from documents using AI agents",
+    "deployment_target": "Local desktop (Windows VM) with database on separate Windows machine",
+    "users": ["Content Creator", "Analyst"],
+    "complexity": "medium-high"
+  },
+
+  "core_requirements": {
+    "document_processing": {
+      "supported_formats": ["ALL file types - PDF, Word, TXT, HTML, EPUB, images, etc."],
+      "file_size_limit": "500MB",
+      "page_limit": "1000 pages",
+      "typical_document_size": "200-500 pages, 200-300MB",
+      "processing_mode": "Sequential page-by-page",
+      "partial_processing": "First N pages (default 10) for testing"
+    },
+
+    "agents": {
+      "reader_agent": {
+        "purpose": "Read pages and extract raw text with OCR",
+        "responsibilities": [
+          "Read one page at a time",
+          "Perform OCR on scanned content",
+          "Detect language (English/Arabic)",
+          "Extract raw text"
+        ],
+        "technologies": ["Tesseract", "pytesseract", "PDF libraries"]
+      },
+      "splitter_agent": {
+        "purpose": "Split text into semantic knowledge units",
+        "responsibilities": [
+          "Extract 3-5 line chunks per idea",
+          "Respect paragraph boundaries",
+          "Split multi-idea paragraphs",
+          "AI semantic boundary detection",
+          "Assign confidence scores"
+        ],
+        "knowledge_unit_size": "3-5 lines",
+        "semantic_analysis": true
+      },
+      "marker_agent": {
+        "purpose": "Create visual markers on page images",
+        "responsibilities": [
+          "Generate page images with green rectangles around text",
+          "Generate page images with orange rectangles for linked text",
+          "Save marked images to database"
+        ],
+        "marker_colors": {
+          "text_extraction": "green",
+          "linked_text": "orange"
+        }
+      },
+      "image_reader_agent": {
+        "purpose": "Analyze and describe images",
+        "responsibilities": [
+          "Extract all image types (diagrams, charts, photos)",
+          "Generate AI description",
+          "Create structured JSON",
+          "Store in database"
+        ],
+        "output_format": "Human description + structured JSON"
+      }
+    },
+
+    "special_features": {
+      "ocr_retry": {
+        "enabled": true,
+        "max_attempts": 3,
+        "strategy": [
+          "Attempt 1: Standard OCR",
+          "Attempt 2: Zoom 200% + highest quality OCR",
+          "Attempt 3: Segment text regions + highest quality OCR"
+        ],
+        "trigger": "Low confidence score"
+      },
+      "pause_resume": {
+        "enabled": true,
+        "checkpoint_frequency": "Every 50 pages",
+        "resume_from": "Exact page (not last checkpoint)",
+        "survives_shutdown": true,
+        "persistence": "Database-based (not in-memory)"
+      },
+      "record_merge": {
+        "enabled": true,
+        "display": "Previous/Current/Next records",
+        "trigger_threshold": "Confidence < 70%",
+        "merge_action": "Combine text, delete one record, update other"
+      }
+    },
+
+    "ui_requirements": {
+      "interface_type": "Desktop app preferred, localhost web acceptable",
+      "screens": [
+        "Upload & Configuration",
+        "Processing Dashboard",
+        "Verification Interface (split-screen)",
+        "Book Library Dashboard",
+        "Image Detail View",
+        "Book Settings (Edit Attribute Names)"
+      ],
+      "verification_layout": {
+        "left_panel": "50% - Page image with green/orange rectangles",
+        "right_panel": "50% - Extracted text, metadata, hierarchy, attributes",
+        "navigation": "Fixed bottom bar with Previous/Next/Approve buttons"
+      },
+      "color_coding": {
+        "green": "Verified/Success/Image location",
+        "orange": "Processing/Warning/Linked text location",
+        "blue": "Information",
+        "red": "Delete/Error"
+      }
+    },
+
+    "database_architecture": {
+      "location": "Separate Windows machine on same network",
+      "primary_database": {
+        "type": "PostgreSQL",
+        "extension": "pgvector",
+        "purpose": "Main relational database with images"
+      },
+      "vector_database": {
+        "type": "Chroma",
+        "purpose": "Vector similarity search (for future cross-book linking)"
+      },
+      "table_naming_convention": "book{N}_{sanitized_name}_{purpose}",
+      "book_number_assignment": "Sequential (1, 2, 3, ...), never reused",
+      "tables_per_book": [
+        "book{N}_{name}_knowledge_units (with attr1_value through attr40_value columns)",
+        "book{N}_{name}_images",
+        "book{N}_{name}_processing_state",
+        "book{N}_{name}_settings",
+        "book{N}_{name}_pages",
+        "book{N}_{name}_hierarchy",
+        "book{N}_{name}_attribute_keys (40 rows: attr_number, key_name)"
+      ],
+      "shared_tables": [
+        "books_metadata"
+      ],
+      "record_id": "Each record has unique database ID"
+    },
+
+    "data_model": {
+      "knowledge_unit": {
+        "text": "3-5 line extracted text",
+        "page_number": "integer",
+        "language": "English | Arabic | Mixed",
+        "position": "X, Y coordinates",
+        "confidence_score": "0-100%",
+        "hierarchy": {
+          "chapter": "string (editable)",
+          "topic": "string (editable)",
+          "sub_topic": "string (editable)"
+        },
+        "custom_attributes": {
+          "count": 40,
+          "architecture": "Book-level key names, record-level values only",
+          "key_storage": "book{N}_{name}_attribute_keys table",
+          "value_storage": "attr1_value through attr40_value columns in knowledge_units table",
+          "attributes_1_to_7_reserved": "System-reserved (OCR results and confidence scores)",
+          "attribute_1": "related_image - image linking",
+          "attributes_2_to_4": "OCR text results (paddleocr, surya, tesseract)",
+          "attributes_5_to_7": "OCR confidence scores",
+          "attributes_8_to_40": "User-defined at upload time (optional)",
+          "editing_capability": {
+            "where": "Book Settings page (accessible from Book Library AND Processing Dashboard)",
+            "access_points": [
+              "Book Library: '⚙️ Settings' button on each book card",
+              "Processing Dashboard: '⚙️ Book Settings' button in action buttons"
+            ],
+            "what": "Attribute key names (8-40) can be edited post-upload",
+            "how": "Pencil icon enables editing, Save/Cancel buttons",
+            "persistence": "Updates book{N}_{name}_attribute_keys table",
+            "ui_impact": "Changes reflected in verification interface labels"
+          }
+        },
+        "verified": "boolean",
+        "notes": "text"
+      },
+      "image": {
+        "image_id": "string (e.g., IMG-68)",
+        "page_number": "integer",
+        "image_data": "binary blob",
+        "image_type": "diagram | chart | photo | etc.",
+        "ai_description": "text (human-readable)",
+        "structured_json": "JSON object",
+        "confidence_score": "0-100%",
+        "tags": "array of strings",
+        "dimensions": "width x height",
+        "file_size": "integer (bytes)"
+      },
+      "processing_state": {
+        "current_page": "integer",
+        "total_pages": "integer",
+        "agent_states": "JSON object",
+        "extracted_count": "integer",
+        "status": "uploading | processing | paused | complete",
+        "last_checkpoint_page": "integer",
+        "last_updated": "timestamp"
+      },
+      "book_settings": {
+        "special_instructions": "text (from upload page)",
+        "language_setting": "auto | english | arabic | both",
+        "extraction_sensitivity": "conservative | balanced | aggressive",
+        "image_processing": "all | diagrams_only | skip",
+        "ocr_quality": "fast | balanced | high",
+        "hierarchy_detection": "auto | manual | skip",
+        "partial_processing_enabled": "boolean",
+        "partial_processing_pages": "integer (if enabled)"
+      }
+    },
+
+    "virtual_environment": {
+      "scope": "Single venv for entire application",
+      "shared_by": ["Reader Agent", "Splitter Agent", "Marker Agent", "Image-Reader Agent", "Web Interface"],
+      "required_libraries": [
+        "PDF processing (PyPDF2, pdfplumber)",
+        "Word processing (python-docx)",
+        "OCR (Tesseract, pytesseract)",
+        "Image processing (Pillow, OpenCV)",
+        "AI/ML (transformers, sentence-transformers)",
+        "Web framework (Flask or FastAPI)",
+        "Database connectors (psycopg2, chromadb)",
+        "pgvector client library"
+      ],
+      "dependency_management": "requirements.txt"
+    },
+
+    "languages": {
+      "supported": ["English", "Arabic"],
+      "auto_detection": true,
+      "rtl_support": true,
+      "ocr_models": "Language-specific OCR models"
+    },
+
+    "deferred_features": {
+      "cross_book_similarity": {
+        "status": "DEFERRED to future phase",
+        "reason": "User request - focus on core extraction first",
+        "future_implementation": {
+          "auto_suggest": "70-90% similarity threshold",
+          "ai_reasons": true,
+          "manual_override": true
+        }
+      }
+    }
+  },
+
+  "non_functional_requirements": {
+    "performance": {
+      "priority": "Quality over speed",
+      "processing_time": "Not critical - take time for highest quality",
+      "checkpoint_overhead": "Max 2 minutes per checkpoint",
+      "real_time_updates": "Every 2 seconds on dashboard",
+      "query_response_time": "< 1 second for verification interface"
+    },
+    "reliability": {
+      "crash_recovery": "100% - no data loss",
+      "shutdown_survival": "100% - pause/resume works",
+      "ocr_retry": "Automatic on failures (max 3 attempts)",
+      "checkpoint_frequency": "Every 50 pages minimum"
+    },
+    "usability": {
+      "deployment": "Desktop app preferred, localhost acceptable",
+      "users": "Single user (no authentication)",
+      "interface": "Intuitive split-screen",
+      "visual_feedback": "Green/orange color coding",
+      "background_processing": true
+    },
+    "scalability": {
+      "books": "Unlimited",
+      "pages_per_book": "Up to 1000",
+      "database": "Separate machine allows scaling",
+      "table_isolation": "Prevents cross-contamination"
+    },
+    "maintainability": {
+      "coding_standard": "PEP8",
+      "architecture": "SOLID principles",
+      "simplicity": "Minimal libraries, standard library preferred",
+      "dependency_management": "Virtual environment"
+    }
+  },
+
+  "deliverables_from_ba": {
+    "documents": [
+      "requirements-specification.md",
+      "database-naming-convention.md",
+      "ui-mockups/README.md"
+    ],
+    "ui_mockups": [
+      "01-upload-page.html",
+      "02-processing-dashboard-UPDATED.html",
+      "03-verification-interface-UPDATED.html",
+      "04-book-library.html",
+      "05-image-detail-view-UPDATED.html",
+      "06-book-settings.html"
+    ],
+    "handoff_manifest": "ba-to-architect.json (this file)"
+  },
+
+  "architect_tasks": {
+    "required": [
+      "Design detailed database schema for all book-specific tables",
+      "Design books_metadata shared table schema",
+      "Design system architecture diagram (agents, web interface, database)",
+      "Break down implementation into 30-50 LOC code chunks",
+      "Create dependency graph for chunks",
+      "Design technology stack (specific libraries and versions)",
+      "Design data model with exact field types and constraints",
+      "Design API design (if using Flask/FastAPI)",
+      "Propose desktop app framework (if timeline allows) vs localhost web",
+      "Create architecture diagrams (SVG visualizations)",
+      "Define code chunk dependencies and execution order",
+      "Estimate development time per chunk",
+      "Create prerequisites checklist",
+      "Create dependency setup script (setup.sh)",
+      "Prepare architect-to-tester handoff (test case generation before development)",
+      "Prepare architect-to-developer handoff (chunk-by-chunk with dependencies)"
+    ],
+    "key_decisions_needed": [
+      "Desktop app framework choice (if preferred): Electron, PyQt, Tkinter, or localhost Flask/FastAPI",
+      "Specific PDF library: PyPDF2 vs pdfplumber vs PyMuPDF",
+      "Specific OCR library: pytesseract vs easyocr vs PaddleOCR",
+      "Web framework: Flask vs FastAPI",
+      "Image processing: Pillow vs OpenCV vs both",
+      "AI model for semantic splitting: transformers, spaCy, or custom",
+      "Database connection pooling strategy",
+      "Checkpoint implementation strategy (triggers, storage format)"
+    ]
+  },
+
+  "questions_for_architect": [
+    "Should we use Docker for the processing VM?",
+    "Should database connection use connection pooling? (recommended: yes)",
+    "Should we implement API endpoints for agents or direct database access?",
+    "Should processing dashboard be real-time WebSocket or polling?",
+    "Should marked page images be stored as files or blobs in database?",
+    "Should we use ORM (SQLAlchemy) or raw SQL for database access?"
+  ],
+
+  "risks_and_assumptions": {
+    "risks": [
+      "OCR quality on low-quality scans may still fail after retries",
+      "Network database latency may slow down real-time updates",
+      "Large images (800x600+) may cause storage issues",
+      "Arabic OCR may require additional models/configuration",
+      "Desktop app development may add 2-4 weeks to timeline"
+    ],
+    "assumptions": [
+      "Network connection between VM and database server is reliable",
+      "Database server has sufficient storage for images",
+      "User has Tesseract installed or can install it",
+      "Python 3.8+ is available",
+      "Windows machine can run virtual environment",
+      "PostgreSQL server supports pgvector extension"
+    ]
+  },
+
+  "success_criteria": {
+    "ba_phase": "95% confidence achieved ✅",
+    "architecture_phase": "Detailed design with chunk breakdown + test cases",
+    "development_phase": "100% test pass before moving to next chunk",
+    "final_delivery": "Fully functional system with all FR requirements met"
+  }
+}

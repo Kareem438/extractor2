@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup: Book Settings - Edit Attribute Names</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .mockup { background: white; padding: 20px; border-radius: 8px; max-width: 1200px; margin: 0 auto; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #333; border-bottom: 2px solid #2196F3; padding-bottom: 10px; }
+        .breadcrumb { margin-bottom: 20px; color: #666; font-size: 14px; }
+        .breadcrumb a { color: #2196F3; text-decoration: none; }
+        .breadcrumb a:hover { text-decoration: underline; }
+        .book-info { background: #e3f2fd; padding: 15px; border-radius: 4px; border-left: 4px solid #2196F3; margin-bottom: 30px; }
+        .section { margin: 30px 0; padding: 20px; border: 2px solid #e0e0e0; border-radius: 8px; }
+        .attributes-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .attribute-item { padding: 15px; background: #f9f9f9; border-radius: 4px; border-left: 4px solid #2196F3; position: relative; }
+        .attribute-item.reserved { border-left-color: #4CAF50; background: #e8f5e9; }
+        .attribute-item.edited { border-left-color: #FF9800; background: #fff3e0; }
+        .attribute-label { font-weight: bold; display: block; margin-bottom: 8px; color: #555; font-size: 12px; }
+        .attribute-value-container { display: flex; align-items: center; gap: 8px; }
+        .attribute-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; background: white; }
+        .attribute-input:disabled { background: #f0f0f0; cursor: not-allowed; color: #999; }
+        .attribute-input.editable { border: 2px solid #FF9800; background: #fffbf0; }
+        .pencil-icon { cursor: pointer; color: #2196F3; font-size: 18px; padding: 8px; border-radius: 4px; transition: all 0.2s; }
+        .pencil-icon:hover { background: #e3f2fd; color: #1976D2; }
+        .pencil-icon.locked { color: #999; cursor: not-allowed; }
+        .note { color: #666; font-size: 12px; margin-top: 5px; font-style: italic; }
+        .action-buttons { margin-top: 30px; text-align: center; display: flex; justify-content: center; gap: 10px; }
+        .btn-primary { background: #4CAF50; color: white; padding: 15px 40px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; transition: all 0.3s; }
+        .btn-primary:disabled { background: #ccc; cursor: not-allowed; opacity: 0.6; }
+        .btn-primary:not(:disabled):hover { background: #45a049; }
+        .btn-secondary { background: #f44336; color: white; padding: 15px 40px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; transition: all 0.3s; }
+        .btn-secondary:disabled { background: #ccc; cursor: not-allowed; opacity: 0.6; }
+        .btn-secondary:not(:disabled):hover { background: #da190b; }
+        .btn-back { background: #f0f0f0; color: #333; padding: 10px 24px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; cursor: pointer; }
+        .btn-back:hover { background: #e0e0e0; }
+        .warning-box { background: #fff3cd; padding: 15px; border-radius: 4px; border-left: 4px solid #FFC107; margin-bottom: 20px; }
+        .info-box { background: #e3f2fd; padding: 15px; border-radius: 4px; border-left: 4px solid #2196F3; margin-bottom: 20px; }
+        .changes-indicator { position: fixed; top: 20px; right: 20px; background: #FF9800; color: white; padding: 12px 24px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); display: none; animation: slideIn 0.3s; }
+        .changes-indicator.visible { display: block; }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+    <script>
+        let editedAttributes = new Set();
+        let originalValues = {};
+
+        function initializeValues() {
+            // Store original values for all attribute inputs
+            const inputs = document.querySelectorAll('.attribute-input:not([disabled])');
+            inputs.forEach(input => {
+                originalValues[input.id] = input.value;
+            });
+        }
+
+        function toggleEdit(attrNumber) {
+            const input = document.getElementById('attr-' + attrNumber);
+            const pencil = document.getElementById('pencil-' + attrNumber);
+
+            if (input.classList.contains('editable')) {
+                // Already in edit mode, do nothing (user must save or cancel)
+                return;
+            }
+
+            // Enable editing
+            input.classList.add('editable');
+            input.focus();
+            input.select();
+            pencil.style.display = 'none';
+
+            // Mark parent as edited
+            input.closest('.attribute-item').classList.add('edited');
+        }
+
+        function handleInputChange(attrNumber) {
+            const input = document.getElementById('attr-' + attrNumber);
+            const originalValue = originalValues['attr-' + attrNumber];
+
+            if (input.value !== originalValue) {
+                editedAttributes.add(attrNumber);
+            } else {
+                editedAttributes.delete(attrNumber);
+            }
+
+            updateButtons();
+        }
+
+        function updateButtons() {
+            const saveBtn = document.getElementById('save-btn');
+            const cancelBtn = document.getElementById('cancel-btn');
+            const changesIndicator = document.getElementById('changes-indicator');
+
+            if (editedAttributes.size > 0) {
+                saveBtn.disabled = false;
+                cancelBtn.disabled = false;
+                changesIndicator.classList.add('visible');
+                changesIndicator.textContent = `${editedAttributes.size} attribute${editedAttributes.size > 1 ? 's' : ''} modified`;
+            } else {
+                saveBtn.disabled = true;
+                cancelBtn.disabled = true;
+                changesIndicator.classList.remove('visible');
+            }
+        }
+
+        function saveChanges() {
+            if (editedAttributes.size === 0) return;
+
+            // In real implementation, this would send data to backend
+            console.log('Saving changes for attributes:', Array.from(editedAttributes));
+
+            // Update original values
+            editedAttributes.forEach(attrNum => {
+                const input = document.getElementById('attr-' + attrNum);
+                originalValues['attr-' + attrNum] = input.value;
+                input.classList.remove('editable');
+                input.closest('.attribute-item').classList.remove('edited');
+                document.getElementById('pencil-' + attrNum).style.display = 'inline-block';
+            });
+
+            editedAttributes.clear();
+            updateButtons();
+
+            // Show success message
+            alert('✅ Attribute names saved successfully!\n\nChanges will be reflected in:\n• Verification interface\n• Database attribute_keys table\n• All existing and future records');
+        }
+
+        function cancelChanges() {
+            if (editedAttributes.size === 0) return;
+
+            if (!confirm('Are you sure you want to discard all changes?')) {
+                return;
+            }
+
+            // Revert all edited attributes
+            editedAttributes.forEach(attrNum => {
+                const input = document.getElementById('attr-' + attrNum);
+                input.value = originalValues['attr-' + attrNum];
+                input.classList.remove('editable');
+                input.closest('.attribute-item').classList.remove('edited');
+                document.getElementById('pencil-' + attrNum).style.display = 'inline-block';
+            });
+
+            editedAttributes.clear();
+            updateButtons();
+        }
+
+        window.onload = function() {
+            initializeValues();
+            updateButtons();
+        };
+    </script>
+</head>
+<body>
+    <div class="mockup">
+        <!-- Breadcrumb Navigation -->
+        <div class="breadcrumb">
+            <a href="04-book-library.html">📚 Book Library</a> >
+            <strong>Book Settings: Machine Learning Fundamentals</strong>
+        </div>
+
+        <h1>⚙️ Book Settings - Edit Attribute Names</h1>
+
+        <!-- Book Information -->
+        <div class="book-info">
+            <strong>📖 Book:</strong> Machine Learning Fundamentals.pdf<br>
+            <strong>🔢 Book ID:</strong> book1_ml_fundamentals<br>
+            <strong>📅 Uploaded:</strong> 2025-11-01<br>
+            <strong>📊 Status:</strong> <span style="color: #4CAF50;">Complete</span> (500 pages processed, 1,247 knowledge units extracted)
+        </div>
+
+        <!-- Instructions -->
+        <div class="info-box">
+            <strong>💡 How to Edit Attribute Names:</strong><br>
+            1. Click the pencil icon (✏️) next to any user-defined attribute (9-40) to enable editing<br>
+            2. Modify the attribute name as desired<br>
+            3. Click <strong>Save Changes</strong> to apply (button activates only when edits are made)<br>
+            4. Click <strong>Cancel</strong> to discard all changes<br>
+            <br>
+            <strong>Note:</strong> Attributes 1-8 are system-reserved (OCR metadata + record status) and cannot be edited.
+        </div>
+
+        <!-- Warning Box -->
+        <div class="warning-box">
+            <strong>⚠️ Important:</strong> Changing attribute names will update:
+            <ul style="margin: 10px 0 0 20px;">
+                <li>The <code>book1_ml_fundamentals_attribute_keys</code> table in the database</li>
+                <li>Label names shown in the verification interface</li>
+                <li>All existing records will retain their values (only the key names change)</li>
+            </ul>
+        </div>
+
+        <!-- System-Reserved Attributes Section -->
+        <div class="section">
+            <h2>🔒 System-Reserved Attributes (1-8)</h2>
+            <p style="color: #666; font-size: 14px; margin-bottom: 20px;">
+                These attributes are automatically populated by the system and cannot be modified.
+            </p>
+
+            <div class="attributes-grid">
+                <!-- Attribute 1 - related_image -->
+                <div class="attribute-item reserved">
+                    <label class="attribute-label">Attribute 1</label>
+                    <div class="attribute-value-container">
+                        <input type="text" class="attribute-input" value="related_image" disabled>
+                        <span class="pencil-icon locked" title="System-defined - Cannot be edited">🔒</span>
+                    </div>
+                    <p class="note">Links images to text (format: IMG-68)</p>
+                </div>
+
+                <!-- Attribute 2 - paddleocr_text -->
+                <div class="attribute-item reserved">
+                    <label class="attribute-label">Attribute 2</label>
+                    <div class="attribute-value-container">
+                        <input type="text" class="attribute-input" value="paddleocr_text" disabled>
+                        <span class="pencil-icon locked" title="System-defined - Cannot be edited">🔒</span>
+                    </div>
+                    <p class="note">Full text from PaddleOCR engine</p>
+                </div>
+
+                <!-- Attribute 3 - surya_ocr_text -->
+                <div class="attribute-item reserved">
+                    <label class="attribute-label">Attribute 3</label>
+                    <div class="attribute-value-container">
+                        <input type="text" class="attribute-input" value="surya_ocr_text" disabled>
+                        <span class="pencil-icon locked" title="System-defined - Cannot be edited">🔒</span>
+                    </div>
+                    <p class="note">Full text from Surya OCR engine</p>
+                </div>
+
+                <!-- Attribute 4 - tesseract_text -->
+                <div class="attribute-item reserved">
+                    <label class="attribute-label">Attribute 4</label>
+                    <div class="attribute-value-container">
+                        <input type="text" class="attribute-input" value="tesseract_text" disabled>
+                        <span class="pencil-icon locked" title="System-defined - Cannot be edited">🔒</span>
+                    </div>
+                    <p class="note">Full text from Tesseract engine</p>
+                </div>
+
+                <!-- Attribute 5 - paddleocr_confidence -->
+                <div class="attribute-item reserved">
+                    <label class="attribute-label">Attribute 5</label>
+                    <div class="attribute-value-container">
+                        <input type="text" class="attribute-input" value="paddleocr_confidence" disabled>
+                        <span class="pencil-icon locked" title="System-defined - Cannot be edited">🔒</span>
+                    </div>
+                    <p class="note">PaddleOCR confidence score (0-100)</p>
+                </div>
+
+                <!-- Attribute 6 - surya_ocr_confidence -->
+                <div class="attribute-item reserved">
+                    <label class="attribute-label">Attribute 6</label>
+                    <div class="attribute-value-container">
+                        <input type="text" class="attribute-input" value="surya_ocr_confidence" disabled>
+                        <span class="pencil-icon locked" title="System-defined - Cannot be edited">🔒</span>
+                    </div>
+                    <p class="note">Surya OCR confidence score (0-100)</p>
+                </div>
+
+                <!-- Attribute 7 - tesseract_confidence -->
+                <div class="attribute-item reserved">
+                    <label class="attribute-label">Attribute 7</label>
+                    <div class="attribute-value-container">
+                        <input type="text" class="attribute-input" value="tesseract_confidence" disabled>
+                        <span class="pencil-icon locked" title="System-defined - Cannot be edited">🔒</span>
+                    </div>
+                    <p class="note">Tesseract confidence score (0-100)</p>
+                </div>
+
+                <!-- Attribute 8 - record_status (NEW) -->
+                <div class="attribute-item reserved" style="border-left-color: #4CAF50; background: #c8e6c9;">
+                    <label class="attribute-label">Attribute 8</label>
+                    <div class="attribute-value-container">
+                        <input type="text" class="attribute-input" value="record_status" disabled style="font-weight: bold;">
+                        <span class="pencil-icon locked" title="System-defined - Cannot be edited">🔒</span>
+                    </div>
+                    <p class="note" style="color: #2E7D32; font-weight: bold;">Record status: "enabled" or "disabled" (for merge/split tracking)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- User-Defined Attributes Section -->
+        <div class="section">
+            <h2>🏷️ User-Defined Attributes (9-40) - 32 Available</h2>
+            <p style="color: #666; font-size: 14px; margin-bottom: 20px;">
+                These attribute names are used as labels throughout the system. Values are entered per knowledge unit during verification.
+            </p>
+
+            <div class="attributes-grid">
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 9</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-9" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(9)">
+                        <span id="pencil-9" class="pencil-icon" onclick="toggleEdit(9)" title="Click to edit">✏️</span>
+                    </div>
+                    <p class="note">Optional - Leave blank if not needed</p>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 10</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-10" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(10)">
+                        <span id="pencil-10" class="pencil-icon" onclick="toggleEdit(10)" title="Click to edit">✏️</span>
+                    </div>
+                    <p class="note">Optional - Leave blank if not needed</p>
+                </div>
+
+                <!-- Attributes 11-20 (Collapsed for brevity - all follow same pattern) -->
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 11</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-11" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(11)">
+                        <span id="pencil-11" class="pencil-icon" onclick="toggleEdit(11)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 12</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-12" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(12)">
+                        <span id="pencil-12" class="pencil-icon" onclick="toggleEdit(12)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 13</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-13" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(13)">
+                        <span id="pencil-13" class="pencil-icon" onclick="toggleEdit(13)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 14</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-14" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(14)">
+                        <span id="pencil-14" class="pencil-icon" onclick="toggleEdit(14)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 15</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-15" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(15)">
+                        <span id="pencil-15" class="pencil-icon" onclick="toggleEdit(15)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 16</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-16" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(16)">
+                        <span id="pencil-16" class="pencil-icon" onclick="toggleEdit(16)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 17</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-17" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(17)">
+                        <span id="pencil-17" class="pencil-icon" onclick="toggleEdit(17)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 18</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-18" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(18)">
+                        <span id="pencil-18" class="pencil-icon" onclick="toggleEdit(18)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 19</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-19" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(19)">
+                        <span id="pencil-19" class="pencil-icon" onclick="toggleEdit(19)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 20</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-20" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(20)">
+                        <span id="pencil-20" class="pencil-icon" onclick="toggleEdit(20)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <!-- Attributes 21-30 -->
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 21</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-21" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(21)">
+                        <span id="pencil-21" class="pencil-icon" onclick="toggleEdit(21)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 22</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-22" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(22)">
+                        <span id="pencil-22" class="pencil-icon" onclick="toggleEdit(22)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 23</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-23" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(23)">
+                        <span id="pencil-23" class="pencil-icon" onclick="toggleEdit(23)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 24</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-24" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(24)">
+                        <span id="pencil-24" class="pencil-icon" onclick="toggleEdit(24)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 25</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-25" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(25)">
+                        <span id="pencil-25" class="pencil-icon" onclick="toggleEdit(25)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 26</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-26" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(26)">
+                        <span id="pencil-26" class="pencil-icon" onclick="toggleEdit(26)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 27</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-27" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(27)">
+                        <span id="pencil-27" class="pencil-icon" onclick="toggleEdit(27)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 28</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-28" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(28)">
+                        <span id="pencil-28" class="pencil-icon" onclick="toggleEdit(28)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 29</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-29" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(29)">
+                        <span id="pencil-29" class="pencil-icon" onclick="toggleEdit(29)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 30</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-30" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(30)">
+                        <span id="pencil-30" class="pencil-icon" onclick="toggleEdit(30)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 31</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-31" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(31)">
+                        <span id="pencil-31" class="pencil-icon" onclick="toggleEdit(31)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 32</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-32" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(32)">
+                        <span id="pencil-32" class="pencil-icon" onclick="toggleEdit(32)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 33</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-33" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(33)">
+                        <span id="pencil-33" class="pencil-icon" onclick="toggleEdit(33)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 34</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-34" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(34)">
+                        <span id="pencil-34" class="pencil-icon" onclick="toggleEdit(34)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 35</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-35" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(35)">
+                        <span id="pencil-35" class="pencil-icon" onclick="toggleEdit(35)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 36</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-36" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(36)">
+                        <span id="pencil-36" class="pencil-icon" onclick="toggleEdit(36)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 37</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-37" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(37)">
+                        <span id="pencil-37" class="pencil-icon" onclick="toggleEdit(37)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 38</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-38" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(38)">
+                        <span id="pencil-38" class="pencil-icon" onclick="toggleEdit(38)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 39</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-39" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(39)">
+                        <span id="pencil-39" class="pencil-icon" onclick="toggleEdit(39)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+
+                <div class="attribute-item">
+                    <label class="attribute-label">Attribute 40</label>
+                    <div class="attribute-value-container">
+                        <input type="text" id="attr-40" class="attribute-input" value=""
+                               placeholder="(Not configured)" oninput="handleInputChange(40)">
+                        <span id="pencil-40" class="pencil-icon" onclick="toggleEdit(40)" title="Click to edit">✏️</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="btn-back" onclick="window.location.href='04-book-library.html'">← Back to Library</button>
+            <button id="save-btn" class="btn-primary" onclick="saveChanges()" disabled>💾 Save Changes</button>
+            <button id="cancel-btn" class="btn-secondary" onclick="cancelChanges()" disabled>❌ Cancel</button>
+        </div>
+
+        <!-- Status Info -->
+        <div style="margin-top: 30px; padding: 15px; background: #e8f5e9; border-radius: 4px; text-align: center;">
+            <strong>ℹ️ Database Table:</strong> <code>book1_ml_fundamentals_attribute_keys</code> |
+            <strong>Total Attributes:</strong> 40 (8 system-reserved, 32 user-defined)
+        </div>
+    </div>
+
+    <!-- Floating Changes Indicator -->
+    <div id="changes-indicator" class="changes-indicator">
+        0 attributes modified
+    </div>
+</body>
+</html>

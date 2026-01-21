@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Schema Comparison: Specification vs Implementation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            border: 1px solid #333;
+        }
+        .recommendations {
+            margin-top: 30px;
+            padding: 20px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 4px;
+        }
+        .recommendations h2 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .recommendations ul {
+            margin: 10px 0;
+        }
+        .recommendations li {
+            margin: 8px 0;
+            color: #856404;
+        }
+        .priority-high {
+            color: #d32f2f;
+            font-weight: bold;
+        }
+        .priority-medium {
+            color: #f57c00;
+            font-weight: bold;
+        }
+        .priority-low {
+            color: #388e3c;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Database Schema Comparison</h1>
+        <div class="subtitle">Specification vs Implementation | Knowledge Units & Paragraphs/Diagrams</div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-box" style="background: #4CAF50;"></div>
+                <span>✅ Implemented Correctly</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background: #FF5252;"></div>
+                <span>❌ Missing in Implementation</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background: #FFC107;"></div>
+                <span>⚠️ Partially Implemented</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background: #2196F3;"></div>
+                <span>🆕 New Feature (Not in Spec)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box" style="background: #9C27B0;"></div>
+                <span>⚡ Naming Difference</span>
+            </div>
+        </div>
+
+        <svg width="1740" height="2400" xmlns="http://www.w3.org/2000/svg">
+            <!-- Background -->
+            <rect width="1740" height="2400" fill="#fafafa"/>
+
+            <!-- Title Section -->
+            <text x="870" y="40" font-size="28" font-weight="bold" text-anchor="middle" fill="#2c3e50">
+                Database Schema Comparison
+            </text>
+            <text x="870" y="70" font-size="16" text-anchor="middle" fill="#7f8c8d">
+                Specification Documents vs Actual Database Implementation
+            </text>
+
+            <!-- Main Split: Specification vs Implementation -->
+            <line x1="870" y1="100" x2="870" y2="2350" stroke="#bdc3c7" stroke-width="3" stroke-dasharray="10,5"/>
+
+            <!-- Left Column Header: SPECIFICATION -->
+            <rect x="50" y="100" width="760" height="60" fill="#3498db" rx="8"/>
+            <text x="430" y="138" font-size="22" font-weight="bold" text-anchor="middle" fill="white">
+                📋 SPECIFICATION
+            </text>
+            <text x="430" y="158" font-size="12" text-anchor="middle" fill="white">
+                (02-architecture/database-schema.md)
+            </text>
+
+            <!-- Right Column Header: IMPLEMENTATION -->
+            <rect x="930" y="100" width="760" height="60" fill="#e74c3c" rx="8"/>
+            <text x="1310" y="138" font-size="22" font-weight="bold" text-anchor="middle" fill="white">
+                🔧 IMPLEMENTATION
+            </text>
+            <text x="1310" y="158" font-size="12" text-anchor="middle" fill="white">
+                (03-code/src/database/table_creator.py)
+            </text>
+
+            <!-- ==================== KNOWLEDGE UNITS SECTION ==================== -->
+
+            <!-- Section Header -->
+            <rect x="50" y="190" width="1640" height="40" fill="#34495e" rx="5"/>
+            <text x="870" y="215" font-size="18" font-weight="bold" text-anchor="middle" fill="white">
+                KNOWLEDGE UNITS TABLE: {prefix}_knowledge_units
+            </text>
+
+            <!-- SPECIFICATION: Knowledge Units -->
+            <rect x="50" y="250" width="760" height="900" fill="white" stroke="#3498db" stroke-width="2" rx="8"/>
+            <text x="430" y="280" font-size="16" font-weight="bold" text-anchor="middle" fill="#2c3e50">
+                Specified Structure
+            </text>
+
+            <!-- Primary Key - MISMATCH -->
+            <rect x="70" y="300" width="720" height="30" fill="#9C27B0" rx="4"/>
+            <text x="80" y="320" font-size="13" font-weight="bold" fill="white">id</text>
+            <text x="710" y="320" font-size="11" text-anchor="end" fill="white">SERIAL PRIMARY KEY</text>
+
+            <!-- Core Fields -->
+            <rect x="70" y="340" width="720" height="30" fill="#4CAF50" rx="4"/>
+            <text x="80" y="360" font-size="13" fill="white">text_content</text>
+            <text x="710" y="360" font-size="11" text-anchor="end" fill="white">TEXT NOT NULL</text>
+
+            <rect x="70" y="375" width="720" height="30" fill="#FF5252" rx="4"/>
+            <text x="80" y="395" font-size="13" fill="white">text_length</text>
+            <text x="710" y="395" font-size="11" text-anchor="end" fill="white">INTEGER ❌ MISSING</text>
+
+            <rect x="70" y="410" width="720" height="30" fill="#FF5252" rx="4"/>
+            <text x="80" y="430" font-size="13" fill="white">line_count</text>
+            <text x="710" y="430" font-size="11" text-anchor="end" fill="white">INTEGER ❌ MISSING</text>
+
+            <rect x="70" y="445" width="720" height="30" fill="#4CAF50" rx="4"/>
+            <text x="80" y="465" font-size="13" fill="white">page_number</text>
+            <text x="710" y="465" font-size="11" text-anchor="end" fill="white">INTEGER NOT NULL</text>
+
+            <!-- Position Fields -->
+            <rect x="70" y="485" width="720" height="25" fill="#e8f4f8" rx="4"/>
+            <text x="80" y="502" font-size="12" font-weight="bold" fill="#2c3e50">Position/Bounding Box:</text>
+
+            <rect x="70" y="515" width="720" height="30" fill="#FFC107" rx="4"/>
+            <text x="80" y="535" font-size="13" fill="white">position_x</text>
+            <text x="710" y="535" font-size="11" text-anchor="end" fill="white">INTEGER ⚠️ PARTIAL</text>
+
+            <rect x="70" y="550" width="720" height="30" fill="#FFC107" rx="4"/>
+            <text x="80" y="570" font-size="13" fill="white">position_y</text>
+            <text x="710" y="570" font-size="11" text-anchor="end" fill="white">INTEGER ⚠️ PARTIAL</text>
+
+            <rect x="70" y="585" width="720" height="30" fill="#FF5252" rx="4"/>
+            <text x="80" y="605" font-size="13" fill="white">position_width</text>
+            <text x="710" y="605" font-size="11" text-anchor="end" fill="white">INTEGER ❌ MISSING</text>
+
+            <rect x="70" y="620" width="720" height="30" fill="#FF5252" rx="4"/>
+            <text x="80" y="640" font-size="13" fill="white">position_height</text>
+            <text x="710" y="640" font-size="11" text-anchor="end" fill="white">INTEGER ❌ MISSING</text>
+
+            <!-- Metadata Fields -->
+            <rect x="70" y="660" width="720" height="25" fill="#e8f4f8" rx="4"/>
+            <text x="80" y="677" font-size="12" font-weight="bold" fill="#2c3e50">Metadata:</text>
+
+            <rect x="70" y="690" width="720" height="30" fill="#4CAF50" rx="4"/>
+            <text x="80" y="710" font-size="13" fill="white">language</text>
+            <text x="710" y="710" font-size="11" text-anchor="end" fill="white">VARCHAR(20)</text>
+
+            <rect x="70" y="725" width="720" height="30" fill="#4CAF50" rx="4"/>
+            <text x="80" y="745" font-size="13" fill="white">confidence_score</text>
+            <text x="710" y="745" font-size="11" text-anchor="end" fill="white">NUMERIC(5,2)</text>
+
+            <rect x="70" y="760" width="720" height="30" fill="#FF5252" rx="4"/>
+            <text x="80" y="780" font-size="13" fill="white">extraction_method</text>
+            <text x="710" y="780" font-size="11" text-anchor="end" fill="white">VARCHAR(50) ❌ MISSING</text>
+
+            <!-- Hierarchy -->
+            <rect x="70" y="800" width="720" height="25" fill="#e8f4f8" rx="4"/>
+            <text x="80" y="817" font-size="12" font-weight="bold" fill="#2c3e50">Hierarchy:</text>
+
+            <rect x="70" y="830" width="720" height="30" fill="#4CAF50" rx="4"/>
+            <text x="80" y="850" font-size="13" fill="white">chapter, topic, sub_topic</text>
+            <text x="710" y="850" font-size="11" text-anchor="end" fill="white">VARCHAR(255)</text>
+
+            <!-- Verification -->
+            <rect x="70" y="870" width="720" height="25" fill="#e8f4f8" rx="4"/>
+            <text x="80" y="887" font-size="12" font-weight="bold" fill="#2c3e50">Verification:</text>
+
+            <rect x="70" y="900" width="720" height="30" fill="#4CAF50" rx="4"/>
+            <text x="80" y="920" font-size="13" fill="white">verified</text>
+            <text x="710" y="920" font-size="11" text-anchor="end" fill="white">BOOLEAN</text>
+
+            <rect x="70" y="935" width="720" height="30" fill="#FF5252" rx="4"/>
+            <text x="80" y="955" font-size="13" fill="white">verified_at</text>
+            <text x="710" y="955" font-size="11" text-anchor="end" fill="white">TIMESTAMP ❌ MISSING</text>
+
+            <rect x="70" y="970" width="720" height="30" fill="#FF5252" rx="4"/>
+            <text x="80" y="990" font-size="13" fill="white">verified_by</text>
+            <text x="710" y="990" font-size="11" text-anchor="end" fill="white">VARCHAR(100) ❌ MISSING</text>
+
+            <!-- 40 Attributes -->
+            <rect x="70" y="1010" width="720" height="30" fill="#4CAF50" rx="4"/>
+            <text x="80" y="1030" font-size="13" font-weight="bold" fill="white">attr1_value → attr40_value</text>
+            <text x="710" y="1030" font-size="11" text-anchor="end" fill="white">TEXT (40 columns)</text>
+
+            <!-- Advanced Features -->
+            <rect x="70" y="1050" width="720" height="30" fill="#4CAF50" rx="4"/>
+            <text x="80" y="1070" font-size="13" fill="white">merged_into_record_id</text>
+            <text x="710" y="1070" font-size="11" text-anchor="end" fill="white">INTEGER</text>
+
+            <rect x="70" y="1085" width="720" height="30" fill="#4CAF50" rx="4"/>
+            <text x="80" y="1105" font-size="13" fill="white">original_record_ids</text>
+            <text x="710" y="1105" font-size="11" text-anchor="end" fill="white">TEXT[]</text>
+
+            <!-- IMPLEMENTATION: Knowledge Units -->
+            <rect x="930" y="250" width="760" height="900" fill="white" stroke="#e74c3c" stroke-width="2" rx="8"/>
+            <text x="1310" y="280" font-size="16" font-weight="bold" text-anchor="middle" fill="#2c3e50">
+                Actual Implementation
+            </text>
+
+            <!-- Primary Key - MISMATCH -->
+            <rect x="950" y="300" width="720" height="30" fill="#9C27B0" rx="4"/>
+            <text x="960" y="320" font-size="13" font-weight="bold" fill="white">unit_id</text>
+            <text x="1660" y="320" font-size="11" text-anchor="end" fill="white">⚡ Should be "id"</text>
+
+            <!-- Core Fields -->
+            <rect x="950" y="340" width="720" height="30" fill="#4CAF50" rx="4"/>
+            <text x="960" y="360" font-size="13" fill="white">text_content</text>
+            <text x="1660" y="360" font-size="11" text-anchor="end" fill="white">TEXT NOT NULL ✅</text>
+
+            <rect x="950" y="375" width="720" height="30" fill="#FF5252" rx="4"/>
+            <text x="960" y="395" font-size="13" fill="white">❌ NOT IMPLEMENTED</text>
+            <text x="1660" y="395" font-size="11" text-anchor="end" fill="white"></text>
+
+            <rect x="950" y="410" width="720" height="30" fill="#FF5252" rx="4"/>
+            <text x="960" y="430" font-size="13" fill="white">❌ NOT IMPLEMENTED</text>
+            <text x="1660" y="430" font-size="11" text-anchor="end" fill="white"></text>
+
+            <rect x="950" y="445" width="720" height="30" fill="#4CAF50" rx="4"/>
+            <text x="960" y="465" font-size="13" fill="white">page_number</text>
+            <text x="1660" y="465" font-size="11" text-anchor="end" fill="white">INTEGER NOT NULL ✅</text>
+
+            <!-- Position Fields -->
+            <rect x="950" y="485" width="720" height="25" fill="#e8f4f8" rx="4"/>
+            <text x="960" y="502" font-size="12" font-weight="bold" fill="#2c3e50">Position (INCOMPLETE):</text>
+
+            <rect x="950" y="515" width="720" height="30" fill="#FFC107" rx="4"/>
+            <text x="960" y="535" font-size="13" fill="white">position_x</text>
+            <text x="1660" y="535" font-size="11" text-anchor="end" fill="white">INTEGER ✅</text>
+
+            <rect x="950" y="550" width="720" height="30" fill="#FFC107" rx="4"/>
+            <text x="960" y="570" font-size="13" fill="white">position_y</text>
+            <text x="1660" y="570" font-size="11" text-anchor="end" fill="white">INTEGER ✅</text>
+
+            <rect x="950" y="585" width="720" height="30" fill="#FF5252" rx="4"/>
+            <text x="960" y="605" font-size="13" fill="white">❌ NOT IMPLEMENTED</text>
+            <text x="1660" y="605" font-size="11" text-anchor="end" fill="white">Missing width!</text>
+
+            <rect x="950" y="620" width="720" height="30" fill="#FF5252" rx="4"/>
+            <text x="960" y="640" font-size="13" fill="white">❌ NOT IMPLEMENTED</text>
+            <text x="1660" y="640" font-size="11" text-anchor="end" fill="white">Missing height!</text>
+
+            <!-- Metadata Fields -->
+            <rect x="950" y="660" width="720" height="25" fill="#e8f4f8" rx="4"/>
+            <text x="960" y="677" font-size="12" font-weight="bold" fill="#2c3e50">Metadata:</text>
+
+            <rect x="950" y="690" width="720" height="30" fill="#4CAF50" rx="4"/>
+            <text x="960" y="710" font-size="13" fill="white">language</text>
+            <text x="1660" y="710" font-size="11" text-anchor="end" fill="white">VARCHAR(20) ✅</text>
+
+            <rect x="950" y="725" width="720" height="30" fill="#4CAF50" rx="4"/>
+            <text x="960" y="745" font-size="13" fill="white">confidence_score</text>
+            <text x="1660" y="745" font-size="11" text-anchor="end" fill="white">DECIMAL(5,2) ✅</text>
+
+            <rect x="950" y="760" width="720" height="30" fill="#FF5252" rx="4"/>
+            <text x="960" y="780" font-size="13" fill="white">❌ NOT IMPLEMENTED</text>
+            <text x="1660" y="780" font-size="11" text-anchor="end" fill="white"></text>
+
+            <!-- Hierarchy -->
+            <rect x="950" y="800" width="720" height="25" fill="#e8f4f8" rx="4"/>
+            <text x="960" y="817" font-size="12" font-weight="bold" fill="#2c3e50">Hierarchy:</text>
+
+            <rect x="950" y="830" width="720" height="30" fill="#4CAF50" rx="4"/>
+            <text x="960" y="850" font-size="13" fill="white">chapter, topic, sub_topic</text>
+            <text x="1660" y="850" font-size="11" text-anchor="end" fill="white">VARCHAR(255) ✅</text>
+
+            <!-- Verification -->
+            <rect x="950" y="870" width="720" height="25" fill="#e8f4f8" rx="4"/>
+            <text x="960" y="887" font-size="12" font-weight="bold" fill="#2c3e50">Verification (INCOMPLETE):</text>
+
+            <rect x="950" y="900" width="720" height="30" fill="#4CAF50" rx="4"/>
+            <text x="960" y="920" font-size="13" fill="white">verified</text>
+            <text x="1660" y="920" font-size="11" text-anchor="end" fill="white">BOOLEAN ✅</text>
+
+            <rect x="950" y="935" width="720" height="30" fill="#FF5252" rx="4"/>
+            <text x="960" y="955" font-size="13" fill="white">❌ NOT IMPLEMENTED</text>
+            <text x="1660" y="955" font-size="11" text-anchor="end" fill="white">No timestamp!</text>
+
+            <rect x="950" y="970" width="720" height="30" fill="#FF5252" rx="4"/>
+            <text x="960" y="990" font-size="13" fill="white">❌ NOT IMPLEMENTED</text>
+            <text x="1660" y="990" font-size="11" text-anchor="end" fill="white">No user tracking!</text>
+
+            <!-- 40 Attributes -->
+            <rect x="950" y="1010" width="720" height="30" fill="#4CAF50" rx="4"/>
+            <text x="960" y="1030" font-size="13" font-weight="bold" fill="white">attr1_value → attr40_value</text>
+            <text x="1660" y="1030" font-size="11" text-anchor="end" fill="white">TEXT (40 columns) ✅</text>
+
+            <!-- Advanced Features -->
+            <rect x="950" y="1050" width="720" height="30" fill="#4CAF50" rx="4"/>
+            <text x="960" y="1070" font-size="13" fill="white">merged_into_record_id</text>
+            <text x="1660" y="1070" font-size="11" text-anchor="end" fill="white">INTEGER ✅</text>
+
+            <rect x="950" y="1085" width="720" height="30" fill="#4CAF50" rx="4"/>
+            <text x="960" y="1105" font-size="13" fill="white">original_record_ids</text>
+            <text x="1660" y="1105" font-size="11" text-anchor="end" fill="white">TEXT[] ✅</text>
+
+            <!-- Additional Implementation Fields -->
+            <rect x="950" y="1120" width="720" height="25" fill="#fff3cd" rx="4"/>
+            <text x="960" y="1137" font-size="12" font-weight="bold" fill="#856404">Extra Implementation Fields:</text>
+
+            <rect x="950" y="1150" width="720" height="30" fill="#2196F3" rx="4"/>
+            <text x="960" y="1170" font-size="13" fill="white">embedding_vector</text>
+            <text x="1660" y="1170" font-size="11" text-anchor="end" fill="white">VECTOR(384) 🆕</text>
+
+            <!-- ==================== PARAGRAPHS SECTION ==================== -->
+
+            <!-- Section Header -->
+            <rect x="50" y="1200" width="1640" height="40" fill="#34495e" rx="5"/>
+            <text x="870" y="1225" font-size="18" font-weight="bold" text-anchor="middle" fill="white">
+                PARAGRAPHS: raw_{prefix}_paragraph_images (NEW FEATURE - NOT IN SPEC)
+            </text>
+
+            <!-- Left: NOT IN SPEC -->
+            <rect x="50" y="1260" width="760" height="550" fill="#f8f9fa" stroke="#bdc3c7" stroke-width="2" stroke-dasharray="10,5" rx="8"/>
+            <text x="430" y="1300" font-size="18" font-weight="bold" text-anchor="middle" fill="#7f8c8d">
+                ❌ NOT IN SPECIFICATION
+            </text>
+            <text x="430" y="1330" font-size="14" text-anchor="middle" fill="#7f8c8d">
+                This is a new feature added
+            </text>
+            <text x="430" y="1355" font-size="14" text-anchor="middle" fill="#7f8c8d">
+                during development (Nov-Dec 2025)
+            </text>
+            <text x="430" y="1400" font-size="13" text-anchor="middle" fill="#95a5a6">
+                "Paragraphs" are user-selected
+            </text>
+            <text x="430" y="1425" font-size="13" text-anchor="middle" fill="#95a5a6">
+                image clips from pages,
+            </text>
+            <text x="430" y="1450" font-size="13" text-anchor="middle" fill="#95a5a6">
+                NOT semantic text units
+            </text>
+
+            <rect x="100" y="1500" width="660" height="280" fill="white" stroke="#95a5a6" stroke-width="1" rx="5"/>
+            <text x="430" y="1530" font-size="14" font-weight="bold" text-anchor="middle" fill="#2c3e50">
+                What Paragraphs Should Be (Per Spec):
+            </text>
+            <text x="120" y="1560" font-size="12" fill="#555">
+                • Semantic text chunks (3-5 lines)
+            </text>
+            <text x="120" y="1585" font-size="12" fill="#555">
+                • Processed from knowledge units
+            </text>
+            <text x="120" y="1610" font-size="12" fill="#555">
+                • Split by meaning/context
+            </text>
+            <text x="120" y="1635" font-size="12" fill="#555">
+                • Stored as TEXT content
+            </text>
+            <text x="120" y="1660" font-size="12" fill="#555">
+                • Related to knowledge_units table
+            </text>
+            <text x="120" y="1710" font-size="13" font-weight="bold" fill="#d32f2f">
+                ⚠️ RECOMMENDATION:
+            </text>
+            <text x="120" y="1735" font-size="12" fill="#d32f2f">
+                Rename "paragraph_images" to something
+            </text>
+            <text x="120" y="1755" font-size="12" fill="#d32f2f">
+                more accurate like "text_clip_images" or
+            </text>
+            <text x="120" y="1775" font-size="12" fill="#d32f2f">
+                "user_selected_regions" to avoid confusion
+            </text>
+
+            <!-- Right: Implementation -->
+            <rect x="930" y="1260" width="760" height="550" fill="white" stroke="#2196F3" stroke-width="3" rx="8"/>
+            <text x="1310" y="1300" font-size="16" font-weight="bold" text-anchor="middle" fill="#2c3e50">
+                🆕 Implemented (Not From Spec)
+            </text>
+
+            <rect x="950" y="1320" width="720" height="30" fill="#2196F3" rx="4"/>
+            <text x="960" y="1340" font-size="13" font-weight="bold" fill="white">id</text>
+            <text x="1660" y="1340" font-size="11" text-anchor="end" fill="white">SERIAL PRIMARY KEY</text>
+
+            <rect x="950" y="1355" width="720" height="25" fill="#e3f2fd" rx="4"/>
+            <text x="960" y="1372" font-size="12" font-weight="bold" fill="#1976d2">Image Data (User Selected Region):</text>
+
+            <rect x="950" y="1385" width="720" height="30" fill="#2196F3" rx="4"/>
+            <text x="960" y="1405" font-size="13" fill="white">selection_x, selection_y, selection_width, selection_height</text>
+
+            <rect x="950" y="1420" width="720" height="30" fill="#2196F3" rx="4"/>
+            <text x="960" y="1440" font-size="13" fill="white">image_data (BYTEA), image_format, dimensions</text>
+
+            <rect x="950" y="1460" width="720" height="25" fill="#e3f2fd" rx="4"/>
+            <text x="960" y="1477" font-size="12" font-weight="bold" fill="#1976d2">Metadata:</text>
+
+            <rect x="950" y="1490" width="720" height="30" fill="#2196F3" rx="4"/>
+            <text x="960" y="1510" font-size="13" fill="white">user_notes, description, category, tags[]</text>
+
+            <rect x="950" y="1525" width="720" height="30" fill="#2196F3" rx="4"/>
+            <text x="960" y="1545" font-size="13" fill="white">approval_status, is_enabled, display_order</text>
+
+            <rect x="950" y="1565" width="720" height="25" fill="#fff3cd" rx="4"/>
+            <text x="960" y="1582" font-size="12" font-weight="bold" fill="#856404">Level Titles (Added Jan 2026):</text>
+
+            <rect x="950" y="1595" width="720" height="30" fill="#FFC107" rx="4"/>
+            <text x="960" y="1615" font-size="13" fill="white">selected_level_number, selected_level_text</text>
+
+            <rect x="950" y="1630" width="720" height="30" fill="#FFC107" rx="4"/>
+            <text x="960" y="1650" font-size="13" fill="white">level_1_title, level_2_title, level_3_title, level_4_title</text>
+
+            <rect x="950" y="1670" width="720" height="25" fill="#e3f2fd" rx="4"/>
+            <text x="960" y="1687" font-size="12" font-weight="bold" fill="#1976d2">OCR & Linking:</text>
+
+            <rect x="950" y="1700" width="720" height="30" fill="#2196F3" rx="4"/>
+            <text x="960" y="1720" font-size="13" fill="white">extracted_text, ocr_confidence</text>
+
+            <rect x="950" y="1735" width="720" height="30" fill="#2196F3" rx="4"/>
+            <text x="960" y="1755" font-size="13" fill="white">linked_knowledge_unit_id (FK)</text>
+
+            <rect x="950" y="1770" width="720" height="30" fill="#2196F3" rx="4"/>
+            <text x="960" y="1790" font-size="13" fill="white">raw_page_id (FK), page_number</text>
+
+            <!-- ==================== DIAGRAMS SECTION ==================== -->
+
+            <!-- Section Header -->
+            <rect x="50" y="1860" width="1640" height="40" fill="#34495e" rx="5"/>
+            <text x="870" y="1885" font-size="18" font-weight="bold" text-anchor="middle" fill="white">
+                DIAGRAMS: raw_{prefix}_diagram_images (NEW FEATURE - NOT IN SPEC)
+            </text>
+
+            <!-- Left: NOT IN SPEC -->
+            <rect x="50" y="1920" width="760" height="400" fill="#f8f9fa" stroke="#bdc3c7" stroke-width="2" stroke-dasharray="10,5" rx="8"/>
+            <text x="430" y="1960" font-size="18" font-weight="bold" text-anchor="middle" fill="#7f8c8d">
+                ❌ NOT IN SPECIFICATION
+            </text>
+            <text x="430" y="1990" font-size="14" text-anchor="middle" fill="#7f8c8d">
+                Similar to paragraphs - new feature
+            </text>
+            <text x="430" y="2015" font-size="14" text-anchor="middle" fill="#7f8c8d">
+                added during development
+            </text>
+
+            <rect x="100" y="2060" width="660" height="230" fill="white" stroke="#95a5a6" stroke-width="1" rx="5"/>
+            <text x="430" y="2090" font-size="14" font-weight="bold" text-anchor="middle" fill="#2c3e50">
+                What Diagrams Should Be (Logically):
+            </text>
+            <text x="120" y="2120" font-size="12" fill="#555">
+                • Visual elements (charts, graphs, schemas)
+            </text>
+            <text x="120" y="2145" font-size="12" fill="#555">
+                • Extracted and analyzed separately
+            </text>
+            <text x="120" y="2170" font-size="12" fill="#555">
+                • AI-powered interpretation (Claude Vision)
+            </text>
+            <text x="120" y="2195" font-size="12" fill="#555">
+                • Structured JSON output
+            </text>
+            <text x="120" y="2240" font-size="13" font-weight="bold" fill="#388e3c">
+                ✅ This makes sense as a new feature
+            </text>
+            <text x="120" y="2265" font-size="12" fill="#388e3c">
+                Could be documented and added to spec
+            </text>
+
+            <!-- Right: Implementation -->
+            <rect x="930" y="1920" width="760" height="400" fill="white" stroke="#2196F3" stroke-width="3" rx="8"/>
+            <text x="1310" y="1960" font-size="16" font-weight="bold" text-anchor="middle" fill="#2c3e50">
+                🆕 Implemented (Not From Spec)
+            </text>
+
+            <text x="960" y="1995" font-size="13" fill="#555">
+                Similar structure to paragraph_images, plus:
+            </text>
+
+            <rect x="950" y="2010" width="720" height="25" fill="#e3f2fd" rx="4"/>
+            <text x="960" y="2027" font-size="12" font-weight="bold" fill="#1976d2">AI Analysis Fields:</text>
+
+            <rect x="950" y="2040" width="720" height="30" fill="#2196F3" rx="4"/>
+            <text x="960" y="2060" font-size="13" fill="white">diagram_type (flowchart, graph, schema, etc.)</text>
+
+            <rect x="950" y="2075" width="720" height="30" fill="#2196F3" rx="4"/>
+            <text x="960" y="2095" font-size="13" fill="white">structured_json (AI analysis output)</text>
+
+            <rect x="950" y="2110" width="720" height="30" fill="#2196F3" rx="4"/>
+            <text x="960" y="2130" font-size="13" fill="white">ai_model, ai_confidence, analyzed_at</text>
+
+            <rect x="950" y="2150" width="720" height="25" fill="#fff3cd" rx="4"/>
+            <text x="960" y="2167" font-size="12" font-weight="bold" fill="#856404">Same Level Title System:</text>
+
+            <rect x="950" y="2180" width="720" height="30" fill="#FFC107" rx="4"/>
+            <text x="960" y="2200" font-size="13" fill="white">level_1_title through level_5_title</text>
+
+            <rect x="950" y="2220" width="720" height="25" fill="#e3f2fd" rx="4"/>
+            <text x="960" y="2237" font-size="12" font-weight="bold" fill="#1976d2">All Other Fields:</text>
+
+            <rect x="950" y="2250" width="720" height="30" fill="#2196F3" rx="4"/>
+            <text x="960" y="2270" font-size="13" fill="white">Same as paragraphs (selection coords, image data, etc.)</text>
+
+        </svg>
+
+        <div class="recommendations">
+            <h2>📋 RECOMMENDATIONS & ACTION ITEMS</h2>
+
+            <h3><span class="priority-high">🔴 HIGH PRIORITY</span> - Breaking Changes / Data Integrity</h3>
+            <ul>
+                <li><strong>Fix Primary Key Naming:</strong> Rename <code>unit_id</code> to <code>id</code> in knowledge_units table to match specification
+                    <br><small style="color: #856404;">⚠️ This requires a migration script and may affect existing code references</small>
+                </li>
+                <li><strong>Add Missing Position Fields:</strong> Add <code>position_width</code> and <code>position_height</code> columns
+                    <br><small style="color: #856404;">Critical for accurate bounding box representation and visual positioning</small>
+                </li>
+                <li><strong>Add Verification Tracking:</strong> Add <code>verified_at</code> (TIMESTAMP) and <code>verified_by</code> (VARCHAR) columns
+                    <br><small style="color: #856404;">Essential for audit trail and user accountability</small>
+                </li>
+            </ul>
+
+            <h3><span class="priority-medium">🟡 MEDIUM PRIORITY</span> - Functionality Gaps</h3>
+            <ul>
+                <li><strong>Add Text Metrics:</strong> Add <code>text_length</code> and <code>line_count</code> columns
+                    <br><small style="color: #856404;">Useful for chunking logic and quality validation</small>
+                </li>
+                <li><strong>Add Extraction Method:</strong> Add <code>extraction_method</code> VARCHAR(50) column
+                    <br><small style="color: #856404;">Track which OCR engine was used (PaddleOCR, Surya, Tesseract)</small>
+                </li>
+                <li><strong>Rename Paragraph Tables:</strong> Consider renaming to avoid confusion
+                    <br><small style="color: #856404;">Current name "paragraph_images" implies text chunks, but they're actually user-selected image clips</small>
+                    <br><small style="color: #856404;">Suggested: <code>user_text_clip_images</code> or <code>selected_text_regions</code></small>
+                </li>
+            </ul>
+
+            <h3><span class="priority-low">🟢 LOW PRIORITY</span> - Documentation & Standardization</h3>
+            <ul>
+                <li><strong>Update Specification Documents:</strong> Add paragraphs and diagrams to official specs
+                    <br><small style="color: #856404;">These features are working well but not documented in architecture docs</small>
+                </li>
+                <li><strong>Create Migration Plan:</strong> Document strategy for adding missing columns to existing databases
+                    <br><small style="color: #856404;">Ensure backward compatibility and data migration path</small>
+                </li>
+                <li><strong>Standardize Data Types:</strong> Ensure NUMERIC vs DECIMAL consistency
+                    <br><small style="color: #856404;">Minor - both work the same in PostgreSQL</small>
+                </li>
+            </ul>
+
+            <h3>💡 OPTIONAL ENHANCEMENTS</h3>
+            <ul>
+                <li>Add indexes on frequently queried columns (page_number, chapter, verified)</li>
+                <li>Add CHECK constraints for data validation (e.g., confidence_score between 0-100)</li>
+                <li>Consider partitioning large tables by page_number for performance</li>
+                <li>Add full-text search indexes on text_content for better search performance</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

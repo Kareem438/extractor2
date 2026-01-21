@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture Visualization - Knowledge Extraction System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #4A90E2 0%, #2E5C8A 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        nav {
+            background: #34495e;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 10px 25px;
+            border-radius: 5px;
+            transition: background 0.3s;
+            font-weight: 500;
+        }
+
+        nav a:hover {
+            background: #4A90E2;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .diagram-section {
+            margin-bottom: 60px;
+        }
+
+        .diagram-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #4A90E2;
+        }
+
+        .section-icon {
+            font-size: 2.5rem;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            color: #2C3E50;
+        }
+
+        .description {
+            background: #F8F9FA;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-left: 5px solid #4A90E2;
+        }
+
+        .description h3 {
+            color: #2C3E50;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .description p {
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .description ul {
+            color: #555;
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .description li {
+            margin-bottom: 8px;
+        }
+
+        .key-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #E0E0E0;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-card h4 {
+            color: #4A90E2;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .feature-card p {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        .diagram-container {
+            background: #F8F9FA;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .diagram-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .badge-system {
+            background: #FFE4E1;
+            color: #C0392B;
+        }
+
+        .badge-user {
+            background: #D5F4E6;
+            color: #1E8449;
+        }
+
+        .badge-new {
+            background: #FFF3CD;
+            color: #D68910;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            opacity: 0.95;
+        }
+
+        footer {
+            background: #2C3E50;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        footer p {
+            margin-bottom: 10px;
+        }
+
+        footer a {
+            color: #4A90E2;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        .highlight-box {
+            background: #FFF9E6;
+            border: 2px solid #F39C12;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .highlight-box h4 {
+            color: #D68910;
+            margin-bottom: 10px;
+        }
+
+        code {
+            background: #F8F9FA;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #E74C3C;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏗️ Architecture Visualization</h1>
+            <p class="subtitle">Knowledge Extraction System (12-extractor)</p>
+            <p class="subtitle">Database Schema & Data Model with Record Merging/Splitting</p>
+        </header>
+
+        <nav>
+            <a href="#database-er">📊 Database ER Diagram</a>
+            <a href="#data-model">📝 Data Model & Attributes</a>
+            <a href="#features">✨ Key Features</a>
+        </nav>
+
+        <div class="content">
+            <!-- Statistics Overview -->
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-number">10</div>
+                    <div class="stat-label">Total Tables<br>(1 Shared + 9 Book: 2 Raw + 7 Processed)</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number">40</div>
+                    <div class="stat-label">Attributes<br>(8 System + 32 User)</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number">11</div>
+                    <div class="stat-label">Record Context View<br>(5 Before + Current + 5 After)</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number">5</div>
+                    <div class="stat-label">Max Merge Range<br>(Forward or Backward)</div>
+                </div>
+            </div>
+
+            <!-- Database ER Diagram Section -->
+            <section id="database-er" class="diagram-section">
+                <div class="section-header">
+                    <span class="section-icon">📊</span>
+                    <h2 class="section-title">Database Entity-Relationship Diagram</h2>
+                </div>
+
+                <div class="description">
+                    <h3>Overview</h3>
+                    <p>The Knowledge Extraction System uses a <strong>dual-database architecture</strong> with <strong>PostgreSQL + pgvector</strong> for the primary relational database and <strong>Chroma DB</strong> with a unified collection for cross-book semantic search.</p>
+
+                    <div class="key-features">
+                        <div class="feature-card">
+                            <h4>📚 1 Shared Table</h4>
+                            <p><code>books_metadata</code> tracks all books in the system with processing status, verification progress, and metadata.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>📁 2 Raw Data Tables</h4>
+                            <p>Each book gets 2 raw tables: <code>raw_pages</code> (original images) and <code>raw_knowledge_units</code> (OCR output before splitting).</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>📖 7 Processed Tables</h4>
+                            <p>Each book gets 7 processed tables: knowledge_units, pages, images, processing_state, settings, hierarchy, attribute_keys.</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>🔮 Chroma DB</h4>
+                            <p><strong>Single unified collection</strong> (<code>knowledge_base_unified</code>) for ALL books, text, and images with semantic search.</p>
+                        </div>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>🎯 Key Design Decisions:</h4>
+                        <ul>
+                            <li><strong>Two-Tier Architecture:</strong> Raw data (OCR input/output) separated from processed/split data for re-processing without re-OCR</li>
+                            <li><strong>Dual Storage:</strong> PostgreSQL = source of truth (CRUD) | Chroma = optimized vector search (cross-book semantic queries)</li>
+                            <li><strong>Unified Collection:</strong> Single Chroma collection for all books enables cross-book discovery and unified query interface</li>
+                            <li><strong>Table Isolation:</strong> Book-specific PostgreSQL tables prevent cross-contamination and enable parallel processing</li>
+                            <li><strong>pgvector Extension:</strong> 384-dimension embeddings stored in both PostgreSQL and Chroma for redundancy</li>
+                            <li><strong>JSONB Fields:</strong> Flexible storage for agent states, rectangle coordinates, and structured image data</li>
+                        </ul>
+                    </div>
+
+                    <div class="highlight-box" style="background: #f0e6ff; border-left-color: #9B59B6;">
+                        <h4>🔮 Chroma DB: Unified Vector Collection</h4>
+                        <ul>
+                            <li><strong>Collection Name:</strong> <code>knowledge_base_unified</code> (single collection for ALL books)</li>
+                            <li><strong>DOCUMENT:</strong> Full text (from knowledge_units) or full AI description (from images) - gets embedded</li>
+                            <li><strong>METADATA:</strong> 14 fields including entity_type, table_name, postgresql_id, chapter, verified, tags, book_id</li>
+                            <li><strong>Use Cases:</strong> Cross-book semantic search, find similar content across all books, unified text+image search</li>
+                            <li><strong>Sync Strategy:</strong> PostgreSQL → Chroma after create/update, eventual consistency with daily reconciliation</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="diagram-container">
+                    <img src="database-er-diagram.svg" alt="Database ER Diagram">
+                </div>
+            </section>
+
+            <!-- Data Model & Attributes Section -->
+            <section id="data-model" class="diagram-section">
+                <div class="section-header">
+                    <span class="section-icon">📝</span>
+                    <h2 class="section-title">Data Model: 40-Attribute Architecture</h2>
+                </div>
+
+                <div class="description">
+                    <h3>40-Attribute System Design</h3>
+                    <p>The system uses a <strong>two-tier attribute architecture</strong>:</p>
+                    <ul>
+                        <li><strong>Book-Level:</strong> Attribute KEY NAMES stored in <code>attribute_keys</code> table (40 rows per book)</li>
+                        <li><strong>Record-Level:</strong> Attribute VALUES stored in <code>knowledge_units</code> table (attr1_value through attr40_value columns)</li>
+                    </ul>
+
+                    <div class="key-features">
+                        <div class="feature-card">
+                            <h4>🔒 System-Reserved (1-8)</h4>
+                            <p>
+                                <span class="badge badge-system">Attributes 1-8</span>
+                                Not editable by users. Reserved for OCR metadata and record status tracking.
+                            </p>
+                            <ul style="margin-top: 10px; font-size: 0.9rem;">
+                                <li><strong>Attr 1:</strong> related_image (links to images)</li>
+                                <li><strong>Attr 2-4:</strong> OCR text from 3 engines</li>
+                                <li><strong>Attr 5-7:</strong> OCR confidence scores</li>
+                                <li><strong>Attr 8:</strong> ⭐ record_status (enabled/disabled)</li>
+                            </ul>
+                        </div>
+
+                        <div class="feature-card">
+                            <h4>✏️ User-Defined (9-40)</h4>
+                            <p>
+                                <span class="badge badge-user">32 Attributes</span>
+                                Fully customizable. User sets key names during upload or via Book Settings page.
+                            </p>
+                            <ul style="margin-top: 10px; font-size: 0.9rem;">
+                                <li>Difficulty Level, Topic Category</li>
+                                <li>Importance, Keywords, Author Opinion</li>
+                                <li>Code Example, Mathematical, etc.</li>
+                                <li>Empty key_name = attribute hidden in UI</li>
+                            </ul>
+                        </div>
+
+                        <div class="feature-card">
+                            <h4>🔄 Merge/Split Tracking</h4>
+                            <p>
+                                <span class="badge badge-new">NEW Feature</span>
+                                Two columns enable full merge/split operations with undo capability.
+                            </p>
+                            <ul style="margin-top: 10px; font-size: 0.9rem;">
+                                <li><code>merged_into_record_id</code>: FK to target record</li>
+                                <li><code>original_record_ids</code>: Array of original IDs</li>
+                                <li>Merge: Up to 5 records forward/backward</li>
+                                <li>Split: Unlimited split points</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>💡 Attribute 8: record_status (NEW)</h4>
+                        <p><strong>Values:</strong> <code>"enabled"</code> (default) | <code>"disabled"</code> (merged)</p>
+                        <p><strong>Purpose:</strong> Controls record visibility in verification interface. Disabled records are hidden by default but can be shown via filter toggle.</p>
+                        <p><strong>Usage:</strong> When records are merged, source records marked as <code>disabled</code>, target record remains <code>enabled</code>.</p>
+                    </div>
+
+                    <h3 style="margin-top: 30px;">Record Merging Workflow</h3>
+                    <p><strong>Example:</strong> Merge current record (150) with next 2 records (151, 152)</p>
+                    <ol>
+                        <li>User selects "Merge with Next 2" in verification interface</li>
+                        <li>System concatenates text: <code>text_150 + " " + text_151 + " " + text_152</code></li>
+                        <li>Target record 150:
+                            <ul>
+                                <li><code>text_content</code> = combined text</li>
+                                <li><code>original_record_ids</code> = [150, 151, 152]</li>
+                                <li><code>attr8_value</code> = "enabled"</li>
+                            </ul>
+                        </li>
+                        <li>Source records 151, 152:
+                            <ul>
+                                <li><code>text_content</code> = "" (cleared)</li>
+                                <li><code>merged_into_record_id</code> = 150</li>
+                                <li><code>attr8_value</code> = "disabled"</li>
+                            </ul>
+                        </li>
+                        <li><strong>Undo:</strong> Restore original text to 151, 152; set all to "enabled"</li>
+                    </ol>
+
+                    <h3 style="margin-top: 30px;">Record Splitting Workflow</h3>
+                    <p><strong>Example:</strong> Split record 200 at 2 character positions → 3 new records</p>
+                    <ol>
+                        <li>User marks 2 split points in text via UI</li>
+                        <li>System creates 3 text segments from original</li>
+                        <li>Record 200 (original):
+                            <ul>
+                                <li><code>text_content</code> = first segment</li>
+                                <li><code>original_record_ids</code> = [200]</li>
+                            </ul>
+                        </li>
+                        <li>Records 201, 202 (new):
+                            <ul>
+                                <li><code>text_content</code> = segments 2 and 3</li>
+                                <li><code>original_record_ids</code> = [200]</li>
+                                <li>All metadata copied from original</li>
+                            </ul>
+                        </li>
+                        <li><strong>Undo:</strong> Recombine all 3 records back to record 200</li>
+                    </ol>
+                </div>
+
+                <div class="diagram-container">
+                    <img src="data-model-attributes.svg" alt="Data Model Attributes Diagram">
+                </div>
+            </section>
+
+            <!-- Key Features Section -->
+            <section id="features" class="diagram-section">
+                <div class="section-header">
+                    <span class="section-icon">✨</span>
+                    <h2 class="section-title">Key Features Summary</h2>
+                </div>
+
+                <div class="description">
+                    <div class="key-features">
+                        <div class="feature-card">
+                            <h4>📊 10 Tables Total</h4>
+                            <p>1 shared (books_metadata) + 9 book-specific: 2 raw + 7 processed</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>🏷️ 40 Attributes</h4>
+                            <p>8 system-reserved + 32 user-defined custom attributes</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>🔄 Merge/Split</h4>
+                            <p>Context view (11 records), merge up to 5 forward/backward, unlimited splits</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>↩️ Full Undo</h4>
+                            <p>Complete history tracking enables unmerge and unsplit operations</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>🔍 Filter Toggle</h4>
+                            <p>Show enabled only (default), all records, or disabled only</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>🎯 Attribute 8</h4>
+                            <p>record_status: "enabled" or "disabled" for merge tracking</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>🔒 System-Reserved</h4>
+                            <p>Attributes 1-8 locked (OCR metadata + record status)</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>✏️ User-Editable</h4>
+                            <p>Attributes 9-40 fully customizable via Book Settings</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>📦 Two-Tier Architecture</h4>
+                            <p>Raw OCR data (input/output) separate from processed split records</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>♻️ Re-Split Without OCR</h4>
+                            <p>Raw OCR text preserved - can re-split without re-running OCR engines</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>🗄️ PostgreSQL + pgvector</h4>
+                            <p>Primary database with 384-dim embeddings (source of truth)</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>🔮 Chroma DB Unified Collection</h4>
+                            <p>Single collection for cross-book semantic search (text + images)</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>🔗 Self-Referencing FKs</h4>
+                            <p>Hierarchy parent-child, merge tracking in knowledge_units</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>📏 11-Record Context</h4>
+                            <p>Verification interface shows 5 before + current + 5 after</p>
+                        </div>
+                        <div class="feature-card">
+                            <h4>💾 Indexes Optimized</h4>
+                            <p>Indexes on record_status, merged_into, page_number, verified</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <footer>
+            <p><strong>Knowledge Extraction System (12-extractor)</strong></p>
+            <p>Architecture Documentation | Generated: 2025-11-08</p>
+            <p>For more details, see: <a href="../database-schema.md">database-schema.md</a> | <a href="../data-model.md">data-model.md</a> | <a href="../api-design.md">api-design.md</a></p>
+            <p style="margin-top: 15px; opacity: 0.8;">🤖 Generated with Claude Code</p>
+        </footer>
+    </div>
+</body>
+</html>

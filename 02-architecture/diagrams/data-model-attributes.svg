@@ -1,0 +1,222 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1100">
+  <!-- Title -->
+  <text x="700" y="30" text-anchor="middle" font-size="24" font-weight="bold" fill="#333">
+    Data Model: 40-Attribute Architecture with Record Merging/Splitting
+  </text>
+  <text x="700" y="55" text-anchor="middle" font-size="14" fill="#666">
+    System-Reserved (1-8) + User-Defined (9-40) = 32 Custom Attributes | Book-Level Keys, Record-Level Values
+  </text>
+
+  <!-- Main Knowledge Unit Record Box -->
+  <g transform="translate(50, 100)">
+    <rect width="700" height="900" fill="#E8F4F8" stroke="#4A90E2" stroke-width="3" rx="10"/>
+    <rect width="700" height="50" fill="#4A90E2" rx="10"/>
+    <text x="350" y="33" text-anchor="middle" font-size="18" font-weight="bold" fill="white">
+      📝 Knowledge Unit Record
+    </text>
+
+    <!-- Core Fields -->
+    <g transform="translate(10, 70)">
+      <text x="0" y="0" font-size="15" font-weight="bold" fill="#333">Core Fields:</text>
+      <text x="10" y="20" font-size="12" fill="#555">• id (PRIMARY KEY)</text>
+      <text x="10" y="38" font-size="12" fill="#555">• text_content (3-5 lines of extracted text)</text>
+      <text x="10" y="56" font-size="12" fill="#555">• page_number, position (x, y, width, height)</text>
+      <text x="10" y="74" font-size="12" fill="#555">• language (english | arabic | mixed)</text>
+      <text x="10" y="92" font-size="12" fill="#555">• confidence_score (0-100%)</text>
+      <text x="10" y="110" font-size="12" fill="#555">• chapter, topic, sub_topic (hierarchy)</text>
+      <text x="10" y="128" font-size="12" fill="#555">• verified (boolean), verified_at, verified_by</text>
+    </g>
+
+    <!-- System-Reserved Attributes (1-8) -->
+    <g transform="translate(10, 240)">
+      <rect width="680" height="250" fill="#FFE4E1" stroke="#E74C3C" stroke-width="2" rx="5"/>
+      <rect width="680" height="35" fill="#E74C3C" rx="5"/>
+      <text x="340" y="23" text-anchor="middle" font-size="15" font-weight="bold" fill="white">
+        🔒 System-Reserved Attributes (1-8) - Not Editable
+      </text>
+
+      <g transform="translate(15, 50)">
+        <text x="0" y="0" font-size="13" font-weight="bold" fill="#C0392B">Attribute 1: related_image</text>
+        <text x="10" y="17" font-size="11" fill="#666">Format: "image_id:IMG-068, page:136, figure:5.3"</text>
+        <text x="10" y="32" font-size="11" fill="#666">Links knowledge unit to related images</text>
+
+        <text x="0" y="55" font-size="13" font-weight="bold" fill="#C0392B">Attributes 2-4: OCR Text Results</text>
+        <text x="10" y="72" font-size="11" fill="#666">• attr2_value: OCR text from PaddleOCR</text>
+        <text x="10" y="87" font-size="11" fill="#666">• attr3_value: OCR text from Surya</text>
+        <text x="10" y="102" font-size="11" fill="#666">• attr4_value: OCR text from Tesseract</text>
+
+        <text x="0" y="125" font-size="13" font-weight="bold" fill="#C0392B">Attributes 5-7: OCR Confidence Scores</text>
+        <text x="10" y="142" font-size="11" fill="#666">• attr5_value: Confidence from PaddleOCR (0-100%)</text>
+        <text x="10" y="157" font-size="11" fill="#666">• attr6_value: Confidence from Surya (0-100%)</text>
+        <text x="10" y="172" font-size="11" fill="#666">• attr7_value: Confidence from Tesseract (0-100%)</text>
+
+        <text x="0" y="200" font-size="13" font-weight="bold" fill="#C0392B">⭐ Attribute 8: record_status (NEW)</text>
+        <text x="10" y="217" font-size="11" fill="#666">Values: "enabled" (default) | "disabled" (merged)</text>
+        <text x="10" y="232" font-size="11" fill="#666">Controls record visibility in verification interface</text>
+      </g>
+    </g>
+
+    <!-- User-Defined Attributes (9-40) -->
+    <g transform="translate(10, 500)">
+      <rect width="680" height="200" fill="#D5F4E6" stroke="#27AE60" stroke-width="2" rx="5"/>
+      <rect width="680" height="35" fill="#27AE60" rx="5"/>
+      <text x="340" y="23" text-anchor="middle" font-size="15" font-weight="bold" fill="white">
+        ✏️ User-Defined Attributes (9-40) - 32 Custom Attributes
+      </text>
+
+      <g transform="translate(15, 50)">
+        <text x="0" y="0" font-size="13" font-weight="bold" fill="#1E8449">Fully Editable via Book Settings</text>
+        <text x="10" y="20" font-size="11" fill="#666">• attr9_value: e.g., "Difficulty Level" → "Beginner"</text>
+        <text x="10" y="38" font-size="11" fill="#666">• attr10_value: e.g., "Topic Category" → "Theory"</text>
+        <text x="10" y="56" font-size="11" fill="#666">• attr11_value: e.g., "Importance" → "High"</text>
+        <text x="10" y="74" font-size="11" fill="#666">• attr12_value: e.g., "Keywords" → "ML, supervised"</text>
+        <text x="10" y="92" font-size="11" fill="#666">• attr13-40: Additional custom metadata fields</text>
+
+        <rect x="0" y="105" width="650" height="80" fill="#FFF9E6" stroke="#F39C12" stroke-width="1" rx="3"/>
+        <text x="10" y="125" font-size="12" font-weight="bold" fill="#D68910">💡 Key Design:</text>
+        <text x="20" y="143" font-size="11" fill="#666">• Attribute KEY NAMES stored in attribute_keys table (book-level)</text>
+        <text x="20" y="159" font-size="11" fill="#666">• Attribute VALUES stored in knowledge_units table (record-level)</text>
+        <text x="20" y="175" font-size="11" fill="#666">• Empty key_name = attribute hidden in UI</text>
+      </g>
+    </g>
+
+    <!-- Merge/Split Tracking -->
+    <g transform="translate(10, 710)">
+      <rect width="680" height="170" fill="#FFF3CD" stroke="#F39C12" stroke-width="2" rx="5"/>
+      <rect width="680" height="35" fill="#F39C12" rx="5"/>
+      <text x="340" y="23" text-anchor="middle" font-size="15" font-weight="bold" fill="white">
+        🔄 Record Merging/Splitting Tracking (NEW)
+      </text>
+
+      <g transform="translate(15, 50)">
+        <text x="0" y="0" font-size="13" font-weight="bold" fill="#D68910">merged_into_record_id (INTEGER, FK → knowledge_units.id)</text>
+        <text x="10" y="18" font-size="11" fill="#666">If disabled, references the target record this was merged into</text>
+        <text x="10" y="33" font-size="11" fill="#666">Example: Record 151 disabled → merged_into_record_id = 150</text>
+
+        <text x="0" y="58" font-size="13" font-weight="bold" fill="#D68910">original_record_ids (TEXT ARRAY)</text>
+        <text x="10" y="76" font-size="11" fill="#666">Stores array of original IDs for merge/split history</text>
+        <text x="10" y="91" font-size="11" fill="#666">Merge example: [150, 151, 152] = combined these 3 records</text>
+        <text x="10" y="106" font-size="11" fill="#666">Split example: [200] = all new records came from record 200</text>
+        <text x="10" y="121" font-size="11" fill="#666">Enables full undo (unmerge/unsplit) operations</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Attribute Keys Table (Right Side) -->
+  <g transform="translate(800, 100)">
+    <rect width="550" height="450" fill="#FFF9E6" stroke="#F39C12" stroke-width="3" rx="10"/>
+    <rect width="550" height="50" fill="#F39C12" rx="10"/>
+    <text x="275" y="33" text-anchor="middle" font-size="18" font-weight="bold" fill="white">
+      🏷️ Attribute Keys Table (Book-Level)
+    </text>
+
+    <g transform="translate(15, 70)">
+      <text x="0" y="0" font-size="14" font-weight="bold" fill="#333">Table: book{N}_{name}_attribute_keys</text>
+      <text x="0" y="20" font-size="12" fill="#666">40 rows per book (one per attribute)</text>
+
+      <!-- Sample Rows - System Reserved -->
+      <g transform="translate(0, 40)">
+        <rect width="520" height="150" fill="#FFE4E1" stroke="#E74C3C" stroke-width="2" rx="5"/>
+        <text x="10" y="20" font-size="13" font-weight="bold" fill="#C0392B">System-Reserved (1-8):</text>
+
+        <g font-size="10" fill="#666">
+          <text x="15" y="40">#1 | related_image | 🔒 System | Not Editable</text>
+          <text x="15" y="56">#2 | ocr_text_paddleocr | 🔒 System | Not Editable</text>
+          <text x="15" y="72">#3 | ocr_text_surya | 🔒 System | Not Editable</text>
+          <text x="15" y="88">#4 | ocr_text_tesseract | 🔒 System | Not Editable</text>
+          <text x="15" y="104">#5 | ocr_confidence_paddleocr | 🔒 System | Not Editable</text>
+          <text x="15" y="120">#6 | ocr_confidence_surya | 🔒 System | Not Editable</text>
+          <text x="15" y="136">#7 | ocr_confidence_tesseract | 🔒 System | Not Editable</text>
+        </g>
+
+        <g font-size="11" fill="#C0392B" font-weight="bold">
+          <text x="15" y="150">#8 | ⭐ record_status | 🔒 System | Not Editable</text>
+        </g>
+      </g>
+
+      <!-- Sample Rows - User Defined -->
+      <g transform="translate(0, 200)">
+        <rect width="520" height="190" fill="#D5F4E6" stroke="#27AE60" stroke-width="2" rx="5"/>
+        <text x="10" y="20" font-size="13" font-weight="bold" fill="#1E8449">User-Defined (9-40) - 32 Attributes:</text>
+
+        <g font-size="10" fill="#666">
+          <text x="15" y="45">#9  | Difficulty Level | ✏️ User | Editable ✅</text>
+          <text x="15" y="63">#10 | Topic Category | ✏️ User | Editable ✅</text>
+          <text x="15" y="81">#11 | Importance | ✏️ User | Editable ✅</text>
+          <text x="15" y="99">#12 | Keywords | ✏️ User | Editable ✅</text>
+          <text x="15" y="117">#13 | Author Opinion | ✏️ User | Editable ✅</text>
+          <text x="15" y="135">#14 | Code Example | ✏️ User | Editable ✅</text>
+          <text x="15" y="153">#15 | Mathematical | ✏️ User | Editable ✅</text>
+          <text x="15" y="171">...</text>
+          <text x="15" y="185">#40 | (empty or custom) | ✏️ User | Editable ✅</text>
+        </g>
+      </g>
+    </g>
+  </g>
+
+  <!-- Merge/Split Operations Visual (Bottom Right) -->
+  <g transform="translate(800, 570)">
+    <rect width="550" height="480" fill="#E8F4F8" stroke="#4A90E2" stroke-width="3" rx="10"/>
+    <rect width="550" height="40" fill="#4A90E2" rx="10"/>
+    <text x="275" y="28" text-anchor="middle" font-size="16" font-weight="bold" fill="white">
+      🔄 Merge/Split Operations
+    </text>
+
+    <!-- Merge Example -->
+    <g transform="translate(15, 60)">
+      <text x="0" y="0" font-size="14" font-weight="bold" fill="#2C3E50">Merge Example (Forward - Merge with Next 2):</text>
+
+      <!-- Before -->
+      <g transform="translate(0, 20)">
+        <text x="0" y="0" font-size="12" font-weight="bold" fill="#666">Before:</text>
+        <rect x="0" y="8" width="500" height="70" fill="#fff" stroke="#bbb" stroke-width="1" rx="3"/>
+        <text x="10" y="28" font-size="11" fill="#333">Record 150: "Neural networks consist of" [enabled]</text>
+        <text x="10" y="48" font-size="11" fill="#333">Record 151: "interconnected layers" [enabled]</text>
+        <text x="10" y="68" font-size="11" fill="#333">Record 152: "with weighted connections." [enabled]</text>
+      </g>
+
+      <!-- After -->
+      <g transform="translate(0, 100)">
+        <text x="0" y="0" font-size="12" font-weight="bold" fill="#666">After Merge:</text>
+        <rect x="0" y="8" width="500" height="90" fill="#D5F4E6" stroke="#27AE60" stroke-width="2" rx="3"/>
+        <text x="10" y="28" font-size="11" fill="#1E8449" font-weight="bold">Record 150: "Neural networks consist of interconnected</text>
+        <text x="10" y="43" font-size="11" fill="#1E8449" font-weight="bold">               layers with weighted connections." [enabled]</text>
+        <text x="10" y="58" font-size="11" fill="#1E8449">  original_record_ids = [150, 151, 152]</text>
+        <text x="10" y="78" font-size="10" fill="#C0392B">Record 151: "" [disabled, merged_into_record_id=150]</text>
+        <text x="10" y="93" font-size="10" fill="#C0392B">Record 152: "" [disabled, merged_into_record_id=150]</text>
+      </g>
+    </g>
+
+    <!-- Split Example -->
+    <g transform="translate(15, 270)">
+      <text x="0" y="0" font-size="14" font-weight="bold" fill="#2C3E50">Split Example (Split at 2 points):</text>
+
+      <!-- Before -->
+      <g transform="translate(0, 20)">
+        <text x="0" y="0" font-size="12" font-weight="bold" fill="#666">Before:</text>
+        <rect x="0" y="8" width="500" height="45" fill="#fff" stroke="#bbb" stroke-width="1" rx="3"/>
+        <text x="10" y="28" font-size="11" fill="#333">Record 200: "Networks learn. Use backprop.</text>
+        <text x="10" y="43" font-size="11" fill="#333">               Training needs data." [enabled]</text>
+      </g>
+
+      <!-- After -->
+      <g transform="translate(0, 75)">
+        <text x="0" y="0" font-size="12" font-weight="bold" fill="#666">After Split (3 new records):</text>
+        <rect x="0" y="8" width="500" height="110" fill="#D5F4E6" stroke="#27AE60" stroke-width="2" rx="3"/>
+        <text x="10" y="28" font-size="11" fill="#1E8449" font-weight="bold">Record 200: "Networks learn." [enabled]</text>
+        <text x="10" y="43" font-size="11" fill="#1E8449">  original_record_ids = [200]</text>
+
+        <text x="10" y="63" font-size="11" fill="#1E8449" font-weight="bold">Record 201: "Use backprop." [enabled, created from split]</text>
+        <text x="10" y="78" font-size="11" fill="#1E8449">  original_record_ids = [200]</text>
+
+        <text x="10" y="98" font-size="11" fill="#1E8449" font-weight="bold">Record 202: "Training needs data." [enabled, created from split]</text>
+        <text x="10" y="113" font-size="11" fill="#1E8449">  original_record_ids = [200]</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Footer -->
+  <text x="700" y="1080" text-anchor="middle" font-size="11" fill="#666" font-style="italic">
+    Design allows: 8 system-reserved + 32 user-defined = 40 total attributes | Record merge/split with full undo capability
+  </text>
+</svg>

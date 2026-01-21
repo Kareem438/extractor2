@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup: Book Library & Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px 30px; }
+        .header h1 { margin: 0 0 10px 0; }
+        .header-stats { display: flex; gap: 30px; font-size: 14px; }
+        .sidebar { position: fixed; left: 0; top: 100px; width: 250px; background: white; height: calc(100vh - 100px); border-right: 2px solid #e0e0e0; padding: 20px; overflow-y: auto; }
+        .sidebar-item { padding: 12px; margin: 5px 0; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+        .sidebar-item:hover { background: #f0f0f0; }
+        .sidebar-item.active { background: #E3F2FD; border-left: 4px solid #2196F3; font-weight: bold; }
+        .main-content { margin-left: 290px; padding: 30px; }
+        .action-bar { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .search-box { flex: 1; margin-right: 20px; }
+        .search-box input { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 14px; }
+        .btn-upload { background: #4CAF50; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .book-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s; }
+        .book-card:hover { transform: translateY(-5px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .book-header { background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); color: white; padding: 20px; }
+        .book-title { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
+        .book-meta { font-size: 12px; opacity: 0.9; }
+        .book-body { padding: 20px; }
+        .stat-row { display: flex; justify-content: space-between; margin: 12px 0; padding: 10px; background: #f9f9f9; border-radius: 4px; }
+        .stat-label { color: #666; font-size: 13px; }
+        .stat-value { font-weight: bold; color: #333; }
+        .progress-bar { width: 100%; height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; margin: 10px 0; }
+        .progress-fill { height: 100%; background: #4CAF50; }
+        .book-actions { display: flex; gap: 10px; margin-top: 15px; }
+        .btn-action { flex: 1; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        .btn-verify { background: #4CAF50; color: white; }
+        .btn-view { background: #2196F3; color: white; }
+        .btn-settings { background: #9C27B0; color: white; }
+        .btn-delete { background: #f44336; color: white; }
+        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-left: 10px; }
+        .status-processing { background: #FF9800; color: white; }
+        .status-complete { background: #4CAF50; color: white; }
+        .status-partial { background: #FFC107; color: #000; }
+        .filter-chips { display: flex; gap: 10px; margin-bottom: 20px; }
+        .filter-chip { padding: 8px 16px; border: 2px solid #2196F3; background: white; border-radius: 20px; cursor: pointer; font-size: 13px; }
+        .filter-chip.active { background: #2196F3; color: white; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>📚 Knowledge Extractor - Library</h1>
+        <div class="header-stats">
+            <div>📖 Total Books: 12</div>
+            <div>💡 Total Knowledge Units: 18,547</div>
+            <div>🖼️ Total Images: 892</div>
+            <div>✅ Verified: 14,203 (76%)</div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h3 style="margin-top: 0;">Navigation</h3>
+        <div class="sidebar-item active">
+            <span>📚</span> All Books
+        </div>
+        <div class="sidebar-item">
+            <span>✅</span> Verified
+        </div>
+        <div class="sidebar-item">
+            <span>⚠️</span> Needs Review
+        </div>
+        <div class="sidebar-item">
+            <span>⚙️</span> Processing
+        </div>
+        <div class="sidebar-item">
+            <span>🔗</span> Linked Content
+        </div>
+        <hr>
+        <h3>Categories</h3>
+        <div class="sidebar-item">
+            <span>🤖</span> Machine Learning
+        </div>
+        <div class="sidebar-item">
+            <span>💻</span> Programming
+        </div>
+        <div class="sidebar-item">
+            <span>📊</span> Data Science
+        </div>
+        <div class="sidebar-item">
+            <span>🔬</span> Research Papers
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Action Bar -->
+        <div class="action-bar">
+            <div class="search-box">
+                <input type="text" placeholder="🔍 Search books, knowledge units, or tags...">
+            </div>
+            <button class="btn-upload">📤 Upload New Book</button>
+        </div>
+
+        <!-- Filter Chips -->
+        <div class="filter-chips">
+            <div class="filter-chip active">All (12)</div>
+            <div class="filter-chip">English (8)</div>
+            <div class="filter-chip">Arabic (4)</div>
+            <div class="filter-chip">PDF (10)</div>
+            <div class="filter-chip">Word (2)</div>
+            <div class="filter-chip">Recently Added</div>
+        </div>
+
+        <!-- Book Grid -->
+        <div class="book-grid">
+            <!-- Book Card 1 - Complete -->
+            <div class="book-card">
+                <div class="book-header">
+                    <div class="book-title">Machine Learning Fundamentals</div>
+                    <div class="book-meta">Added: Nov 1, 2025 | 300 pages | PDF</div>
+                </div>
+                <div class="book-body">
+                    <div class="stat-row">
+                        <span class="stat-label">Knowledge Units</span>
+                        <span class="stat-value">1,523</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Images Analyzed</span>
+                        <span class="stat-value">68</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Verified</span>
+                        <span class="stat-value">1,211 (79%)</span>
+                    </div>
+                    <div>
+                        <span class="stat-label">Verification Progress</span>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 79%;"></div>
+                        </div>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Language</span>
+                        <span class="stat-value">🇬🇧 English</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Status</span>
+                        <span class="status-badge status-partial">In Review</span>
+                    </div>
+                    <div class="book-actions">
+                        <button class="btn-action btn-verify">✅ Verify</button>
+                        <button class="btn-action btn-view">👁️ View</button>
+                        <button class="btn-action btn-settings" onclick="window.location.href='06-book-settings.html'">⚙️ Settings</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Book Card 2 - Processing -->
+            <div class="book-card">
+                <div class="book-header" style="background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);">
+                    <div class="book-title">Deep Learning with Python</div>
+                    <div class="book-meta">Added: Nov 2, 2025 | 450 pages | PDF</div>
+                </div>
+                <div class="book-body">
+                    <div class="stat-row">
+                        <span class="stat-label">Processing Status</span>
+                        <span class="stat-value">Page 234 / 450</span>
+                    </div>
+                    <div>
+                        <span class="stat-label">Processing Progress</span>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 52%; background: #FF9800;"></div>
+                        </div>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Knowledge Units (so far)</span>
+                        <span class="stat-value">987</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Images (so far)</span>
+                        <span class="stat-value">43</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">ETA</span>
+                        <span class="stat-value">~25 minutes</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Status</span>
+                        <span class="status-badge status-processing">⚙️ Processing</span>
+                    </div>
+                    <div class="book-actions">
+                        <button class="btn-action" style="background: #FF9800; color: white;">⏸️ Pause</button>
+                        <button class="btn-action btn-view">👁️ Monitor</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Book Card 3 - Complete & Verified -->
+            <div class="book-card">
+                <div class="book-header" style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);">
+                    <div class="book-title">تعلم الآلة للمبتدئين</div>
+                    <div class="book-meta">Added: Oct 28, 2025 | 220 pages | PDF</div>
+                </div>
+                <div class="book-body">
+                    <div class="stat-row">
+                        <span class="stat-label">Knowledge Units</span>
+                        <span class="stat-value">892</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Images Analyzed</span>
+                        <span class="stat-value">34</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Verified</span>
+                        <span class="stat-value">892 (100%)</span>
+                    </div>
+                    <div>
+                        <span class="stat-label">Verification Progress</span>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 100%;"></div>
+                        </div>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Language</span>
+                        <span class="stat-value">🇸🇦 Arabic</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Status</span>
+                        <span class="status-badge status-complete">✅ Complete</span>
+                    </div>
+                    <div class="book-actions">
+                        <button class="btn-action btn-view">👁️ View</button>
+                        <button class="btn-action btn-settings" onclick="window.location.href='06-book-settings.html'">⚙️ Settings</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Book Card 4 - Placeholder -->
+            <div class="book-card">
+                <div class="book-header">
+                    <div class="book-title">Python Data Analysis</div>
+                    <div class="book-meta">Added: Oct 25, 2025 | 380 pages | PDF</div>
+                </div>
+                <div class="book-body">
+                    <div class="stat-row">
+                        <span class="stat-label">Knowledge Units</span>
+                        <span class="stat-value">1,634</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Images Analyzed</span>
+                        <span class="stat-value">92</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Verified</span>
+                        <span class="stat-value">1,480 (91%)</span>
+                    </div>
+                    <div>
+                        <span class="stat-label">Verification Progress</span>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 91%;"></div>
+                        </div>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Language</span>
+                        <span class="stat-value">🇬🇧 English</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Status</span>
+                        <span class="status-badge status-partial">In Review</span>
+                    </div>
+                    <div class="book-actions">
+                        <button class="btn-action btn-verify">✅ Verify</button>
+                        <button class="btn-action btn-view">👁️ View</button>
+                        <button class="btn-action btn-settings" onclick="window.location.href='06-book-settings.html'">⚙️ Settings</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div style="margin-top: 30px; text-align: center;">
+            <button style="padding: 10px 20px; margin: 0 5px; border: 1px solid #ccc; background: white; border-radius: 4px; cursor: pointer;">« Previous</button>
+            <button style="padding: 10px 20px; margin: 0 5px; border: 1px solid #2196F3; background: #2196F3; color: white; border-radius: 4px; cursor: pointer;">1</button>
+            <button style="padding: 10px 20px; margin: 0 5px; border: 1px solid #ccc; background: white; border-radius: 4px; cursor: pointer;">2</button>
+            <button style="padding: 10px 20px; margin: 0 5px; border: 1px solid #ccc; background: white; border-radius: 4px; cursor: pointer;">3</button>
+            <button style="padding: 10px 20px; margin: 0 5px; border: 1px solid #ccc; background: white; border-radius: 4px; cursor: pointer;">Next »</button>
+        </div>
+    </div>
+</body>
+</html>

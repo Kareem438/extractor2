@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Settings - Knowledge Extraction System</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; background: #f5f5f5; }
+        .header { background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%); color: white; padding: 20px 30px; }
+        .header h1 { margin: 0; font-size: 24px; }
+        .breadcrumb { background: white; padding: 15px 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .breadcrumb a { color: #2196F3; text-decoration: none; }
+        .breadcrumb a:hover { text-decoration: underline; }
+        .container { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
+        .book-info { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .attributes-section { background: white; padding: 30px; border-radius: 8px; }
+        .attr-row { display: flex; align-items: center; gap: 15px; margin: 15px 0; padding: 15px; background: #f9f9f9; border-radius: 4px; }
+        .attr-label { font-weight: bold; color: #666; width: 150px; }
+        .attr-input { flex: 1; padding: 10px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 14px; }
+        .attr-input.editable { border-color: #FF9800; background: #fff3cd; }
+        .attr-input:disabled { background: #f5f5f5; cursor: not-allowed; }
+        .edit-btn { background: #2196F3; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; }
+        .edit-btn:hover { background: #1976D2; }
+        .locked-icon { color: #999; }
+        .actions { text-align: center; margin: 30px 0; }
+        .btn { padding: 12px 30px; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; margin: 0 5px; font-weight: bold; }
+        .btn-save { background: #4CAF50; color: white; }
+        .btn-cancel { background: #f44336; color: white; }
+        .btn-back { background: #2196F3; color: white; }
+
+        /* Page Scanning Section */
+        .scanning-section {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .scanning-section h2 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        .scan-controls {
+            display: flex;
+            gap: 20px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .scan-control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .scan-control-group label {
+            font-weight: bold;
+            color: #666;
+            font-size: 14px;
+        }
+        .scan-control-group input {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 200px;
+        }
+        .btn-scan {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-scan-pages {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-scan-pages:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        .btn-scan-pages:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .scan-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #2196F3;
+            margin-bottom: 20px;
+        }
+        .scan-status {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+        .scan-status-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .scan-stat {
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #e0e0e0;
+        }
+        .scan-stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        .scan-stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        /* Progress Bar */
+        .scan-progress-container {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            border: 2px solid #667eea;
+        }
+        .scan-progress-container.active {
+            display: block;
+        }
+        .scan-progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .scan-progress-title {
+            font-weight: bold;
+            color: #333;
+            font-size: 16px;
+        }
+        .scan-progress-stats {
+            color: #666;
+            font-size: 14px;
+        }
+        .scan-progress-bar {
+            height: 24px;
+            background: #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+        .scan-progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+        .scan-progress-fill.complete {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+        }
+        .scan-progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #333;
+            font-weight: bold;
+            font-size: 12px;
+            text-shadow: 0 0 2px white;
+        }
+        .scan-progress-details {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #666;
+        }
+        .scan-progress-current {
+            color: #667eea;
+            font-weight: bold;
+        }
+        .scan-progress-eta {
+            float: right;
+            color: #999;
+        }
+
+        /* Book Selector */
+        .book-selector-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        .book-selector-section label {
+            font-weight: bold;
+            color: #666;
+        }
+        .book-selector-section select {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        /* Content sections that can be hidden */
+        .book-content {
+            display: none;
+        }
+        .book-content.visible {
+            display: block;
+        }
+
+        /* No book selected state */
+        .no-book-message {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 8px;
+            color: #666;
+        }
+        .no-book-message h2 {
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        .top-nav {
+            background: #2196F3;
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .top-nav-brand { font-size: 20px; font-weight: bold; }
+        .top-nav-links { display: flex; gap: 20px; }
+        .top-nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .top-nav-links a:hover { background: rgba(255,255,255,0.2); }
+
+        /* Extraction Prompts Section */
+        .prompts-section {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 2px solid #4CAF50;
+        }
+        .prompts-section h2 {
+            margin-top: 0;
+            color: #2e7d32;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .prompt-group {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+        }
+        .prompt-group label {
+            display: block;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .prompt-group .prompt-class {
+            color: #666;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+        .prompt-group textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+        }
+        .prompt-group textarea:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+        .prompts-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .btn-save-prompts {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-save-prompts:hover {
+            background: #388E3C;
+        }
+        .btn-reset-prompts {
+            background: #FF9800;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-reset-prompts:hover {
+            background: #F57C00;
+        }
+    </style>
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="top-nav-brand">📚 Knowledge Extraction System</div>
+        <div class="top-nav-links">
+            <a href="/library">📚 Library</a>
+            <a href="/auto-slicer">🔪 Auto-Slicer</a>
+            <a href="/upload">📤 Upload</a>
+            <a href="/verification">✅ Verification</a>
+            <a href="/book-settings" class="active">⚙️ Book Settings</a>
+            <a href="/verify-pages">🔍 Verify Pages</a>
+        </div>
+    </nav>
+    <div class="header">
+        <h1 id="page-title">⚙️ Book Settings</h1>
+    </div>
+    <div class="breadcrumb">
+        <a href="/library">📚 Library</a> / <span id="book-name">Book Settings</span>
+    </div>
+    <div class="container">
+        <!-- Book Selector -->
+        <div class="book-selector-section">
+            <label for="book-select">Select Book:</label>
+            <select id="book-select">
+                <option value="">Loading books...</option>
+            </select>
+        </div>
+
+        <!-- No Book Selected Message -->
+        <div class="no-book-message" id="no-book-message">
+            <h2>📖 No Book Selected</h2>
+            <p>Select a book above to view and edit its settings.</p>
+        </div>
+
+        <!-- Book Content (hidden until book selected) -->
+        <div class="book-content" id="book-content">
+            <div class="book-info" id="book-info">
+                <p>Loading book information...</p>
+            </div>
+
+            <!-- Auto-Slicer Section -->
+            <div class="scanning-section" style="background: linear-gradient(135deg, #fff5f5 0%, #ffe0e0 100%); border: 2px solid #f44336;">
+                <h2 style="color: #c62828; border-bottom-color: #f44336;">Auto-Slicer</h2>
+                <p style="color: #666; margin-bottom: 20px;">
+                    Bulk process book pages with Surya OCR at 600 DPI. Configure page ranges, titles, and OCR boundaries.
+                </p>
+                <button type="button" id="open-auto-slicer-btn" onclick="openAutoSlicer()" style="
+                    background: linear-gradient(135deg, #f44336 0%, #c62828 100%);
+                    color: white;
+                    padding: 16px 40px;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 18px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    box-shadow: 0 4px 15px rgba(244, 67, 54, 0.4);
+                    transition: all 0.2s;
+                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(244, 67, 54, 0.5)'"
+                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(244, 67, 54, 0.4)'">
+                    Open Auto-Slicer
+                </button>
+            </div>
+
+            <!-- Page Scanning Section -->
+            <div class="scanning-section">
+            <h2>📸 Page Scanning</h2>
+
+            <div class="scan-info">
+                <strong>📖 How Page Scanning Works:</strong><br>
+                • Renders PDF pages to high-quality 600 DPI images<br>
+                • Saves images to the database for OCR processing<br>
+                • 🔒 <strong>Safe Mode:</strong> Only unscanned pages are processed - already scanned pages are protected to maintain data integrity with linked paragraphs/diagrams
+            </div>
+
+            <div class="scan-controls">
+                <div class="scan-control-group">
+                    <label for="max-pages-input">📄 Number of Pages to Scan:</label>
+                    <input type="number" id="max-pages-input" min="1" placeholder="Leave empty for all remaining">
+                </div>
+                <button type="button" id="scan-pages-btn" class="btn-scan btn-scan-pages">
+                    📸 Scan Unscanned Pages
+                </button>
+            </div>
+
+            <div class="scan-status" id="scan-status">
+                <strong>📊 Scanning Status:</strong>
+                <div class="scan-status-grid">
+                    <div class="scan-stat">
+                        <div class="scan-stat-value" id="total-pages-stat">-</div>
+                        <div class="scan-stat-label">Total Pages</div>
+                    </div>
+                    <div class="scan-stat">
+                        <div class="scan-stat-value" id="scanned-pages-stat">-</div>
+                        <div class="scan-stat-label">Pages Scanned</div>
+                    </div>
+                    <div class="scan-stat">
+                        <div class="scan-stat-value" id="remaining-pages-stat">-</div>
+                        <div class="scan-stat-label">Remaining</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Bar (shown during scanning) -->
+            <div class="scan-progress-container" id="scan-progress-container">
+                <div class="scan-progress-header">
+                    <span class="scan-progress-title">📸 Scanning in Progress...</span>
+                    <span class="scan-progress-stats" id="scan-progress-stats">0 / 0 pages</span>
+                </div>
+                <div class="scan-progress-bar">
+                    <div class="scan-progress-fill" id="scan-progress-fill" style="width: 0%"></div>
+                    <span class="scan-progress-text" id="scan-progress-text">0%</span>
+                </div>
+                <div class="scan-progress-details">
+                    <span class="scan-progress-current" id="scan-progress-current">Preparing...</span>
+                    <span class="scan-progress-eta" id="scan-progress-eta"></span>
+                </div>
+            </div>
+        </div>
+
+            <!-- OCR Text Configuration Section -->
+            <div class="scanning-section">
+                <h2>🔍 OCR Text Areas Configuration</h2>
+                <p style="color: #666; margin-bottom: 20px;">
+                    Configure which attributes will store OCR-extracted text from the 3 sequential rectangle areas in Verify Pages.
+                </p>
+
+                <div class="scan-control-group" style="margin-bottom: 20px;">
+                    <label for="ocr-attr1">📝 OCR Area 1:</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" id="ocr-label1" placeholder="Area label (e.g., 'Title')" style="width: 200px; padding: 10px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 14px;">
+                        <span style="color: #666;">→</span>
+                        <select id="ocr-attr1" style="flex: 1; padding: 10px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 14px;">
+                            <option value="">Select attribute...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="scan-control-group" style="margin-bottom: 20px;">
+                    <label for="ocr-attr2">📝 OCR Area 2:</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" id="ocr-label2" placeholder="Area label (e.g., 'Content')" style="width: 200px; padding: 10px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 14px;">
+                        <span style="color: #666;">→</span>
+                        <select id="ocr-attr2" style="flex: 1; padding: 10px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 14px;">
+                            <option value="">Select attribute...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="scan-control-group" style="margin-bottom: 20px;">
+                    <label for="ocr-attr3">📝 OCR Area 3:</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" id="ocr-label3" placeholder="Area label (e.g., 'Notes')" style="width: 200px; padding: 10px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 14px;">
+                        <span style="color: #666;">→</span>
+                        <select id="ocr-attr3" style="flex: 1; padding: 10px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 14px;">
+                            <option value="">Select attribute...</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manual Text Configuration Section -->
+            <div class="scanning-section">
+                <h2>✍️ Manual Text Areas Configuration</h2>
+                <p style="color: #666; margin-bottom: 20px;">
+                    Configure which attributes will store manually typed text from the 3 manual text areas in Verify Pages.
+                </p>
+
+                <div class="scan-control-group" style="margin-bottom: 20px;">
+                    <label for="manual-attr1">✍️ Manual Area 1:</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" id="manual-label1" placeholder="Area label (e.g., 'Summary')" style="width: 200px; padding: 10px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 14px;">
+                        <span style="color: #666;">→</span>
+                        <select id="manual-attr1" style="flex: 1; padding: 10px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 14px;">
+                            <option value="">Select attribute...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="scan-control-group" style="margin-bottom: 20px;">
+                    <label for="manual-attr2">✍️ Manual Area 2:</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" id="manual-label2" placeholder="Area label (e.g., 'Keywords')" style="width: 200px; padding: 10px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 14px;">
+                        <span style="color: #666;">→</span>
+                        <select id="manual-attr2" style="flex: 1; padding: 10px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 14px;">
+                            <option value="">Select attribute...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="scan-control-group" style="margin-bottom: 20px;">
+                    <label for="manual-attr3">✍️ Manual Area 3:</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" id="manual-label3" placeholder="Area label (e.g., 'Comments')" style="width: 200px; padding: 10px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 14px;">
+                        <span style="color: #666;">→</span>
+                        <select id="manual-attr3" style="flex: 1; padding: 10px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 14px;">
+                            <option value="">Select attribute...</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Extraction Prompts Section -->
+            <div class="prompts-section">
+                <h2>🤖 Claude Extraction Prompts</h2>
+                <p style="color: #666; margin-bottom: 20px;">
+                    Configure prompts for Claude to analyze diagrams, tables, equations, and lists during extraction.
+                    These prompts are used when decoding images in the Extract Knowledge page.
+                </p>
+
+                <div class="prompt-group">
+                    <label>📊 Diagram Prompt <span class="prompt-class">(diagram)</span></label>
+                    <textarea id="prompt-diagram" placeholder="Enter prompt for analyzing diagrams..."></textarea>
+                </div>
+
+                <div class="prompt-group">
+                    <label>📋 Table Prompt <span class="prompt-class">(table)</span></label>
+                    <textarea id="prompt-table" placeholder="Enter prompt for extracting table data..."></textarea>
+                </div>
+
+                <div class="prompt-group">
+                    <label>🔢 Equation Prompt <span class="prompt-class">(equation)</span></label>
+                    <textarea id="prompt-equation" placeholder="Enter prompt for transcribing equations..."></textarea>
+                </div>
+
+                <div class="prompt-group">
+                    <label>• Bulleted List Prompt <span class="prompt-class">(list_bulleted)</span></label>
+                    <textarea id="prompt-list_bulleted" placeholder="Enter prompt for extracting bulleted lists..."></textarea>
+                </div>
+
+                <div class="prompt-group">
+                    <label>1. Numbered List Prompt <span class="prompt-class">(list_numbered)</span></label>
+                    <textarea id="prompt-list_numbered" placeholder="Enter prompt for extracting numbered lists..."></textarea>
+                </div>
+
+                <div class="prompt-group">
+                    <label>a. Lettered List Prompt <span class="prompt-class">(list_lettered)</span></label>
+                    <textarea id="prompt-list_lettered" placeholder="Enter prompt for extracting lettered lists..."></textarea>
+                </div>
+
+                <div class="prompt-group">
+                    <label>❓ Question Prompt <span class="prompt-class">(question)</span></label>
+                    <textarea id="prompt-question" placeholder="Enter prompt for analyzing question images..."></textarea>
+                </div>
+
+                <div class="prompt-group">
+                    <label>💡 Answer Prompt <span class="prompt-class">(answer)</span></label>
+                    <textarea id="prompt-answer" placeholder="Enter prompt for analyzing answer images..."></textarea>
+                </div>
+
+                <div class="prompts-actions">
+                    <button type="button" class="btn-save-prompts" onclick="savePrompts()">💾 Save Prompts</button>
+                    <button type="button" class="btn-reset-prompts" onclick="resetPrompts()">🔄 Reset to Defaults</button>
+                </div>
+            </div>
+
+            <div class="attributes-section">
+                <h2>📝 Edit Attribute Names (1-80)</h2>
+                <p style="color: #666; margin-bottom: 20px;">
+                    <strong>Reserved Attributes (1-21):</strong> System functions, OCR/Manual text areas, and diagram links - not editable.<br>
+                    <strong>Custom Attributes (22-80):</strong> 59 customizable attributes for your specific needs.
+                </p>
+                <div id="attributes-list">
+                    <p>Loading attributes...</p>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-save" onclick="saveAllAttributes()">💾 Save Changes</button>
+                <button class="btn btn-cancel" onclick="cancelChanges()">❌ Cancel</button>
+                <button class="btn btn-back" onclick="goBack()">◀ Back to Library</button>
+            </div>
+        </div><!-- end book-content -->
+    </div>
+    <script src="/static/js/book-settings.js?v=20260111-reserved-attrs"></script>
+</body>
+</html>

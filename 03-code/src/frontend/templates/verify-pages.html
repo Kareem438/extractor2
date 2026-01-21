@@ -1,0 +1,3035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Pages - Knowledge Extraction System</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; background: #f5f5f5; }
+
+        /* Top Navigation */
+        .top-nav {
+            background: #2196F3;
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+        .top-nav-brand { font-size: 20px; font-weight: bold; }
+        .top-nav-links { display: flex; gap: 20px; }
+        .top-nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .top-nav-links a:hover { background: rgba(255,255,255,0.2); }
+        .top-nav-links a.active { background: rgba(255,255,255,0.3); font-weight: bold; }
+        body { padding-top: 65px; }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .header h1 { margin: 0; font-size: 24px; }
+
+        /* Main Content */
+        .main-content {
+            padding: 30px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        /* Controls */
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-group label {
+            font-size: 12px;
+            color: #666;
+            font-weight: bold;
+        }
+
+        .control-group select,
+        .control-group input {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .btn-nav {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            background: #2196F3;
+            color: white;
+            transition: opacity 0.2s;
+        }
+
+        .btn-nav:hover { opacity: 0.85; }
+        .btn-nav:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Split View */
+        .split-view {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            min-height: 600px;
+        }
+
+        .view-panel {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: auto;
+        }
+
+        .panel-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        /* Image Panel */
+        .image-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 500px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            padding: 10px;
+            position: relative;
+        }
+
+        .image-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .image-container img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: block;
+        }
+
+        #selection-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: crosshair;
+            pointer-events: all;
+        }
+
+        /* Selection Info */
+        .selection-info {
+            background: rgba(33, 150, 243, 0.9);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Cropped Image Panel */
+        .cropped-image-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .cropped-image-display {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            padding: 10px;
+            border: 2px dashed #ddd;
+        }
+
+        .cropped-image-display img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .crop-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-crop {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+
+        .btn-crop-primary {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-crop-secondary {
+            background: #FF9800;
+            color: white;
+        }
+
+        .btn-crop-clear {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-crop:hover { opacity: 0.85; }
+        .btn-crop:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        /* Recent Clips Gallery */
+        .recent-clips-section {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .recent-clips-header {
+            font-size: 14px;
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .recent-clips-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .clips-column {
+            background: #f9f9f9;
+            border-radius: 4px;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .clips-column-header {
+            font-size: 13px;
+            font-weight: bold;
+            color: #2196F3;
+            margin-bottom: 10px;
+            text-align: center;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .clips-thumbnails {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .thumbnail-item {
+            position: relative;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 5px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .thumbnail-item:hover {
+            border-color: #2196F3;
+            box-shadow: 0 2px 6px rgba(33, 150, 243, 0.3);
+            transform: scale(1.02);
+        }
+
+        .thumbnail-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 2px;
+            /* 30% scale achieved through parent container */
+        }
+
+        .thumbnail-info {
+            font-size: 10px;
+            color: #666;
+            margin-top: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .empty-thumbnails {
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+            padding: 20px;
+            font-style: italic;
+        }
+
+        /* Merge Button */
+        .merge-button-container {
+            display: flex;
+            justify-content: center;
+            padding: 8px 0;
+        }
+
+        .btn-merge {
+            padding: 6px 16px;
+            border: 2px solid #9C27B0;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(156, 39, 176, 0.3);
+        }
+
+        .btn-merge:hover {
+            background: linear-gradient(135deg, #7B1FA2 0%, #6A1B9A 100%);
+            box-shadow: 0 3px 6px rgba(156, 39, 176, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .btn-merge:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(156, 39, 176, 0.4);
+        }
+
+        /* Knowledge Units Panel */
+        .knowledge-units {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .knowledge-unit {
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 15px;
+            background: #fafafa;
+        }
+
+        .ku-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .ku-engine {
+            font-weight: bold;
+            color: #2196F3;
+            font-size: 14px;
+        }
+
+        .ku-confidence {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .confidence-high { color: #4CAF50; }
+        .confidence-medium { color: #FF9800; }
+        .confidence-low { color: #f44336; }
+
+        .ku-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .ku-meta {
+            margin-top: 10px;
+            font-size: 11px;
+            color: #999;
+            display: flex;
+            gap: 15px;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2196F3;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #666;
+        }
+
+        .empty-state h2 { color: #999; margin-bottom: 20px; }
+
+        /* Level Extraction Section */
+        .level-extraction-section {
+            background: #f3e5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border: 2px solid #9C27B0;
+        }
+
+        .level-extraction-title {
+            color: #6A1B9A;
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .level-row {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .level-label {
+            font-size: 14px;
+            color: #6A1B9A;
+            font-weight: bold;
+            width: 80px;
+        }
+
+        .btn-extract-level {
+            background: #9C27B0;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .btn-extract-level:hover {
+            background: #7B1FA2;
+        }
+
+        .level-text-input {
+            flex: 1;
+            padding: 8px;
+            border: 2px solid #9C27B0;
+            border-radius: 4px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .level-text-input.visible {
+            display: block;
+        }
+
+        .btn-save-level {
+            background: #4CAF50;
+            color: white;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            white-space: nowrap;
+            margin-left: 5px;
+        }
+
+        .btn-save-level:hover {
+            background: #388E3C;
+        }
+
+        .btn-save-level.saved {
+            background: #2196F3;
+        }
+
+        /* Level Radio Button Styles */
+        .level-radio-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            flex-shrink: 0;
+        }
+
+        .level-radio {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #9C27B0;
+        }
+
+        .level-row.selected {
+            background: rgba(156, 39, 176, 0.15);
+            border-radius: 4px;
+            padding: 8px;
+            margin: 6px -8px;
+        }
+
+        .selected-level-indicator {
+            display: none;
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: #9C27B0;
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .selected-level-indicator.visible {
+            display: block;
+        }
+
+        .btn-save-level:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Surya OCR Status Message */
+        .surya-status-message {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            font-weight: bold;
+            display: none;
+            box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+            position: relative;
+            padding-right: 40px;
+        }
+
+        .surya-status-message.visible {
+            display: block;
+        }
+
+        .surya-status-message.loading {
+            background: #FF9800;
+        }
+
+        .surya-status-message.error {
+            background: #f44336;
+        }
+
+        .close-message-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            text-align: center;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+
+        .close-message-btn:hover {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        /* ============================================
+           Mode Toolbar Styles
+           ============================================ */
+        .mode-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f5f5f5;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .mode-toolbar-label {
+            font-size: 13px;
+            font-weight: bold;
+            color: #666;
+            margin-right: 5px;
+        }
+
+        .mode-btn {
+            padding: 8px 16px;
+            border: 2px solid #ccc;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.2s;
+            background: white;
+            color: #666;
+        }
+
+        .mode-btn:hover {
+            border-color: #999;
+            background: #f0f0f0;
+        }
+
+        .mode-btn.active-select {
+            border-color: #2196F3;
+            background: #2196F3;
+            color: white;
+        }
+
+        .mode-btn.active-ocr {
+            border-color: #4CAF50;
+            background: #4CAF50;
+            color: white;
+        }
+
+        .mode-indicator {
+            margin-left: auto;
+            font-size: 12px;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .mode-indicator.select-mode {
+            background: #E3F2FD;
+            color: #1976D2;
+        }
+
+        .mode-indicator.ocr-mode {
+            background: #E8F5E9;
+            color: #388E3C;
+        }
+
+        /* Selection canvas styles for different modes */
+        #selection-canvas.ocr-mode {
+            cursor: crosshair;
+        }
+
+        /* Green selection rectangle for OCR mode */
+        .selection-info.ocr-mode {
+            background: rgba(76, 175, 80, 0.9);
+        }
+
+        /* ============================================
+           OCR Result Section Styles
+           (HIDDEN - Duplicate section, using surya-result-section instead)
+           ============================================ */
+        .ocr-result-section {
+            margin-top: 15px;
+            padding: 15px;
+            background: #E8F5E9;
+            border-radius: 8px;
+            border: 2px solid #4CAF50;
+            display: none !important; /* Hidden - using surya-result-section at top instead */
+        }
+
+        .ocr-result-section.visible {
+            display: none !important; /* Hidden - using surya-result-section at top instead */
+        }
+
+        .ocr-result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .ocr-result-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #2E7D32;
+        }
+
+        .ocr-result-status {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: #C8E6C9;
+            color: #2E7D32;
+        }
+
+        .ocr-result-status.processing {
+            background: #FFF3E0;
+            color: #E65100;
+            animation: pulse 1.5s infinite;
+        }
+
+        .ocr-result-status.error {
+            background: #FFEBEE;
+            color: #C62828;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .ocr-text-container {
+            position: relative;
+        }
+
+        .ocr-text-area {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px;
+            border: 2px solid #A5D6A7;
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            font-family: inherit;
+            background: white;
+        }
+
+        .ocr-text-area:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+        }
+
+        .ocr-text-area:disabled {
+            background: #f5f5f5;
+            color: #999;
+        }
+
+        .ocr-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            align-items: center;
+        }
+
+        .btn-save-ocr {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            background: #4CAF50;
+            color: white;
+            transition: all 0.2s;
+        }
+
+        .btn-save-ocr:hover {
+            background: #388E3C;
+        }
+
+        .btn-save-ocr:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .ocr-save-status {
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .ocr-save-status.saved {
+            color: #4CAF50;
+        }
+
+        .ocr-save-status.unsaved {
+            color: #FF9800;
+        }
+
+        .ocr-confidence-badge {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: #E3F2FD;
+            color: #1976D2;
+            margin-left: auto;
+        }
+
+        /* Panel header updates for OCR mode */
+        .panel-header.ocr-mode {
+            color: #2E7D32;
+            border-bottom-color: #4CAF50;
+        }
+
+        .panel-header.ocr-mode::after {
+            content: " + OCR";
+            color: #4CAF50;
+            font-size: 14px;
+        }
+
+        /* ============================================
+           Diagram Analysis Section Styles
+           ============================================ */
+        .diagram-analysis-section {
+            margin-top: 15px;
+            padding: 15px;
+            background: #FFF3E0;
+            border-radius: 8px;
+            border: 2px solid #FF9800;
+            display: none;
+        }
+
+        .diagram-analysis-section.visible {
+            display: block;
+        }
+
+        .diagram-analysis-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .diagram-analysis-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #E65100;
+        }
+
+        .diagram-type-badge {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: #FFE0B2;
+            color: #E65100;
+            font-weight: bold;
+        }
+
+        .diagram-analysis-status {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: #FFE0B2;
+            color: #E65100;
+        }
+
+        .diagram-analysis-status.processing {
+            background: #FFF3E0;
+            animation: pulse 1.5s infinite;
+        }
+
+        .diagram-analysis-status.error {
+            background: #FFEBEE;
+            color: #C62828;
+        }
+
+        .diagram-description-area {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            border: 2px solid #FFCC80;
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            font-family: inherit;
+            background: white;
+        }
+
+        .diagram-description-area:focus {
+            outline: none;
+            border-color: #FF9800;
+            box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.2);
+        }
+
+        .diagram-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            align-items: center;
+        }
+
+        .btn-save-diagram {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            background: #FF9800;
+            color: white;
+            transition: all 0.2s;
+        }
+
+        .btn-save-diagram:hover {
+            background: #F57C00;
+        }
+
+        .btn-save-diagram:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* ============================================
+           Diagram Linking Section Styles
+           ============================================ */
+        .diagram-linking-section {
+            margin-top: 15px;
+            padding: 15px;
+            background: #E8EAF6;
+            border-radius: 8px;
+            border: 2px solid #3F51B5;
+            display: none;
+        }
+
+        .diagram-linking-section.visible {
+            display: block;
+        }
+
+        .linking-header {
+            margin-bottom: 10px;
+        }
+
+        .linking-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #283593;
+        }
+
+        .linking-select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #9FA8DA;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .linking-select:focus {
+            outline: none;
+            border-color: #3F51B5;
+            box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.2);
+        }
+
+        .link-preview {
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #666;
+            min-height: 40px;
+            border: 1px solid #C5CAE9;
+        }
+
+        .btn-save-link {
+            margin-top: 10px;
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            background: #3F51B5;
+            color: white;
+            transition: all 0.2s;
+        }
+
+        .btn-save-link:hover {
+            background: #303F9F;
+        }
+
+        .btn-save-link:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* ============================================
+           Diagram Details Section (V3 Mockup)
+           ============================================ */
+        .diagram-details-section {
+            margin-top: 15px;
+            background: #FFF8E1;
+            border-radius: 8px;
+            border: 2px solid #FF9800;
+            display: none;
+            overflow: hidden;
+        }
+
+        .diagram-details-section.visible {
+            display: block;
+        }
+
+        .diagram-details-header {
+            background: #FF9800;
+            color: white;
+            padding: 12px 15px;
+            font-size: 16px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .diagram-details-mode-badge {
+            font-size: 11px;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+
+        /* Cropped Diagram Preview */
+        .diagram-preview-section {
+            padding: 15px;
+            background: #FFF8E1;
+            border-bottom: 1px solid #FFE0B2;
+        }
+
+        .diagram-preview-label {
+            font-size: 13px;
+            font-weight: bold;
+            color: #E65100;
+            margin-bottom: 8px;
+        }
+
+        .diagram-preview-container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .diagram-preview-image {
+            max-width: 180px;
+            max-height: 120px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f9f9f9;
+            padding: 4px;
+        }
+
+        .diagram-preview-info {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.8;
+        }
+
+        /* Level Titles Section */
+        .diagram-levels-section {
+            padding: 15px;
+            background: #E8F5E9;
+            border-bottom: 1px solid #C8E6C9;
+        }
+
+        .diagram-levels-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .diagram-levels-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #2E7D32;
+        }
+
+        .diagram-levels-hint {
+            font-size: 10px;
+            color: #666;
+        }
+
+        .diagram-level-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .diagram-level-label {
+            font-size: 12px;
+            font-weight: bold;
+            color: #1B5E20;
+            width: 60px;
+            flex-shrink: 0;
+        }
+
+        .diagram-level-input {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid #A5D6A7;
+            border-radius: 4px;
+            font-size: 12px;
+            background: white;
+        }
+
+        .diagram-level-input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+
+        .btn-diagram-level-ocr {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            background: #4CAF50;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .btn-diagram-level-ocr:hover {
+            background: #388E3C;
+        }
+
+        .btn-diagram-level-ocr:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-save-levels {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background: #2E7D32;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .btn-save-levels:hover {
+            background: #1B5E20;
+        }
+
+        /* Associated Text Section */
+        .diagram-associated-section {
+            padding: 15px;
+            background: #F3E5F5;
+            border-bottom: 1px solid #E1BEE7;
+        }
+
+        .diagram-associated-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .diagram-associated-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #7B1FA2;
+        }
+
+        .diagram-associated-hint {
+            font-size: 10px;
+            color: #666;
+        }
+
+        .diagram-associated-display {
+            padding: 10px;
+            background: white;
+            border: 1px solid #BA68C8;
+            border-radius: 4px;
+            min-height: 50px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .diagram-associated-display.has-content {
+            color: #333;
+        }
+
+        .diagram-selected-ku-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #9C27B0;
+            color: white;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        .btn-clear-associated {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            background: #f5f5f5;
+            color: #666;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        /* AI Analysis Section */
+        .diagram-ai-section {
+            padding: 15px;
+            background: #E3F2FD;
+            border-bottom: 1px solid #90CAF9;
+        }
+
+        .diagram-ai-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .diagram-ai-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #1565C0;
+        }
+
+        .diagram-ai-status-badge {
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            background: #C8E6C9;
+            color: #2E7D32;
+        }
+
+        .diagram-ai-status-badge.processing {
+            background: #FFF3E0;
+            color: #E65100;
+            animation: pulse 1.5s infinite;
+        }
+
+        .diagram-ai-status-badge.error {
+            background: #FFEBEE;
+            color: #C62828;
+        }
+
+        .btn-reanalyze {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 4px;
+            background: #2196F3;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-reanalyze:hover {
+            background: #1976D2;
+        }
+
+        .diagram-ai-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 10px;
+            border: 1px solid #90CAF9;
+            border-radius: 4px;
+            font-size: 12px;
+            line-height: 1.5;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .diagram-ai-textarea:focus {
+            outline: none;
+            border-color: #2196F3;
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+        }
+
+        /* Bottom Action Bar */
+        .diagram-action-bar {
+            padding: 12px 15px;
+            background: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .diagram-help-text {
+            font-size: 10px;
+            color: #999;
+        }
+
+        .diagram-action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-diagram-cancel {
+            padding: 8px 20px;
+            border: 1px solid #999;
+            border-radius: 4px;
+            background: white;
+            color: #666;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .btn-diagram-cancel:hover {
+            background: #f5f5f5;
+        }
+
+        .btn-diagram-save-all {
+            padding: 8px 24px;
+            border: none;
+            border-radius: 4px;
+            background: #4CAF50;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-diagram-save-all:hover {
+            background: #388E3C;
+        }
+
+        .btn-diagram-save-all:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* KU Selection List */
+        .diagram-ku-list-section {
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #FAFAFA;
+            border: 1px solid #E1BEE7;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+
+        .diagram-ku-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 8px;
+            border: 1px solid #E1BEE7;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .diagram-ku-item:hover {
+            border-color: #9C27B0;
+            background: #F3E5F5;
+        }
+
+        .diagram-ku-item.selected {
+            border-color: #9C27B0;
+            background: #F3E5F5;
+            border-width: 2px;
+        }
+
+        .diagram-ku-radio {
+            margin-right: 10px;
+            margin-top: 2px;
+        }
+
+        .diagram-ku-content {
+            flex: 1;
+        }
+
+        .diagram-ku-id {
+            font-size: 11px;
+            font-weight: bold;
+            color: #9C27B0;
+            margin-bottom: 2px;
+        }
+
+        .diagram-ku-text {
+            font-size: 11px;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        /* ============================================
+           Multi-OCR Comparison Section Styles
+           (HIDDEN - Feature disabled)
+           ============================================ */
+        .ocr-comparison-section {
+            margin-top: 15px;
+            background: #FAFAFA;
+            border-radius: 8px;
+            border: 2px solid #2196F3;
+            display: none !important; /* Hidden - OCR comparison feature disabled */
+            overflow: hidden;
+        }
+
+        .ocr-comparison-section.visible {
+            display: none !important; /* Hidden - OCR comparison feature disabled */
+        }
+
+        .ocr-comparison-header {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            color: white;
+            padding: 12px 15px;
+            font-size: 16px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ocr-comparison-subtitle {
+            font-size: 11px;
+            font-weight: normal;
+            opacity: 0.9;
+        }
+
+        .ocr-engines-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            padding: 15px;
+        }
+
+        .ocr-engine-box {
+            background: white;
+            border-radius: 6px;
+            border: 2px solid #e0e0e0;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+
+        .ocr-engine-box.selected {
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+        }
+
+        .ocr-engine-box:hover {
+            border-color: #2196F3;
+        }
+
+        .ocr-engine-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            background: #f5f5f5;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .ocr-engine-radio-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .ocr-engine-radio {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #4CAF50;
+        }
+
+        .ocr-engine-badge {
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            background: #E3F2FD;
+            color: #1976D2;
+        }
+
+        .ocr-engine-badge.loading {
+            background: #FFF3E0;
+            color: #E65100;
+            animation: pulse 1.5s infinite;
+        }
+
+        .ocr-engine-badge.error {
+            background: #FFEBEE;
+            color: #C62828;
+        }
+
+        .ocr-engine-badge.ready {
+            background: #E8F5E9;
+            color: #2E7D32;
+        }
+
+        .ocr-engine-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 10px;
+            border: none;
+            font-size: 13px;
+            line-height: 1.5;
+            resize: vertical;
+            font-family: inherit;
+            direction: auto; /* Support RTL for Arabic */
+        }
+
+        .ocr-engine-textarea:focus {
+            outline: none;
+            background: #FFFDE7;
+        }
+
+        .ocr-engine-textarea:disabled {
+            background: #f9f9f9;
+            color: #999;
+        }
+
+        .ocr-engine-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #f9f9f9;
+            border-top: 1px solid #e0e0e0;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .ocr-engine-confidence {
+            font-weight: bold;
+        }
+
+        .ocr-engine-confidence.high { color: #4CAF50; }
+        .ocr-engine-confidence.medium { color: #FF9800; }
+        .ocr-engine-confidence.low { color: #f44336; }
+
+        /* OCR Comparison Action Bar */
+        .ocr-comparison-actions {
+            padding: 12px 15px;
+            background: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .ocr-comparison-help {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .ocr-comparison-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-ocr-cancel {
+            padding: 8px 20px;
+            border: 1px solid #999;
+            border-radius: 4px;
+            background: white;
+            color: #666;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .btn-ocr-cancel:hover {
+            background: #f5f5f5;
+        }
+
+        .btn-ocr-save-selected {
+            padding: 8px 24px;
+            border: none;
+            border-radius: 4px;
+            background: #4CAF50;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-ocr-save-selected:hover {
+            background: #388E3C;
+        }
+
+        .btn-ocr-save-selected:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Progress indicator for multi-OCR */
+        .ocr-progress-bar {
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 0 15px 15px 15px;
+        }
+
+        .ocr-progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #2196F3 0%, #4CAF50 100%);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        .ocr-progress-status {
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            padding: 0 15px 10px 15px;
+        }
+
+        /* ============================================
+           Clip Type Selection Styles (Text vs Diagram)
+           ============================================ */
+        .clip-type-section {
+            background: #ECEFF1;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border: 2px solid #607D8B;
+        }
+
+        .clip-type-header {
+            font-size: 14px;
+            font-weight: bold;
+            color: #37474F;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .clip-type-radios {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+        }
+
+        .clip-type-radio-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 2px solid #B0BEC5;
+            background: white;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .clip-type-radio-label:hover {
+            border-color: #607D8B;
+            background: #F5F5F5;
+        }
+
+        .clip-type-radio-label.selected {
+            border-color: #2196F3;
+            background: #E3F2FD;
+            color: #1565C0;
+        }
+
+        .clip-type-radio-label.selected-diagram {
+            border-color: #FF9800;
+            background: #FFF3E0;
+            color: #E65100;
+        }
+
+        .clip-type-radio {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        /* Diagram Analysis Options Section */
+        .diagram-options-section {
+            background: #FFF8E1;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border: 2px solid #FF9800;
+            display: none;
+        }
+
+        .diagram-options-section.visible {
+            display: block;
+        }
+
+        .diagram-options-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .diagram-options-label {
+            font-size: 13px;
+            font-weight: bold;
+            color: #E65100;
+            min-width: 100px;
+        }
+
+        .diagram-option-radios {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .diagram-option-radio-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            padding: 6px 14px;
+            border-radius: 15px;
+            border: 2px solid #FFCC80;
+            background: white;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .diagram-option-radio-label:hover {
+            border-color: #FF9800;
+            background: #FFF3E0;
+        }
+
+        .diagram-option-radio-label.selected {
+            border-color: #FF9800;
+            background: #FFE0B2;
+            font-weight: bold;
+        }
+
+        .diagram-option-radio {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #FF9800;
+        }
+
+        /* Analyze Button */
+        .btn-analyze-diagram {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            background: linear-gradient(135deg, #7B1FA2 0%, #9C27B0 100%);
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 4px rgba(123, 31, 162, 0.3);
+        }
+
+        .btn-analyze-diagram:hover {
+            background: linear-gradient(135deg, #6A1B9A 0%, #8E24AA 100%);
+            box-shadow: 0 4px 8px rgba(123, 31, 162, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .btn-analyze-diagram:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .btn-analyze-diagram.loading {
+            background: #FF9800;
+        }
+
+        .btn-analyze-diagram .spinner-small {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Claude Analysis Result Section */
+        .claude-analysis-section {
+            background: #F3E5F5;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border: 2px solid #9C27B0;
+            display: none;
+        }
+
+        .claude-analysis-section.visible {
+            display: block;
+        }
+
+        .claude-analysis-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .claude-analysis-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #6A1B9A;
+        }
+
+        .claude-analysis-model-badge {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: #CE93D8;
+            color: #4A148C;
+            font-weight: bold;
+        }
+
+        .claude-analysis-textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 12px;
+            border: 2px solid #CE93D8;
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            font-family: inherit;
+            background: white;
+        }
+
+        .claude-analysis-textarea:focus {
+            outline: none;
+            border-color: #9C27B0;
+            box-shadow: 0 0 0 3px rgba(156, 39, 176, 0.2);
+        }
+
+        .claude-analysis-textarea.error {
+            border-color: #f44336;
+            background: #FFEBEE;
+        }
+
+        /* ============================================
+           Paragraph Linking Section Styles
+           ============================================ */
+        .paragraph-linking-section {
+            background: #FFF3E0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border: 2px solid #FF9800;
+            display: none;
+        }
+
+        .paragraph-linking-section.visible {
+            display: block;
+        }
+
+        .paragraph-linking-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .paragraph-linking-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #E65100;
+        }
+
+        .paragraph-linking-status {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: #FFE0B2;
+            color: #E65100;
+            font-weight: bold;
+        }
+
+        .paragraph-linking-status.linked {
+            background: #C8E6C9;
+            color: #2E7D32;
+        }
+
+        .paragraph-thumbnails-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .paragraph-thumbnail-item {
+            position: relative;
+            border: 2px solid #FFE0B2;
+            border-radius: 6px;
+            padding: 4px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .paragraph-thumbnail-item:hover {
+            border-color: #FF9800;
+            box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
+            transform: scale(1.02);
+        }
+
+        .paragraph-thumbnail-item.selected {
+            border-color: #4CAF50;
+            background: #E8F5E9;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.3);
+        }
+
+        .paragraph-thumbnail-item.clear-option {
+            background: #FFEBEE;
+            border-color: #FFCDD2;
+        }
+
+        .paragraph-thumbnail-item.clear-option:hover {
+            border-color: #f44336;
+            background: #FFCDD2;
+        }
+
+        .paragraph-thumbnail-img {
+            width: 100%;
+            height: 60px;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+
+        .paragraph-thumbnail-info {
+            font-size: 9px;
+            color: #666;
+            margin-top: 4px;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .paragraph-thumbnail-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: #FF9800;
+            color: white;
+            font-size: 8px;
+            font-weight: bold;
+            padding: 2px 5px;
+            border-radius: 8px;
+        }
+
+        .paragraph-thumbnail-badge.full {
+            background: #f44336;
+        }
+
+        .clear-icon {
+            font-size: 24px;
+            color: #f44336;
+        }
+
+        .no-paragraphs-message {
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+            padding: 20px;
+            font-style: italic;
+        }
+
+        .paragraph-linking-loading {
+            text-align: center;
+            padding: 20px;
+            color: #FF9800;
+        }
+
+        .paragraph-linking-loading .spinner-small {
+            border: 3px solid #FFE0B2;
+            border-top: 3px solid #FF9800;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 8px;
+        }
+
+        /* Surya OCR Result Section (Text mode) */
+        .surya-result-section {
+            background: #E8F5E9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border: 2px solid #4CAF50;
+            display: none;
+        }
+
+        .surya-result-section.visible {
+            display: block;
+        }
+
+        .surya-result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .surya-result-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #2E7D32;
+        }
+
+        .surya-result-confidence {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: #A5D6A7;
+            color: #1B5E20;
+            font-weight: bold;
+        }
+
+        .surya-result-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px;
+            border: 2px solid #A5D6A7;
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            font-family: inherit;
+            background: white;
+        }
+
+        .surya-result-textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+        }
+
+        /* ============================================
+           Analysis Preview Modal Styles
+           ============================================ */
+        .analysis-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .analysis-modal-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .analysis-modal {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+
+        .analysis-modal-overlay.visible .analysis-modal {
+            transform: scale(1);
+        }
+
+        .analysis-modal-header {
+            background: linear-gradient(135deg, #7B1FA2 0%, #9C27B0 100%);
+            color: white;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .analysis-modal-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .analysis-modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+
+        .analysis-modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .analysis-modal-body {
+            padding: 20px;
+            max-height: calc(90vh - 140px);
+            overflow-y: auto;
+        }
+
+        .analysis-modal-section {
+            margin-bottom: 20px;
+        }
+
+        .analysis-modal-section-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #6A1B9A;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .analysis-modal-prompt-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            border: 2px solid #CE93D8;
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .analysis-modal-prompt-textarea:focus {
+            outline: none;
+            border-color: #9C27B0;
+            box-shadow: 0 0 0 3px rgba(156, 39, 176, 0.2);
+        }
+
+        .analysis-modal-context-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .analysis-modal-context-item {
+            background: #F5F5F5;
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .analysis-modal-context-label {
+            font-size: 12px;
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 6px;
+        }
+
+        .analysis-modal-context-textarea {
+            width: 100%;
+            min-height: 60px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .analysis-modal-context-textarea:focus {
+            outline: none;
+            border-color: #9C27B0;
+        }
+
+        .analysis-modal-footer {
+            padding: 16px 20px;
+            background: #F5F5F5;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .btn-modal-cancel {
+            padding: 10px 24px;
+            border: 2px solid #999;
+            border-radius: 6px;
+            background: white;
+            color: #666;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-modal-cancel:hover {
+            background: #F5F5F5;
+            border-color: #666;
+        }
+
+        .btn-modal-analyze {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 6px;
+            background: linear-gradient(135deg, #7B1FA2 0%, #9C27B0 100%);
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-modal-analyze:hover {
+            background: linear-gradient(135deg, #6A1B9A 0%, #8E24AA 100%);
+        }
+
+        .btn-modal-analyze:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="top-nav-brand">📚 Knowledge Extraction System</div>
+        <div class="top-nav-links">
+            <a href="/library">📚 Library</a>
+            <a href="/auto-slicer">🔪 Auto-Slicer</a>
+            <a href="/upload">📤 Upload</a>
+            <a href="/verification">✅ Verification</a>
+            <a href="/book-settings">⚙️ Book Settings</a>
+            <a href="/verify-pages" class="active">🔍 Verify Pages</a>
+            <a href="/edit-paragraphs">✏️ Edit Paragraphs</a>
+            <a href="/edit-diagrams">📊 Edit Diagrams</a>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <div class="header">
+        <h1>🔍 Verify Pages - Raw Data Viewer</h1>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Controls -->
+        <div class="controls">
+            <div class="control-group">
+                <label>Book</label>
+                <select id="book-select">
+                    <option value="">Loading books...</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Page Number</label>
+                <input type="number" id="page-input" min="1" value="1" />
+            </div>
+
+            <div class="control-group" style="padding-top: 18px;">
+                <button class="btn-nav" id="prev-btn">⬅️ Previous</button>
+            </div>
+
+            <div class="control-group" style="padding-top: 18px;">
+                <button class="btn-nav" id="next-btn">Next ➡️</button>
+            </div>
+
+            <div class="control-group" style="padding-top: 18px;">
+                <button class="btn-nav" id="load-btn">🔄 Load Page</button>
+            </div>
+
+            <div class="control-group" style="padding-top: 18px;">
+                <button class="btn-nav" id="edit-paragraphs-btn" style="background: #9C27B0;" disabled>
+                    ✏️ Edit Paragraphs
+                </button>
+            </div>
+
+            <div class="control-group" style="padding-top: 18px;">
+                <button class="btn-nav" id="edit-diagrams-btn" style="background: #FF6F00;" disabled>
+                    📊 Edit Diagrams
+                </button>
+            </div>
+
+            <div class="control-group" style="padding-top: 18px;">
+                <button class="btn-nav" id="review-raw-btn" style="background: #607D8B;" disabled>
+                    📋 Review Raw
+                </button>
+            </div>
+
+            <div class="control-group" style="flex-grow: 1; padding-top: 18px; text-align: right;">
+                <span id="page-info" style="color: #666; font-size: 14px;">Select a book to start</span>
+            </div>
+        </div>
+
+        <!-- Split View -->
+        <div class="split-view">
+            <!-- Left Panel: Original Page Image -->
+            <div class="view-panel">
+                <div class="panel-header">📄 Original Page Image</div>
+                <div id="image-panel" class="loading">
+                    <div class="empty-state">
+                        <h2>📖 No Page Loaded</h2>
+                        <p>Select a book and page number above to view the raw page image.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Selected/Cropped Image -->
+            <div class="view-panel">
+                <!-- Surya OCR Status Message -->
+                <div class="surya-status-message" id="surya-status-message">
+                    <span id="surya-message-text">Loading Surya OCR...</span>
+                    <button class="close-message-btn" onclick="closeSuryaMessage()">×</button>
+                </div>
+
+                <!-- Mode Toolbar -->
+                <div class="mode-toolbar">
+                    <span class="mode-toolbar-label">Mode:</span>
+                    <button class="mode-btn active-select" id="mode-select-btn" onclick="setMode('select')">
+                        🖱️ Select Only
+                    </button>
+                    <button class="mode-btn" id="mode-ocr-btn" onclick="setMode('ocr')">
+                        📝 Clip + OCR
+                    </button>
+                    <span class="mode-indicator select-mode" id="mode-indicator">Select Mode</span>
+                </div>
+
+                <div class="panel-header" id="right-panel-header">✂️ Selected Area</div>
+                <div class="cropped-image-container">
+                    <!-- Clip Type Selection (Text vs Diagram) - Above the preview -->
+                    <div class="clip-type-section" id="clip-type-section" style="display: none;">
+                        <div class="clip-type-header">What does this clip represent?</div>
+                        <div class="clip-type-radios">
+                            <label class="clip-type-radio-label selected" id="clip-type-text-label" onclick="setClipType('text')">
+                                <input type="radio" name="clip-type" value="text" class="clip-type-radio" id="clip-type-text" checked>
+                                📝 Text
+                            </label>
+                            <label class="clip-type-radio-label" id="clip-type-diagram-label" onclick="setClipType('diagram')">
+                                <input type="radio" name="clip-type" value="diagram" class="clip-type-radio" id="clip-type-diagram">
+                                📊 Diagram
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="cropped-image-display" id="cropped-image-display">
+                        <div class="empty-state">
+                            <h2>🖼️ No Selection</h2>
+                            <p>Click and drag on the left image to select an area.</p>
+                        </div>
+                    </div>
+
+                    <!-- Surya OCR Result Section (visible when Text is selected) -->
+                    <div class="surya-result-section" id="surya-result-section">
+                        <div class="surya-result-header">
+                            <span class="surya-result-title">📝 Surya OCR Result (600 DPI)</span>
+                            <span class="surya-result-confidence" id="surya-result-confidence">Confidence: --</span>
+                        </div>
+                        <textarea
+                            class="surya-result-textarea"
+                            id="surya-result-textarea"
+                            placeholder="OCR text will appear here after drawing a selection..."
+                        ></textarea>
+                    </div>
+
+                    <!-- Diagram Analysis Options (visible when Diagram is selected) -->
+                    <div class="diagram-options-section" id="diagram-options-section">
+                        <!-- Diagram Type Selection -->
+                        <div class="diagram-options-row">
+                            <span class="diagram-options-label">Diagram Type:</span>
+                            <div class="diagram-option-radios" id="diagram-type-radios">
+                                <label class="diagram-option-radio-label selected" onclick="setDiagramType('equation')">
+                                    <input type="radio" name="diagram-type" value="equation" class="diagram-option-radio" checked>
+                                    Equation
+                                </label>
+                                <label class="diagram-option-radio-label" onclick="setDiagramType('table')">
+                                    <input type="radio" name="diagram-type" value="table" class="diagram-option-radio">
+                                    Table
+                                </label>
+                                <label class="diagram-option-radio-label" onclick="setDiagramType('diagram')">
+                                    <input type="radio" name="diagram-type" value="diagram" class="diagram-option-radio">
+                                    Diagram
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Model Selection -->
+                        <div class="diagram-options-row">
+                            <span class="diagram-options-label">Claude Model:</span>
+                            <div class="diagram-option-radios" id="model-type-radios">
+                                <label class="diagram-option-radio-label selected" onclick="setModelType('sonnet')">
+                                    <input type="radio" name="model-type" value="sonnet" class="diagram-option-radio" checked>
+                                    Sonnet (Recommended)
+                                </label>
+                                <label class="diagram-option-radio-label" onclick="setModelType('opus')">
+                                    <input type="radio" name="model-type" value="opus" class="diagram-option-radio">
+                                    Opus
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Analyze Button -->
+                        <div class="diagram-options-row" style="justify-content: center; margin-top: 10px;">
+                            <button class="btn-analyze-diagram" id="btn-analyze-diagram" onclick="openAnalysisModal()">
+                                🤖 Analyze with Claude
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Claude Analysis Result Section -->
+                    <div class="claude-analysis-section" id="claude-analysis-section">
+                        <div class="claude-analysis-header">
+                            <span class="claude-analysis-title">🤖 Claude Analysis Result</span>
+                            <span class="claude-analysis-model-badge" id="claude-analysis-model-badge">Sonnet</span>
+                        </div>
+                        <textarea
+                            class="claude-analysis-textarea"
+                            id="claude-analysis-textarea"
+                            placeholder="Analysis result will appear here..."
+                        ></textarea>
+                    </div>
+
+                    <!-- Paragraph Linking Section (visible when Diagram is selected) -->
+                    <div class="paragraph-linking-section" id="paragraph-linking-section">
+                        <div class="paragraph-linking-header">
+                            <span class="paragraph-linking-title">🔗 Link to Parent Paragraph</span>
+                            <span class="paragraph-linking-status" id="paragraph-linking-status">Not Linked</span>
+                        </div>
+                        <div id="paragraph-thumbnails-container">
+                            <div class="paragraph-linking-loading" id="paragraph-linking-loading" style="display: none;">
+                                <div class="spinner-small"></div>
+                                Loading recent paragraphs...
+                            </div>
+                            <div class="paragraph-thumbnails-grid" id="paragraph-thumbnails-grid">
+                                <!-- Paragraph thumbnails will be loaded here -->
+                            </div>
+                            <div class="no-paragraphs-message" id="no-paragraphs-message" style="display: none;">
+                                No paragraphs found. Save some paragraphs first.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Level Extraction Section -->
+                    <div class="level-extraction-section">
+                        <div class="level-extraction-title">🎯 Level Extraction (OCR on Selection)</div>
+                        <div class="level-row" id="level-row-1">
+                            <div class="level-radio-container">
+                                <input type="radio" class="level-radio" name="selected-level" id="level-radio-1" value="1" onchange="onLevelRadioChange(1)">
+                            </div>
+                            <div class="level-label">Level 1:</div>
+                            <button class="btn-extract-level" id="btn-extract-1" onclick="extractLevel(1)">🔍 Extract</button>
+                            <input type="text" class="level-text-input" id="level-1-input" placeholder="Click Extract to run OCR...">
+                            <button class="btn-save-level" id="btn-save-1" onclick="saveLevelText(1)" style="display: none;">💾 Save</button>
+                        </div>
+                        <div class="level-row" id="level-row-2">
+                            <div class="level-radio-container">
+                                <input type="radio" class="level-radio" name="selected-level" id="level-radio-2" value="2" onchange="onLevelRadioChange(2)">
+                            </div>
+                            <div class="level-label">Level 2:</div>
+                            <button class="btn-extract-level" id="btn-extract-2" onclick="extractLevel(2)">🔍 Extract</button>
+                            <input type="text" class="level-text-input" id="level-2-input" placeholder="Click Extract to run OCR...">
+                            <button class="btn-save-level" id="btn-save-2" onclick="saveLevelText(2)" style="display: none;">💾 Save</button>
+                        </div>
+                        <div class="level-row" id="level-row-3">
+                            <div class="level-radio-container">
+                                <input type="radio" class="level-radio" name="selected-level" id="level-radio-3" value="3" onchange="onLevelRadioChange(3)">
+                            </div>
+                            <div class="level-label">Level 3:</div>
+                            <button class="btn-extract-level" id="btn-extract-3" onclick="extractLevel(3)">🔍 Extract</button>
+                            <input type="text" class="level-text-input" id="level-3-input" placeholder="Click Extract to run OCR...">
+                            <button class="btn-save-level" id="btn-save-3" onclick="saveLevelText(3)" style="display: none;">💾 Save</button>
+                        </div>
+                        <div class="level-row" id="level-row-4">
+                            <div class="level-radio-container">
+                                <input type="radio" class="level-radio" name="selected-level" id="level-radio-4" value="4" onchange="onLevelRadioChange(4)">
+                            </div>
+                            <div class="level-label">Level 4:</div>
+                            <button class="btn-extract-level" id="btn-extract-4" onclick="extractLevel(4)">🔍 Extract</button>
+                            <input type="text" class="level-text-input" id="level-4-input" placeholder="Click Extract to run OCR...">
+                            <button class="btn-save-level" id="btn-save-4" onclick="saveLevelText(4)" style="display: none;">💾 Save</button>
+                        </div>
+                        <div class="level-row" id="level-row-5">
+                            <div class="level-radio-container">
+                                <input type="radio" class="level-radio" name="selected-level" id="level-radio-5" value="5" onchange="onLevelRadioChange(5)">
+                            </div>
+                            <div class="level-label">Level 5:</div>
+                            <button class="btn-extract-level" id="btn-extract-5" onclick="extractLevel(5)">🔍 Extract</button>
+                            <input type="text" class="level-text-input" id="level-5-input" placeholder="Click Extract to run OCR...">
+                            <button class="btn-save-level" id="btn-save-5" onclick="saveLevelText(5)" style="display: none;">💾 Save</button>
+                        </div>
+                        <div class="selected-level-indicator" id="selected-level-indicator">
+                            Selected: Level <span id="selected-level-number">-</span>
+                        </div>
+                        <div style="margin-top: 15px; padding: 10px; border-top: 2px solid #e0e0e0;">
+                            <button class="btn-batch-update-titles" id="btn-batch-update-titles" onclick="batchUpdateTitles()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%); color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3); transition: all 0.2s;">
+                                📋 Update Titles in Batch Mode
+                            </button>
+                            <div style="margin-top: 8px; font-size: 12px; color: #666; text-align: center;">
+                                Apply current level titles to ALL paragraphs & diagrams on this page
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sequential OCR & Manual Text Section (Phase 4) -->
+                    <div class="sequential-text-section" style="background: #E1F5FE; padding: 15px; border-radius: 8px; border: 2px solid #03A9F4; margin-top: 20px; display: none;" id="sequential-text-section">
+                        <div style="font-size: 16px; font-weight: bold; color: #01579B; margin-bottom: 15px; text-align: center;">
+                            📝 Extracted & Manual Texts
+                        </div>
+
+                        <!-- OCR Extracted Texts (3 areas) -->
+                        <div style="margin-bottom: 20px;">
+                            <div style="font-size: 14px; font-weight: bold; color: #0277BD; margin-bottom: 10px;">
+                                🔍 OCR Extracted (Draw 3 rectangles sequentially)
+                            </div>
+                            
+                            <div style="margin-bottom: 12px;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                                    <label id="ocr-area-1-label" style="font-size: 12px; font-weight: bold; color: #01579B;">
+                                        Area 1
+                                    </label>
+                                    <button
+                                        id="btn-select-ocr-1"
+                                        onclick="startOcrAreaSelect(1)"
+                                        style="padding: 3px 10px; border: 1px solid #0288D1; border-radius: 3px; background: #E1F5FE; color: #0277BD; font-size: 11px; font-weight: bold; cursor: pointer; transition: all 0.2s;"
+                                        onmouseover="this.style.background='#B3E5FC'"
+                                        onmouseout="if(!this.classList.contains('active')) this.style.background='#E1F5FE'"
+                                    >Select</button>
+                                </div>
+                                <textarea
+                                    id="ocr-text-1"
+                                    class="ocr-manual-textarea"
+                                    style="width: 100%; min-height: 60px; padding: 8px; border: 2px solid #4FC3F7; border-radius: 4px; font-size: 13px; resize: vertical; font-family: inherit;"
+                                    placeholder="Click 'Select' then draw a rectangle on the image..."
+                                ></textarea>
+                            </div>
+
+                            <div style="margin-bottom: 12px;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                                    <label id="ocr-area-2-label" style="font-size: 12px; font-weight: bold; color: #01579B;">
+                                        Area 2
+                                    </label>
+                                    <button
+                                        id="btn-select-ocr-2"
+                                        onclick="startOcrAreaSelect(2)"
+                                        style="padding: 3px 10px; border: 1px solid #0288D1; border-radius: 3px; background: #E1F5FE; color: #0277BD; font-size: 11px; font-weight: bold; cursor: pointer; transition: all 0.2s;"
+                                        onmouseover="this.style.background='#B3E5FC'"
+                                        onmouseout="if(!this.classList.contains('active')) this.style.background='#E1F5FE'"
+                                    >Select</button>
+                                </div>
+                                <textarea
+                                    id="ocr-text-2"
+                                    class="ocr-manual-textarea"
+                                    style="width: 100%; min-height: 60px; padding: 8px; border: 2px solid #4FC3F7; border-radius: 4px; font-size: 13px; resize: vertical; font-family: inherit;"
+                                    placeholder="Click 'Select' then draw a rectangle on the image..."
+                                ></textarea>
+                            </div>
+
+                            <div style="margin-bottom: 12px;">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                                    <label id="ocr-area-3-label" style="font-size: 12px; font-weight: bold; color: #01579B;">
+                                        Area 3
+                                    </label>
+                                    <button
+                                        id="btn-select-ocr-3"
+                                        onclick="startOcrAreaSelect(3)"
+                                        style="padding: 3px 10px; border: 1px solid #0288D1; border-radius: 3px; background: #E1F5FE; color: #0277BD; font-size: 11px; font-weight: bold; cursor: pointer; transition: all 0.2s;"
+                                        onmouseover="this.style.background='#B3E5FC'"
+                                        onmouseout="if(!this.classList.contains('active')) this.style.background='#E1F5FE'"
+                                    >Select</button>
+                                </div>
+                                <textarea
+                                    id="ocr-text-3"
+                                    class="ocr-manual-textarea"
+                                    style="width: 100%; min-height: 60px; padding: 8px; border: 2px solid #4FC3F7; border-radius: 4px; font-size: 13px; resize: vertical; font-family: inherit;"
+                                    placeholder="Click 'Select' then draw a rectangle on the image..."
+                                ></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Manual Text Areas (3 areas) -->
+                        <div>
+                            <div style="font-size: 14px; font-weight: bold; color: #0277BD; margin-bottom: 10px;">
+                                ✏️ Manual Text (Type your own text)
+                            </div>
+                            
+                            <div style="margin-bottom: 12px;">
+                                <label id="manual-area-1-label" style="font-size: 12px; font-weight: bold; color: #01579B; display: block; margin-bottom: 4px;">
+                                    Manual 1
+                                </label>
+                                <textarea 
+                                    id="manual-text-1" 
+                                    class="ocr-manual-textarea"
+                                    style="width: 100%; min-height: 60px; padding: 8px; border: 2px solid #81C784; border-radius: 4px; font-size: 13px; resize: vertical; font-family: inherit;"
+                                    placeholder="Type your own text here..."
+                                ></textarea>
+                            </div>
+
+                            <div style="margin-bottom: 12px;">
+                                <label id="manual-area-2-label" style="font-size: 12px; font-weight: bold; color: #01579B; display: block; margin-bottom: 4px;">
+                                    Manual 2
+                                </label>
+                                <textarea 
+                                    id="manual-text-2" 
+                                    class="ocr-manual-textarea"
+                                    style="width: 100%; min-height: 60px; padding: 8px; border: 2px solid #81C784; border-radius: 4px; font-size: 13px; resize: vertical; font-family: inherit;"
+                                    placeholder="Type your own text here..."
+                                ></textarea>
+                            </div>
+
+                            <div style="margin-bottom: 12px;">
+                                <label id="manual-area-3-label" style="font-size: 12px; font-weight: bold; color: #01579B; display: block; margin-bottom: 4px;">
+                                    Manual 3
+                                </label>
+                                <textarea 
+                                    id="manual-text-3" 
+                                    class="ocr-manual-textarea"
+                                    style="width: 100%; min-height: 60px; padding: 8px; border: 2px solid #81C784; border-radius: 4px; font-size: 13px; resize: vertical; font-family: inherit;"
+                                    placeholder="Type your own text here..."
+                                ></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Save Button - Hidden: texts are saved automatically with Add as Paragraph/Diagram -->
+                        <!--
+                        <div style="margin-top: 15px; text-align: center;">
+                            <button
+                                id="btn-save-sequential-texts"
+                                onclick="saveSequentialTexts()"
+                                style="padding: 10px 24px; border: none; border-radius: 4px; background: #4CAF50; color: white; font-size: 13px; font-weight: bold; cursor: pointer; transition: all 0.2s;"
+                                onmouseover="this.style.background='#388E3C'"
+                                onmouseout="this.style.background='#4CAF50'"
+                            >
+                                💾 Save All Texts
+                            </button>
+                        </div>
+                        -->
+                    </div>
+
+
+                    <div class="crop-actions">
+                        <button class="btn-crop btn-crop-primary" id="add-paragraph-btn" disabled>
+                            📝 Add as Paragraph
+                        </button>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <label for="level-select" style="font-size: 14px; font-weight: bold; color: #666;">Level:</label>
+                            <select id="level-select" style="padding: 10px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 14px; cursor: pointer;">
+                                <option value="Level 1">Level 1</option>
+                                <option value="Level 2">Level 2</option>
+                                <option value="Level 3">Level 3</option>
+                                <option value="Level 4">Level 4</option>
+                                <option value="Level 5">Level 5</option>
+                            </select>
+                        </div>
+                        <button class="btn-crop btn-crop-secondary" id="add-diagram-btn" disabled>
+                            📊 Add as Diagram
+                        </button>
+                        <button class="btn-crop btn-crop-clear" id="clear-selection-btn" disabled>
+                            🗑️ Clear Selection
+                        </button>
+                    </div>
+
+                    <!-- OCR Result Section (visible in Clip+OCR mode after OCR runs) -->
+                    <div class="ocr-result-section" id="ocr-result-section">
+                        <div class="ocr-result-header">
+                            <span class="ocr-result-title">📝 OCR Result (Surya)</span>
+                            <span class="ocr-result-status" id="ocr-status">Ready</span>
+                            <span class="ocr-confidence-badge" id="ocr-confidence">Confidence: --</span>
+                        </div>
+                        <div class="ocr-text-container">
+                            <textarea
+                                class="ocr-text-area"
+                                id="ocr-text-area"
+                                placeholder="OCR text will appear here after processing..."
+                                disabled
+                            ></textarea>
+                        </div>
+                        <div class="ocr-actions">
+                            <button class="btn-save-ocr" id="btn-save-ocr" disabled onclick="saveOcrText()">
+                                💾 Save Changes
+                            </button>
+                            <span class="ocr-save-status" id="ocr-save-status"></span>
+                        </div>
+                    </div>
+
+                    <!-- Multi-OCR Comparison Section (NEW) -->
+                    <div class="ocr-comparison-section" id="ocr-comparison-section">
+                        <div class="ocr-comparison-header">
+                            <span>🔍 OCR Comparison <span class="ocr-comparison-subtitle">- Select the best result to save</span></span>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="ocr-progress-bar">
+                            <div class="ocr-progress-fill" id="ocr-progress-fill" style="width: 0%"></div>
+                        </div>
+                        <div class="ocr-progress-status" id="ocr-progress-status">Preparing OCR engines...</div>
+
+                        <!-- 4 OCR Engine Results in 2x2 Grid -->
+                        <div class="ocr-engines-grid">
+                            <!-- 1. Surya OCR (600 DPI) -->
+                            <div class="ocr-engine-box" id="ocr-box-surya-600" onclick="selectOcrEngine('surya-600')">
+                                <div class="ocr-engine-header">
+                                    <label class="ocr-engine-radio-label">
+                                        <input type="radio" name="ocr-engine" value="surya-600" class="ocr-engine-radio" id="radio-surya-600">
+                                        Surya OCR (600 DPI)
+                                    </label>
+                                    <span class="ocr-engine-badge" id="badge-surya-600">Waiting</span>
+                                </div>
+                                <textarea
+                                    class="ocr-engine-textarea"
+                                    id="text-surya-600"
+                                    placeholder="Running Surya OCR at 600 DPI..."
+                                    disabled
+                                ></textarea>
+                                <div class="ocr-engine-footer">
+                                    <span>Full resolution scan</span>
+                                    <span class="ocr-engine-confidence" id="conf-surya-600">--</span>
+                                </div>
+                            </div>
+
+                            <!-- 2. Surya OCR (Downsampled ~2048px) -->
+                            <div class="ocr-engine-box" id="ocr-box-surya-ds" onclick="selectOcrEngine('surya-ds')">
+                                <div class="ocr-engine-header">
+                                    <label class="ocr-engine-radio-label">
+                                        <input type="radio" name="ocr-engine" value="surya-ds" class="ocr-engine-radio" id="radio-surya-ds">
+                                        Surya OCR (Optimized)
+                                    </label>
+                                    <span class="ocr-engine-badge" id="badge-surya-ds">Waiting</span>
+                                </div>
+                                <textarea
+                                    class="ocr-engine-textarea"
+                                    id="text-surya-ds"
+                                    placeholder="Running Surya OCR with downsampling..."
+                                    disabled
+                                ></textarea>
+                                <div class="ocr-engine-footer">
+                                    <span>Downsampled to ~2048px</span>
+                                    <span class="ocr-engine-confidence" id="conf-surya-ds">--</span>
+                                </div>
+                            </div>
+
+                            <!-- 3. Tesseract (Arabic) -->
+                            <div class="ocr-engine-box" id="ocr-box-tesseract" onclick="selectOcrEngine('tesseract')">
+                                <div class="ocr-engine-header">
+                                    <label class="ocr-engine-radio-label">
+                                        <input type="radio" name="ocr-engine" value="tesseract" class="ocr-engine-radio" id="radio-tesseract">
+                                        Tesseract (Arabic)
+                                    </label>
+                                    <span class="ocr-engine-badge" id="badge-tesseract">Waiting</span>
+                                </div>
+                                <textarea
+                                    class="ocr-engine-textarea"
+                                    id="text-tesseract"
+                                    placeholder="Running Tesseract with Arabic language pack..."
+                                    disabled
+                                ></textarea>
+                                <div class="ocr-engine-footer">
+                                    <span>ara+eng language pack</span>
+                                    <span class="ocr-engine-confidence" id="conf-tesseract">--</span>
+                                </div>
+                            </div>
+
+                            <!-- 4. EasyOCR -->
+                            <div class="ocr-engine-box" id="ocr-box-easyocr" onclick="selectOcrEngine('easyocr')">
+                                <div class="ocr-engine-header">
+                                    <label class="ocr-engine-radio-label">
+                                        <input type="radio" name="ocr-engine" value="easyocr" class="ocr-engine-radio" id="radio-easyocr">
+                                        EasyOCR
+                                    </label>
+                                    <span class="ocr-engine-badge" id="badge-easyocr">Waiting</span>
+                                </div>
+                                <textarea
+                                    class="ocr-engine-textarea"
+                                    id="text-easyocr"
+                                    placeholder="Running EasyOCR..."
+                                    disabled
+                                ></textarea>
+                                <div class="ocr-engine-footer">
+                                    <span>Multi-language support</span>
+                                    <span class="ocr-engine-confidence" id="conf-easyocr">--</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Bar -->
+                        <div class="ocr-comparison-actions">
+                            <span class="ocr-comparison-help">💡 Select the OCR result with the best quality, then click Save. You can edit the text before saving.</span>
+                            <div class="ocr-comparison-buttons">
+                                <button class="btn-ocr-cancel" onclick="cancelOcrComparison()">Cancel</button>
+                                <button class="btn-ocr-save-selected" id="btn-ocr-save-selected" disabled onclick="saveSelectedOcrResult()">
+                                    💾 Save Selected
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Diagram Analysis Section (legacy - hidden) -->
+                    <div class="diagram-analysis-section" id="diagram-analysis-section" style="display:none !important;">
+                    </div>
+
+                    <!-- Diagram Linking Section (legacy - hidden) -->
+                    <div class="diagram-linking-section" id="diagram-linking-section" style="display:none !important;">
+                    </div>
+
+                    <!-- NEW: Diagram Details Section (V3 Mockup) -->
+                    <!-- Note: This section appears after clicking "Add as Diagram" in Clip+OCR mode -->
+                    <div class="diagram-details-section visible" id="diagram-details-section">
+                        <div class="diagram-details-header">
+                            <span>📊 Diagram Details</span>
+                            <span class="diagram-details-mode-badge">Clip + OCR Mode</span>
+                        </div>
+
+                        <!-- Cropped Diagram Preview -->
+                        <div class="diagram-preview-section">
+                            <div class="diagram-preview-label">Cropped Diagram Preview</div>
+                            <div class="diagram-preview-container">
+                                <img class="diagram-preview-image" id="diagram-preview-image" src="" alt="Diagram preview" />
+                                <div class="diagram-preview-info" id="diagram-preview-info">
+                                    <div>Size: -- x -- px</div>
+                                    <div>Format: PNG</div>
+                                    <div>Page: --</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Prompt Type Selection (Phase 4) -->
+                        <div class="diagram-prompt-type-section" style="padding: 15px; background: #FFF3E0; border-bottom: 1px solid #FFE0B2;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                <label for="diagram-prompt-type" style="font-size: 13px; font-weight: bold; color: #E65100;">
+                                    Diagram Type:
+                                </label>
+                                <select id="diagram-prompt-type" style="flex: 1; padding: 8px 12px; border: 2px solid #FF9800; border-radius: 4px; font-size: 13px; background: white; cursor: pointer;">
+                                    <option value="diagram">Diagram</option>
+                                    <option value="equation">Equation</option>
+                                    <option value="table">Table</option>
+                                </select>
+                            </div>
+                            <div style="font-size: 11px; color: #666; font-style: italic;">
+                                💡 Select the type to use the appropriate AI analysis prompt
+                            </div>
+                        </div>
+
+
+                        <!-- 1. Associated Text (KU Selection) -->
+                        <div class="diagram-associated-section">
+                            <div class="diagram-associated-header">
+                                <span class="diagram-associated-title">1. Associated Text</span>
+                                <span class="diagram-associated-hint">(select from Knowledge Units on this page)</span>
+                            </div>
+                            <div class="diagram-associated-display" id="diagram-associated-display">
+                                Select a knowledge unit from the list below
+                            </div>
+                            <div class="diagram-ku-list-section" id="diagram-ku-list-section">
+                                <div style="text-align: center; color: #999; padding: 20px; font-style: italic;">
+                                    Loading knowledge units...
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. AI Analysis (Claude Vision) -->
+                        <div class="diagram-ai-section">
+                            <div class="diagram-ai-header">
+                                <span class="diagram-ai-title">2. AI Analysis (Claude Vision)</span>
+                                <span class="diagram-ai-status-badge" id="diagram-ai-status-badge">Ready</span>
+                                <button class="btn-reanalyze" id="btn-reanalyze" onclick="reanalyzeDiagram()">🤖 Re-Analyze</button>
+                            </div>
+                            <textarea
+                                class="diagram-ai-textarea"
+                                id="diagram-ai-textarea"
+                                placeholder="AI diagram analysis will appear here after processing..."
+                            ></textarea>
+                        </div>
+
+                        <!-- Bottom Action Bar -->
+                        <div class="diagram-action-bar">
+                            <span class="diagram-help-text">💡 Use Level Extraction section above for hierarchy. Associated text links diagram to related content.</span>
+                            <div class="diagram-action-buttons">
+                                <button class="btn-diagram-cancel" onclick="cancelDiagramDetails()">Cancel</button>
+                                <button class="btn-diagram-save-all" id="btn-diagram-save-all" onclick="saveDiagramAll()">💾 Save All</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Clips Gallery -->
+                    <div class="recent-clips-section" id="recent-clips-section">
+                        <div class="recent-clips-header">Recent Clips (30% size)</div>
+                        <div class="recent-clips-grid">
+                            <!-- Left Column: Paragraph Clips -->
+                            <div class="clips-column">
+                                <div class="clips-column-header">📝 Paragraphs</div>
+                                <div class="clips-thumbnails" id="paragraph-thumbnails">
+                                    <div class="empty-thumbnails">No clips yet</div>
+                                </div>
+                            </div>
+
+                            <!-- Right Column: Diagram Clips -->
+                            <div class="clips-column">
+                                <div class="clips-column-header">📊 Diagrams</div>
+                                <div class="clips-thumbnails" id="diagram-thumbnails">
+                                    <div class="empty-thumbnails">No clips yet</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analysis Preview Modal -->
+    <div class="analysis-modal-overlay" id="analysis-modal-overlay" onclick="closeAnalysisModal(event)">
+        <div class="analysis-modal" onclick="event.stopPropagation()">
+            <div class="analysis-modal-header">
+                <span class="analysis-modal-title">🤖 Preview Analysis Request</span>
+                <button class="analysis-modal-close" onclick="closeAnalysisModal()">&times;</button>
+            </div>
+            <div class="analysis-modal-body">
+                <!-- Prompt Section -->
+                <div class="analysis-modal-section">
+                    <div class="analysis-modal-section-title">
+                        📝 Analysis Prompt
+                        <span style="font-weight: normal; color: #999; font-size: 12px;">(editable)</span>
+                    </div>
+                    <textarea
+                        class="analysis-modal-prompt-textarea"
+                        id="analysis-modal-prompt"
+                        placeholder="Loading prompt from book settings..."
+                    ></textarea>
+                </div>
+
+                <!-- Context Texts Section -->
+                <div class="analysis-modal-section">
+                    <div class="analysis-modal-section-title">
+                        📋 Context Texts
+                        <span style="font-weight: normal; color: #999; font-size: 12px;">(optional, editable)</span>
+                    </div>
+                    <div class="analysis-modal-context-grid">
+                        <!-- Row 1: OCR 1 + Manual 1 -->
+                        <div class="analysis-modal-context-item">
+                            <div class="analysis-modal-context-label">OCR Text 1</div>
+                            <textarea class="analysis-modal-context-textarea" id="modal-ocr-text-1" placeholder="No OCR text"></textarea>
+                        </div>
+                        <div class="analysis-modal-context-item">
+                            <div class="analysis-modal-context-label">Manual Text 1</div>
+                            <textarea class="analysis-modal-context-textarea" id="modal-manual-text-1" placeholder="No manual text"></textarea>
+                        </div>
+                        <!-- Row 2: OCR 2 + Manual 2 -->
+                        <div class="analysis-modal-context-item">
+                            <div class="analysis-modal-context-label">OCR Text 2</div>
+                            <textarea class="analysis-modal-context-textarea" id="modal-ocr-text-2" placeholder="No OCR text"></textarea>
+                        </div>
+                        <div class="analysis-modal-context-item">
+                            <div class="analysis-modal-context-label">Manual Text 2</div>
+                            <textarea class="analysis-modal-context-textarea" id="modal-manual-text-2" placeholder="No manual text"></textarea>
+                        </div>
+                        <!-- Row 3: OCR 3 + Manual 3 -->
+                        <div class="analysis-modal-context-item">
+                            <div class="analysis-modal-context-label">OCR Text 3</div>
+                            <textarea class="analysis-modal-context-textarea" id="modal-ocr-text-3" placeholder="No OCR text"></textarea>
+                        </div>
+                        <div class="analysis-modal-context-item">
+                            <div class="analysis-modal-context-label">Manual Text 3</div>
+                            <textarea class="analysis-modal-context-textarea" id="modal-manual-text-3" placeholder="No manual text"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="analysis-modal-footer">
+                <button class="btn-modal-cancel" onclick="closeAnalysisModal()">Cancel</button>
+                <button class="btn-modal-analyze" id="btn-modal-analyze" onclick="executeClaudeAnalysis()">
+                    🤖 Analyze
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/verify-pages.js?v=20260110-claude-analysis-v3"></script>
+</body>
+</html>

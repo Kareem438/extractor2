@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layout Review - Knowledge Extraction System</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: Arial, sans-serif; background: #1a1a2e; color: #eee; overflow: hidden; }
+
+        /* Top Navigation */
+        .top-nav {
+            background: #16213e;
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #0f3460;
+        }
+        .top-nav-brand { font-size: 18px; font-weight: bold; }
+        .top-nav-info { display: flex; gap: 20px; align-items: center; }
+        .top-nav-info span { font-size: 14px; color: #aaa; }
+        .top-nav-info .book-name { color: #4fc3f7; font-weight: bold; }
+        .top-nav-links { display: flex; gap: 10px; }
+        .top-nav-links a, .top-nav-links button {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            background: #0f3460;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .top-nav-links a:hover, .top-nav-links button:hover { background: #1a4a7a; }
+        .top-nav-links .btn-success { background: #2e7d32; }
+        .top-nav-links .btn-success:hover { background: #388e3c; }
+
+        /* Main Layout */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 56px - 38px); /* Account for nav + title bar */
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 320px;
+            background: #16213e;
+            border-right: 2px solid #0f3460;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: width 0.3s ease;
+        }
+        .sidebar.collapsed {
+            width: 40px;
+        }
+        .sidebar.collapsed .sidebar-header h3,
+        .sidebar.collapsed .page-nav span,
+        .sidebar.collapsed .regions-container,
+        .sidebar.collapsed .links-section,
+        .sidebar.collapsed .class-editor {
+            display: none;
+        }
+        .sidebar.collapsed .page-nav {
+            flex-direction: column;
+            gap: 5px;
+        }
+        .sidebar.collapsed .page-nav button {
+            padding: 8px 5px;
+            font-size: 12px;
+        }
+        .sidebar-toggle {
+            position: absolute;
+            right: -12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 24px;
+            height: 48px;
+            background: #1a4a7a;
+            border: none;
+            border-radius: 0 6px 6px 0;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: background 0.2s;
+        }
+        .sidebar-toggle:hover {
+            background: #2a5a8a;
+        }
+        .sidebar.collapsed .sidebar-toggle {
+            right: -12px;
+        }
+        .sidebar-wrapper {
+            position: relative;
+        }
+        .sidebar-header {
+            padding: 15px;
+            background: #0f3460;
+            border-bottom: 1px solid #1a4a7a;
+        }
+        .sidebar-header h3 { margin: 0 0 10px 0; font-size: 16px; color: #4fc3f7; }
+        .page-nav {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .page-nav button {
+            padding: 8px 16px;
+            background: #1a4a7a;
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .page-nav button:hover { background: #2a5a8a; }
+        .page-nav button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .page-nav span { flex: 1; text-align: center; font-size: 14px; }
+
+        /* Regions List */
+        .regions-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .region-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            border-left: 4px solid #666;
+            background: #1a1a2e;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .region-item:hover { background: #252547; }
+        .region-item.selected { background: #1a4a7a; border-left-color: #4fc3f7; }
+        .region-item.ignored { opacity: 0.5; border-left-color: #666; }
+        .region-item.linked { border-right: 3px solid #ff9800; }
+        .region-item .class-name { font-weight: bold; font-size: 13px; }
+        .region-item .confidence { font-size: 12px; color: #aaa; margin-top: 4px; }
+        .region-item .dimensions { font-size: 11px; color: #666; margin-top: 2px; }
+        .region-item .link-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #ff9800;
+            color: #000;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        /* Class Editor */
+        .class-editor {
+            padding: 15px;
+            background: #0f3460;
+            border-top: 1px solid #1a4a7a;
+        }
+        .class-editor h4 { margin: 0 0 10px 0; font-size: 14px; color: #aaa; }
+        .class-editor select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #1a4a7a;
+            background: #1a1a2e;
+            color: white;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .class-editor .btn-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .class-editor button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            min-width: 80px;
+        }
+        .btn-apply { background: #2196F3; color: white; }
+        .btn-apply:hover { background: #1976D2; }
+        .btn-delete { background: #f44336; color: white; }
+        .btn-delete:hover { background: #c62828; }
+        .btn-link { background: #ff9800; color: #000; }
+        .btn-link:hover { background: #f57c00; }
+        .btn-link.active { background: #4fc3f7; color: #1a1a2e; }
+
+        /* Links Section */
+        .links-section {
+            padding: 10px 15px;
+            background: #0a1628;
+            border-top: 1px solid #1a4a7a;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .links-section h4 { margin: 0 0 8px 0; font-size: 13px; color: #ff9800; }
+        .link-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            background: #16213e;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            font-size: 12px;
+        }
+        .link-item .link-info { color: #aaa; }
+        .link-item .unlink-btn {
+            background: none;
+            border: none;
+            color: #f44336;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        /* Canvas Area */
+        .canvas-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            padding: 10px 15px;
+            background: #16213e;
+            border-bottom: 1px solid #0f3460;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .toolbar-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .toolbar-group label { font-size: 13px; color: #aaa; }
+        .toolbar button {
+            padding: 8px 14px;
+            background: #1a4a7a;
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .toolbar button:hover { background: #2a5a8a; }
+        .toolbar button.active { background: #4fc3f7; color: #1a1a2e; }
+        .toolbar button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .toolbar select {
+            padding: 8px;
+            background: #1a1a2e;
+            border: 1px solid #1a4a7a;
+            color: white;
+            border-radius: 4px;
+        }
+        .toolbar .separator {
+            width: 1px;
+            height: 30px;
+            background: #0f3460;
+        }
+        .toolbar .stats {
+            margin-left: auto;
+            font-size: 13px;
+            color: #aaa;
+        }
+
+        /* Canvas Container */
+        .canvas-container {
+            flex: 1;
+            overflow: auto;
+            background: #0d0d1a;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+            gap: 20px;
+        }
+        .canvas-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .canvas-wrapper .page-label {
+            color: #aaa;
+            font-size: 12px;
+            margin-bottom: 8px;
+            background: #16213e;
+            padding: 4px 12px;
+            border-radius: 4px;
+        }
+        .canvas-wrapper canvas {
+            background: #333;
+            cursor: default;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .canvas-wrapper canvas.drawing { cursor: crosshair; }
+        .canvas-wrapper canvas.moving { cursor: move; }
+        .canvas-wrapper canvas.linking { cursor: cell; }
+        .canvas-wrapper canvas.secondary {
+            opacity: 0.85;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        /* Keyboard Shortcuts Panel */
+        .shortcuts-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(22, 33, 62, 0.95);
+            border: 1px solid #0f3460;
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 12px;
+            color: #aaa;
+            max-width: 280px;
+            display: none;
+            z-index: 100;
+        }
+        .shortcuts-panel.visible { display: block; }
+        .shortcuts-panel h4 { margin: 0 0 10px 0; color: #4fc3f7; }
+        .shortcut-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        .shortcut-key {
+            background: #0f3460;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        /* Status Messages */
+        .status-bar {
+            padding: 8px 15px;
+            background: #0f3460;
+            font-size: 13px;
+            color: #aaa;
+            display: flex;
+            justify-content: space-between;
+        }
+        .status-bar .mode { color: #4fc3f7; font-weight: bold; }
+        .status-bar .link-status { color: #ff9800; }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(26, 26, 46, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .loading-overlay.hidden { display: none; }
+        .loading-content {
+            text-align: center;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #0f3460;
+            border-top-color: #4fc3f7;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* No Data Message */
+        .no-data {
+            text-align: center;
+            padding: 60px;
+            color: #666;
+        }
+        .no-data h2 { color: #aaa; margin-bottom: 10px; }
+        .no-data a { color: #4fc3f7; }
+
+        /* Link line indicator */
+        .link-indicator {
+            position: absolute;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        /* Context Menu */
+        .context-menu {
+            position: fixed;
+            background: #16213e;
+            border: 1px solid #0f3460;
+            border-radius: 6px;
+            padding: 8px 0;
+            min-width: 180px;
+            max-height: calc(100vh - 20px);
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: none;
+        }
+        .context-menu.visible { display: block; }
+        .context-menu-item {
+            padding: 8px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: #eee;
+        }
+        .context-menu-item:hover { background: #1a4a7a; }
+        .context-menu-item .color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .context-menu-separator {
+            height: 1px;
+            background: #0f3460;
+            margin: 6px 0;
+        }
+        .context-menu-header {
+            padding: 6px 16px;
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        /* Page Confirm Buttons */
+        .page-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .page-buttons button {
+            padding: 6px 12px;
+            font-size: 11px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-ready-extract {
+            background: #ff9800;
+            color: white;
+        }
+        .btn-ready-extract:hover { background: #f57c00; }
+        .btn-ready-extract.ready {
+            background: #4CAF50;
+        }
+
+        /* L1/L2 Title Bar */
+        .title-bar {
+            background: #0a1628;
+            padding: 8px 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            border-bottom: 1px solid #0f3460;
+            font-size: 14px;
+        }
+        .title-level {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .title-label {
+            color: #666;
+            font-weight: bold;
+        }
+        .l1-title .title-label { color: #FF0000; }
+        .l2-title .title-label { color: #FF6600; }
+        .title-value {
+            color: #eee;
+            max-width: 400px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .title-separator {
+            color: #444;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div class="top-nav-brand">Layout Review</div>
+        <div class="top-nav-info">
+            <span>Book: <span id="book-name" class="book-name">Loading...</span></span>
+            <span id="page-count-info">0 pages with regions</span>
+        </div>
+        <div class="top-nav-links">
+            <button onclick="toggleShortcuts()" title="Keyboard Shortcuts">? Shortcuts</button>
+            <a href="#" id="back-link">Back to Auto-Slicer</a>
+            <a href="#" id="back-to-extraction-link" style="background: #00897B;">Back to Extraction</a>
+            <button class="btn-success" onclick="confirmAllAndFinish()">Confirm All & Finish</button>
+        </div>
+    </nav>
+
+    <!-- L1/L2 Title Bar -->
+    <div class="title-bar" id="title-bar">
+        <div class="title-level l1-title">
+            <span class="title-label">L1:</span>
+            <span class="title-value" id="l1-title-value">-</span>
+        </div>
+        <div class="title-separator">|</div>
+        <div class="title-level l2-title">
+            <span class="title-label">L2:</span>
+            <span class="title-value" id="l2-title-value">-</span>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar -->
+        <div class="sidebar-wrapper">
+            <div class="sidebar" id="sidebar">
+                <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle Sidebar">
+                    <span id="sidebar-toggle-icon">◀</span>
+                </button>
+                <div class="sidebar-header">
+                    <h3>Page Navigation</h3>
+                <div class="page-nav">
+                    <button id="prev-page-btn" onclick="prevPage()" title="Previous Page (A)">&lt; Prev</button>
+                    <span id="page-info">Page 1 of 1</span>
+                    <button id="next-page-btn" onclick="nextPage()" title="Next Page (D)">Next &gt;</button>
+                </div>
+            </div>
+
+            <div class="regions-container" id="regions-list">
+                <!-- Regions will be populated here -->
+            </div>
+
+            <!-- Links Section -->
+            <div class="links-section" id="links-section" style="display: none;">
+                <h4>Diagram-Paragraph Links</h4>
+                <div id="links-list"></div>
+            </div>
+
+            <div class="class-editor">
+                <h4>Selected Region</h4>
+                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                    <select id="class-select" style="flex: 1; margin-bottom: 0;">
+                        <option value="">-- Select a region first --</option>
+                        <option value="title_level_1">Title Level 1</option>
+                        <option value="title_level_2">Title Level 2</option>
+                        <option value="title_level_3">Title Level 3</option>
+                        <option value="paragraph">Paragraph</option>
+                        <option value="diagram">Diagram</option>
+                        <option value="table">Table</option>
+                        <option value="equation">Equation</option>
+                        <option value="list_bulleted">List (Bulleted)</option>
+                        <option value="list_numbered">List (Numbered)</option>
+                        <option value="list_lettered">List (Lettered)</option>
+                        <option value="list_item">List Item</option>
+                        <option value="question">Question</option>
+                        <option value="answer">Answer</option>
+                        <option value="header">Header</option>
+                        <option value="footer">Footer</option>
+                        <option value="reference">Reference</option>
+                        <option value="caption">Caption</option>
+                        <option value="ignore" style="color: #f44336;">-- IGNORE (will not save) --</option>
+                    </select>
+                    <button class="btn-apply" onclick="applyClassChange()" title="Apply Class (Enter)" style="padding: 10px 16px; min-width: auto;">Apply</button>
+                </div>
+                <div class="btn-row">
+                    <button class="btn-link" id="link-btn" onclick="toggleLinkMode()" title="Link Diagram (L)">Link</button>
+                    <button class="btn-delete" onclick="deleteSelectedRegion()" title="Delete (Del)">Delete</button>
+                </div>
+            </div>
+        </div>
+        </div> <!-- End sidebar-wrapper -->
+
+        <!-- Canvas Area -->
+        <div class="canvas-area">
+            <div class="toolbar">
+                <div class="toolbar-group">
+                    <button id="select-mode-btn" class="active" onclick="setMode('select')" title="Select Mode (S)">
+                        Select
+                    </button>
+                    <button id="draw-mode-btn" onclick="setMode('draw')" title="Draw Mode (N)">
+                        + New Region
+                    </button>
+                    <button id="link-mode-btn" onclick="setMode('link')" title="Link Mode (L)">
+                        Link Diagram
+                    </button>
+                </div>
+
+                <div class="separator"></div>
+
+                <div class="toolbar-group">
+                    <label>View:</label>
+                    <select id="view-mode-select" onchange="updateViewMode()">
+                        <option value="single">Single Page</option>
+                        <option value="dual-prev">Dual: Prev + Current</option>
+                        <option value="dual-next" selected>Dual: Current + Next</option>
+                    </select>
+                </div>
+
+                <div class="toolbar-group">
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="checkbox" id="arabic-mode-checkbox" onchange="toggleArabicMode()">
+                        Arabic (RTL)
+                    </label>
+                </div>
+
+                <div class="toolbar-group">
+                    <label>Zoom:</label>
+                    <select id="zoom-select" onchange="updateZoom()">
+                        <option value="0.08">8%</option>
+                        <option value="0.10" selected>10%</option>
+                        <option value="0.15">15%</option>
+                        <option value="0.25">25%</option>
+                        <option value="0.5">50%</option>
+                        <option value="0.75">75%</option>
+                        <option value="1">100%</option>
+                        <option value="1.5">150%</option>
+                        <option value="2">200%</option>
+                    </select>
+                </div>
+
+                <div class="toolbar-group">
+                    <label>New Class:</label>
+                    <select id="new-region-class">
+                        <option value="paragraph">Paragraph</option>
+                        <option value="title_level_1">Title Level 1</option>
+                        <option value="title_level_2">Title Level 2</option>
+                        <option value="title_level_3">Title Level 3</option>
+                        <option value="diagram">Diagram</option>
+                        <option value="table">Table</option>
+                        <option value="equation">Equation</option>
+                        <option value="list_bulleted">List (Bulleted)</option>
+                        <option value="question">Question</option>
+                        <option value="answer">Answer</option>
+                        <option value="reference">Reference</option>
+                        <option value="caption">Caption</option>
+                        <option value="ignore">Ignore</option>
+                    </select>
+                </div>
+
+                <div class="separator"></div>
+
+                <div class="toolbar-group">
+                    <button onclick="confirmCurrentPage()" title="Confirm Page (C)">Confirm Page</button>
+                </div>
+
+                <div class="stats" id="stats-info">
+                    <span id="regions-count">0 regions</span>
+                    <span id="links-count" style="margin-left: 15px; color: #ff9800;">0 links</span>
+                </div>
+            </div>
+
+            <div class="canvas-container" id="canvas-container">
+                <!-- Primary canvas wrapper -->
+                <div class="canvas-wrapper" id="primary-canvas-wrapper">
+                    <div class="page-label" id="primary-page-label">Page 1</div>
+                    <div class="page-buttons">
+                        <button class="btn-ready-extract" id="primary-ready-extract" onclick="toggleReadyForExtraction('primary')" title="Mark page as ready for extraction (validates all regions are linked)">Ready for Extraction</button>
+                    </div>
+                    <canvas id="review-canvas"></canvas>
+                </div>
+                <!-- Secondary canvas wrapper (for dual view) -->
+                <div class="canvas-wrapper" id="secondary-canvas-wrapper" style="display: none;">
+                    <div class="page-label" id="secondary-page-label">Page 2</div>
+                    <div class="page-buttons">
+                        <button class="btn-ready-extract" id="secondary-ready-extract" onclick="toggleReadyForExtraction('secondary')" title="Mark page as ready for extraction (validates all regions are linked)">Ready for Extraction</button>
+                    </div>
+                    <canvas id="secondary-canvas" class="secondary"></canvas>
+                </div>
+            </div>
+
+            <div class="status-bar">
+                <span>Mode: <span id="mode-display" class="mode">SELECT</span></span>
+                <span id="link-status" class="link-status"></span>
+                <span id="cursor-info">-</span>
+                <span id="selection-info">No selection</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Panel -->
+    <div class="shortcuts-panel" id="shortcuts-panel">
+        <h4>Keyboard Shortcuts</h4>
+        <div class="shortcut-row"><span>Select mode</span><span class="shortcut-key">S</span></div>
+        <div class="shortcut-row"><span>Draw mode</span><span class="shortcut-key">N</span></div>
+        <div class="shortcut-row"><span>Link mode</span><span class="shortcut-key">L</span></div>
+        <div class="shortcut-row"><span>Previous page</span><span class="shortcut-key">A</span></div>
+        <div class="shortcut-row"><span>Next page</span><span class="shortcut-key">D</span></div>
+        <div class="shortcut-row"><span>Delete region</span><span class="shortcut-key">Del</span></div>
+        <div class="shortcut-row"><span>Apply class</span><span class="shortcut-key">Enter</span></div>
+        <div class="shortcut-row"><span>Confirm page</span><span class="shortcut-key">C</span></div>
+        <div class="shortcut-row"><span>Toggle dual view</span><span class="shortcut-key">V</span></div>
+        <div class="shortcut-row"><span>Zoom in</span><span class="shortcut-key">+</span></div>
+        <div class="shortcut-row"><span>Zoom out</span><span class="shortcut-key">-</span></div>
+        <div class="shortcut-row"><span>Escape link mode</span><span class="shortcut-key">Esc</span></div>
+        <div class="shortcut-row"><span>Close shortcuts</span><span class="shortcut-key">?</span></div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div id="loading-text">Loading layout data...</div>
+        </div>
+    </div>
+
+    <!-- Right-Click Context Menu -->
+    <div class="context-menu" id="context-menu">
+        <div class="context-menu-header" id="selection-count-header" style="display: none;">
+            <span id="selection-count-text">1 region selected</span>
+        </div>
+        <div class="context-menu-item" data-action="change-boundary" style="color: #4fc3f7;">
+            <span style="font-size: 14px;">&#9998;</span> Change Region Boundary
+        </div>
+        <div class="context-menu-item" id="merge-regions-item" data-action="merge" style="color: #FFD700; display: none;">
+            <span style="font-size: 14px;">&#128279;</span> Merge Regions
+        </div>
+        <div class="context-menu-item" id="split-region-item" data-action="split" style="color: #4fc3f7;">
+            <span style="font-size: 14px;">&#9986;</span> Split Region
+        </div>
+        <div class="context-menu-item" id="link-to-paragraph-item" data-action="link-paragraph" style="color: #ff9800; display: none;">
+            <span style="font-size: 14px;">&#128279;</span> <span id="link-to-paragraph-text">Link to Paragraph</span>
+        </div>
+        <div class="context-menu-item" data-action="link-l3" style="color: #FFCC00;">
+            <span style="font-size: 14px;">&#128280;</span> Link to L3 Title
+        </div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" data-action="bring-to-front" style="color: #81d4fa;">
+            <span style="font-size: 14px;">&#11014;</span> Bring to Front
+        </div>
+        <div class="context-menu-item" data-action="send-to-back" style="color: #81d4fa;">
+            <span style="font-size: 14px;">&#11015;</span> Send to Back
+        </div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-header">Change Class To:</div>
+        <div class="context-menu-item" data-class="title_level_1">
+            <span class="color-dot" style="background: #FF0000;"></span> Title Level 1
+        </div>
+        <div class="context-menu-item" data-class="title_level_2">
+            <span class="color-dot" style="background: #FF6600;"></span> Title Level 2
+        </div>
+        <div class="context-menu-item" data-class="title_level_3">
+            <span class="color-dot" style="background: #FFCC00;"></span> Title Level 3
+        </div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" data-class="paragraph">
+            <span class="color-dot" style="background: #00FF00;"></span> Paragraph
+        </div>
+        <div class="context-menu-item" data-class="diagram">
+            <span class="color-dot" style="background: #0066FF;"></span> Diagram
+        </div>
+        <div class="context-menu-item" data-class="table">
+            <span class="color-dot" style="background: #9900FF;"></span> Table
+        </div>
+        <div class="context-menu-item" data-class="equation">
+            <span class="color-dot" style="background: #FF00FF;"></span> Equation
+        </div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" data-class="list_bulleted">
+            <span class="color-dot" style="background: #00FFFF;"></span> List (Bulleted)
+        </div>
+        <div class="context-menu-item" data-class="list_numbered">
+            <span class="color-dot" style="background: #00CCCC;"></span> List (Numbered)
+        </div>
+        <div class="context-menu-item" data-class="list_lettered">
+            <span class="color-dot" style="background: #009999;"></span> List (Lettered)
+        </div>
+        <div class="context-menu-item" data-class="caption">
+            <span class="color-dot" style="background: #99CC00;"></span> Caption
+        </div>
+        <div class="context-menu-item" data-class="reference">
+            <span class="color-dot" style="background: #CC9900;"></span> Reference
+        </div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" data-class="question">
+            <span class="color-dot" style="background: #9C27B0;"></span> Question
+        </div>
+        <div class="context-menu-item" data-class="answer">
+            <span class="color-dot" style="background: #E91E63;"></span> Answer
+        </div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" data-class="header">
+            <span class="color-dot" style="background: #999999;"></span> Header
+        </div>
+        <div class="context-menu-item" data-class="footer">
+            <span class="color-dot" style="background: #666666;"></span> Footer
+        </div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" data-class="ignore" style="color: #888;">
+            <span class="color-dot" style="background: #444444;"></span> Mark as Ignore
+        </div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" data-action="delete" style="color: #f44336;">
+            <span style="font-size: 14px;">&#128465;</span> Delete Region
+        </div>
+        <div class="context-menu-item" data-action="permanent-ignore" style="color: #ff9800;">
+            <span style="font-size: 14px;">&#128683;</span> Permanently Ignore Similar
+        </div>
+    </div>
+
+    <script src="/static/js/layout-review.js"></script>
+</body>
+</html>

@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Library - Knowledge Extraction System</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; background: #f5f5f5; }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .header h1 { margin: 0 0 10px 0; font-size: 24px; }
+        .header-stats {
+            display: flex;
+            gap: 30px;
+            font-size: 14px;
+            opacity: 0.95;
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Action Bar */
+        .action-bar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .search-box {
+            flex: 1;
+            margin-right: 20px;
+        }
+        .search-box input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .btn-upload {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .btn-upload:hover { background: #388E3C; }
+
+        /* Filter Chips */
+        .filter-chips {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .filter-chip {
+            padding: 8px 16px;
+            border: 2px solid #2196F3;
+            background: white;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .filter-chip:hover { background: #E3F2FD; }
+        .filter-chip.active {
+            background: #2196F3;
+            color: white;
+        }
+
+        /* Books Table */
+        .books-table-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .books-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .books-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .books-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .books-table tbody tr {
+            border-bottom: 1px solid #e0e0e0;
+            transition: background 0.2s;
+        }
+        .books-table tbody tr:hover {
+            background: #f5f5f5;
+        }
+        .books-table td {
+            padding: 15px;
+            font-size: 14px;
+        }
+        .book-name {
+            font-weight: bold;
+            color: #333;
+        }
+        .book-meta-text {
+            color: #666;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        /* Progress Cell */
+        .progress-cell {
+            text-align: center;
+            min-width: 100px;
+        }
+        .progress-percentage {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2196F3;
+            margin-bottom: 4px;
+        }
+        .progress-count {
+            font-size: 11px;
+            color: #666;
+        }
+        .progress-bar-mini {
+            width: 80px;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 5px auto;
+        }
+        .progress-fill-mini {
+            height: 100%;
+            transition: width 0.3s;
+        }
+        .progress-fill-mini.page-scan { background: #9C27B0; }
+        .progress-fill-mini.easyocr { background: #2196F3; }
+        .progress-fill-mini.surya { background: #FF9800; }
+        .progress-fill-mini.tesseract { background: #4CAF50; }
+        .progress-fill-mini.verification { background: #F44336; }
+
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #4CAF50;
+            transition: width 0.3s;
+        }
+
+        /* Table Actions */
+        .table-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .btn-action {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+        .btn-action:hover { opacity: 0.85; }
+        .btn-scan { background: #FF9800; color: white; }
+        .btn-verify { background: #4CAF50; color: white; }
+        .btn-view { background: #2196F3; color: white; }
+        .btn-settings { background: #9C27B0; color: white; }
+        .btn-delete { background: #f44336; color: white; }
+        .btn-review-raw { background: #607D8B; color: white; }
+
+        /* Hide Scan Pages and Run OCR buttons */
+        .btn-scan-pages,
+        .btn-run-ocr {
+            display: none !important;
+        }
+
+        /* OCR Control Buttons */
+        .btn-ocr-control {
+            padding: 8px 16px;
+            border: 2px solid #9C27B0;
+            background: white;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            font-weight: bold;
+            color: #9C27B0;
+        }
+        .btn-ocr-control:hover {
+            background: #9C27B0;
+            color: white;
+        }
+        .btn-ocr-control:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-ocr-control.loaded {
+            background: #4CAF50;
+            border-color: #4CAF50;
+            color: white;
+        }
+
+        /* Model Management Container */
+        .model-management-container {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .model-management-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-weight: bold;
+            font-size: 14px;
+            color: #333;
+        }
+        .model-buttons-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .model-control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+        .model-control-group.all-models {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin-left: auto;
+        }
+        .model-control-group.all-models .model-label {
+            color: white;
+        }
+        .model-label {
+            font-size: 13px;
+            font-weight: bold;
+            color: #333;
+            min-width: 80px;
+        }
+        .model-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ccc;
+            transition: background 0.3s;
+        }
+        .model-dot.loaded { background: #4CAF50; }
+        .model-dot.loading { background: #FF9800; animation: pulse 1s infinite; }
+        .model-dot.error { background: #f44336; }
+        .btn-model-load, .btn-model-unload {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .btn-model-load {
+            background: #4CAF50;
+            color: white;
+        }
+        .btn-model-load:hover { background: #388E3C; }
+        .btn-model-load:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-model-unload {
+            background: #f44336;
+            color: white;
+        }
+        .btn-model-unload:hover { background: #d32f2f; }
+        .btn-model-unload:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-model-load-all, .btn-model-unload-all {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .btn-model-load-all {
+            background: white;
+            color: #667eea;
+        }
+        .btn-model-load-all:hover { background: #e8e8ff; }
+        .btn-model-unload-all {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid white;
+        }
+        .btn-model-unload-all:hover { background: rgba(255,255,255,0.3); }
+
+        /* OCR Status Container */
+        .ocr-status-container {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: none;
+        }
+        .ocr-status-container.visible {
+            display: block;
+        }
+        .ocr-status-header {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .ocr-status-header.loading { color: #FF9800; }
+        .ocr-status-header.success { color: #4CAF50; }
+        .ocr-status-header.error { color: #f44336; }
+
+        .ocr-engines-status {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+        .ocr-engine-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+        .ocr-engine-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ccc;
+        }
+        .ocr-engine-dot.loaded { background: #4CAF50; }
+        .ocr-engine-dot.loading { background: #FF9800; animation: pulse 1s infinite; }
+        .ocr-engine-dot.error { background: #f44336; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .close-surya-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #666;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            text-align: center;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+        .close-surya-btn:hover {
+            background: #f0f0f0;
+        }
+
+        /* Progress Bar */
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #9C27B0 0%, #7B1FA2 100%);
+            width: 0%;
+            transition: width 0.3s;
+            animation: progress-pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes progress-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .status-pending { background: #FFC107; color: #000; }
+        .status-processing { background: #FF9800; color: white; }
+        .status-completed { background: #4CAF50; color: white; }
+        .status-paused { background: #9E9E9E; color: white; }
+        .status-error { background: #f44336; color: white; }
+
+        /* Loading & Empty States */
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2196F3;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #666;
+        }
+        .empty-state h2 { color: #999; margin-bottom: 20px; }
+        .top-nav {
+            background: #2196F3;
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+        .top-nav-brand { font-size: 20px; font-weight: bold; }
+        .top-nav-links { display: flex; gap: 20px; }
+        .top-nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .top-nav-links a:hover { background: rgba(255,255,255,0.2); }
+        .top-nav-links a.active { background: rgba(255,255,255,0.3); font-weight: bold; }
+        body { padding-top: 65px; }
+    </style>
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="top-nav-brand">📚 Knowledge Extraction System</div>
+        <div class="top-nav-links">
+            <a href="/library" class="active">📚 Library</a>
+            <a href="/auto-slicer">🔪 Auto-Slicer</a>
+            <a href="/upload">📤 Upload</a>
+            <a href="/book-settings">⚙️ Settings</a>
+            <a href="/review-raw">📋 Review Raw</a>
+            <a href="/edit-paragraphs">📝 Paragraphs</a>
+            <a href="/edit-diagrams">🖼️ Diagrams</a>
+            <a href="/pipeline-config">🔧 Pipeline</a>
+            <a href="/pipeline-dashboard">📊 Dashboard</a>
+        </div>
+    </nav>
+    <!-- Header -->
+    <div class="header">
+        <h1>📚 Knowledge Extraction System - Library</h1>
+        <div class="header-stats" id="header-stats">
+            <div>📖 Total Books: <span id="total-books">0</span></div>
+            <div>💡 Total Units: <span id="total-units">0</span></div>
+            <div>🖼️ Total Images: <span id="total-images">0</span></div>
+            <div>✅ Verified: <span id="total-verified">0 (0%)</span></div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Action Bar -->
+        <div class="action-bar">
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="🔍 Search books by name...">
+            </div>
+            <button class="btn-upload" onclick="goToUpload()">📤 Upload New Book</button>
+        </div>
+
+        <!-- Filter Chips -->
+        <div class="filter-chips" id="filter-chips">
+            <div class="filter-chip active" data-type="all">All (<span id="count-all">0</span>)</div>
+            <div class="filter-chip" data-type="PDF">PDF (<span id="count-pdf">0</span>)</div>
+            <div class="filter-chip" data-type="recently">Recently Added</div>
+        </div>
+
+        <!-- GPU Model Management -->
+        <div class="model-management-container">
+            <div class="model-management-header">
+                <span>GPU Model Management</span>
+                <button class="btn-ocr-control" id="btn-check-ocr-status" onclick="checkAllOCRStatus()">
+                    🔍 Check Status
+                </button>
+            </div>
+            <div class="model-buttons-row">
+                <!-- Surya OCR -->
+                <div class="model-control-group">
+                    <span class="model-label">Surya OCR</span>
+                    <span class="model-dot" id="dot-surya"></span>
+                    <button class="btn-model-load" id="btn-load-surya" onclick="loadSuryaModel()">Load</button>
+                    <button class="btn-model-unload" id="btn-unload-surya" onclick="unloadSuryaModel()">Unload</button>
+                </div>
+                <!-- EasyOCR -->
+                <div class="model-control-group">
+                    <span class="model-label">EasyOCR</span>
+                    <span class="model-dot" id="dot-easyocr"></span>
+                    <button class="btn-model-load" id="btn-load-easyocr" onclick="loadEasyOCRModel()">Load</button>
+                    <button class="btn-model-unload" id="btn-unload-easyocr" onclick="unloadEasyOCRModel()">Unload</button>
+                </div>
+                <!-- YOLO -->
+                <div class="model-control-group">
+                    <span class="model-label">YOLO Layout</span>
+                    <span class="model-dot" id="dot-yolo"></span>
+                    <button class="btn-model-load" id="btn-load-yolo" onclick="loadYOLOModel()">Load</button>
+                    <button class="btn-model-unload" id="btn-unload-yolo" onclick="unloadYOLOModel()">Unload</button>
+                </div>
+                <!-- All Models -->
+                <div class="model-control-group all-models">
+                    <span class="model-label">All Models</span>
+                    <button class="btn-model-load-all" id="btn-load-all-ocr" onclick="loadAllOCR()">Load All</button>
+                    <button class="btn-model-unload-all" id="btn-unload-all-ocr" onclick="unloadAllOCR()">Unload All</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- OCR Status Message -->
+        <div class="ocr-status-container" id="ocr-status-container">
+            <div class="ocr-status-header" id="ocr-status-header">
+                <span id="ocr-message-text">Loading models...</span>
+                <button class="close-surya-btn" onclick="closeOCRStatus()">×</button>
+            </div>
+            <div class="progress-bar-container" id="progress-bar-container" style="display: none;">
+                <div class="progress-bar-fill" id="progress-bar-fill"></div>
+            </div>
+        </div>
+
+        <!-- Books Table -->
+        <div class="books-table-container">
+            <table class="books-table">
+                <thead>
+                    <tr>
+                        <th>Book ID</th>
+                        <th>Book Name</th>
+                        <th>Pages</th>
+                        <th>File Size</th>
+                        <th style="text-align: center;">Page Scan</th>
+                        <th style="text-align: center;">EasyOCR</th>
+                        <th style="text-align: center;">Surya OCR</th>
+                        <th style="text-align: center;">Tesseract</th>
+                        <th style="text-align: center;">Verification</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="books-table-body">
+                    <tr>
+                        <td colspan="11" style="text-align: center; padding: 40px;">
+                            <div class="spinner"></div>
+                            <p>Loading books...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="/static/js/library.js?v=20260113-autoslicer"></script>
+</body>
+</html>

@@ -1,0 +1,236 @@
+{
+  "schema_version": "1.0.0",
+  "_comment": "This is the default configuration template. Copy to agent-config.json and customize for your project.",
+
+  "project_metadata": {
+    "project_name": "auto",
+    "project_root": ".",
+    "git_enabled": true,
+    "git_remote": "auto"
+  },
+
+  "folder_structure": {
+    "requirements": "01-requirements",
+    "architecture": "02-architecture",
+    "code": "03-code",
+    "tests": "04-tests",
+    "agent_status": ".agent-status",
+    "handoff_subfolder": ".handoff"
+  },
+
+  "environment": {
+    "isolation_type": "auto",
+    "venv_path": "venv",
+    "venv_name": "venv",
+    "requirements_file": "auto",
+    "setup_scripts": {
+      "linux_mac": "setup-env.sh",
+      "windows": "setup-env.bat"
+    },
+    "python_version": "auto",
+    "node_version": "auto"
+  },
+
+  "defect_tracking": {
+    "enabled": true,
+    "defect_file": "04-tests/bug-reports/defects.json",
+    "severity_levels": ["critical", "high", "medium", "low"],
+    "auto_create_issues": false,
+    "defect_report_format": "json"
+  },
+
+  "quality_gates": {
+    "ba_confidence_threshold": 95,
+    "test_pass_rate_per_chunk": 100,
+    "final_test_pass_rate": 95,
+    "code_coverage_threshold": 80,
+    "max_critical_bugs": 0,
+    "max_high_bugs": 0
+  },
+
+  "agent_behavior": {
+    "business_analyst": {
+      "max_questions_total": 40,
+      "questions_per_batch": 3,
+      "target_confidence": 95,
+      "create_ui_mockups": true,
+      "mockup_format": "svg"
+    },
+    "architect": {
+      "chunk_size_loc": [30, 50],
+      "prefer_simplicity": true,
+      "max_questions_per_chunk": 9,
+      "diagram_format": "svg",
+      "technology_preferences": {
+        "prefer_standard_library": true,
+        "prefer_vanilla_over_framework": true,
+        "max_external_dependencies": 5
+      }
+    },
+    "developer": {
+      "enforce_venv": true,
+      "test_first": true,
+      "coding_standard": "pep8",
+      "max_function_length": 50,
+      "require_type_hints": true,
+      "require_docstrings": true
+    },
+    "tester": {
+      "generate_tests_before_dev": true,
+      "test_types": ["unit", "integration", "functional", "security", "performance"],
+      "fail_fast": false,
+      "parallel_execution": true,
+      "coverage_tool": "auto"
+    }
+  },
+
+  "progress_tracking": {
+    "enabled": true,
+    "checkpoint_directory": ".agent-status",
+
+    "checkpoint_files": {
+      "session_metadata": ".agent-status/session-metadata.json",
+      "orchestrator_progress": ".agent-status/orchestrator-progress.json",
+      "ba_checkpoint": ".agent-status/ba-checkpoint.json",
+      "architect_checkpoint": ".agent-status/architect-checkpoint.json",
+      "developer_checkpoint": ".agent-status/developer-checkpoint.json",
+      "tester_checkpoint": ".agent-status/tester-checkpoint.json",
+      "execution_trace": ".agent-status/execution-trace.log"
+    },
+
+    "handoff_files": {
+      "ba_to_architect": "01-requirements/.handoff/ba-to-architect.json",
+      "architect_to_tester": "02-architecture/.handoff/architect-to-tester.json",
+      "architect_to_developer": "02-architecture/.handoff/architect-to-developer-chunks.json",
+      "dev_chunk_to_tester_pattern": "03-code/.handoff/dev-chunk-{N}-to-tester.json",
+      "tester_chunk_results_pattern": "04-tests/.handoff/tester-chunk-{N}-results.json",
+      "tester_final_validation": "04-tests/.handoff/tester-final-validation.json"
+    },
+
+    "checkpoint_settings": {
+      "auto_checkpoint_interval_minutes": 5,
+      "max_checkpoints_per_agent": 10,
+      "checkpoint_on_events": [
+        "phase_start",
+        "phase_complete",
+        "chunk_start",
+        "chunk_complete",
+        "quality_gate_check",
+        "handoff_create"
+      ]
+    },
+
+    "progress_dashboard": {
+      "enabled": true,
+      "dashboard_file": ".agent-status/progress-dashboard.json",
+      "update_frequency_seconds": 30,
+      "include_metrics": true
+    },
+
+    "monitoring": {
+      "heartbeat_enabled": true,
+      "heartbeat_file": ".agent-status/heartbeat.json",
+      "heartbeat_interval_seconds": 60,
+      "stale_threshold_minutes": 15
+    }
+  },
+
+  "deliverables_tracking": {
+    "enabled": true,
+    "deliverables_manifest": ".agent-status/deliverables-manifest.json",
+
+    "expected_deliverables": {
+      "phase_1_ba": [
+        "01-requirements/requirements-specification.md",
+        "01-requirements/user-stories.md",
+        "01-requirements/acceptance-criteria.md",
+        "01-requirements/.handoff/ba-to-architect.json"
+      ],
+      "phase_2_architect": [
+        "02-architecture/system-design.md",
+        "02-architecture/code-chunks/chunk-breakdown.md",
+        "02-architecture/code-chunks/dependency-graph.md",
+        "02-architecture/.handoff/architect-to-tester.json",
+        "02-architecture/.handoff/architect-to-developer-chunks.json"
+      ],
+      "phase_3_tester_test_gen": [
+        "04-tests/test-plan.md",
+        "04-tests/test-cases/functional-tests.md"
+      ],
+      "phase_4_developer_per_chunk": [
+        "03-code/src/{chunk-files}",
+        "03-code/tests/{chunk-test-files}",
+        "03-code/.handoff/dev-chunk-{N}-to-tester.json"
+      ],
+      "phase_5_final_validation": [
+        "04-tests/test-results/final-test-run.md",
+        "04-tests/.handoff/tester-final-validation.json"
+      ]
+    },
+
+    "deliverable_status_tracking": true,
+    "auto_verify_deliverables": true
+  },
+
+  "status_reporting": {
+    "enabled": true,
+    "consolidated_status_file": ".agent-status/project-status.json",
+    "status_format": "json",
+    "include_sections": [
+      "current_phase",
+      "active_agent",
+      "progress_percentage",
+      "chunks_status",
+      "quality_gates_status",
+      "deliverables_checklist",
+      "blockers",
+      "time_estimates"
+    ],
+    "auto_update": true,
+    "human_readable_summary": ".agent-status/project-status.md"
+  },
+
+  "git_workflow": {
+    "commit_strategy": "milestone",
+    "commit_message_template": "default",
+    "auto_commit": false,
+    "require_tests_pass_before_commit": true,
+    "create_pr_on_completion": false,
+    "branch_naming": "feature/{project-name}"
+  },
+
+  "output_preferences": {
+    "verbose": false,
+    "progress_bars": true,
+    "colored_output": true,
+    "notifications": {
+      "phase_complete": true,
+      "tests_failed": true,
+      "quality_gate_blocked": true
+    }
+  },
+
+  "templates": {
+    "requirements_doc_template": "default",
+    "architecture_doc_template": "default",
+    "test_case_template": "default"
+  },
+
+  "integrations": {
+    "github": {
+      "enabled": false,
+      "create_issues_for_bugs": false,
+      "create_pr_on_complete": false
+    },
+    "jira": {
+      "enabled": false,
+      "project_key": null,
+      "create_tickets_for_bugs": false
+    },
+    "slack": {
+      "enabled": false,
+      "webhook_url": null,
+      "notify_on_phase_complete": false
+    }
+  }
+}

@@ -1,0 +1,456 @@
+{
+  "handoff_metadata": {
+    "from_agent": "architect",
+    "to_agent": "developer",
+    "handoff_date": "2025-11-03",
+    "session_id": "arch-20251103",
+    "confidence_level": 98,
+    "status": "ready_for_development",
+    "architecture_complete": true,
+    "test_plan_required": true
+  },
+
+  "project_summary": {
+    "project_name": "Knowledge Extraction System",
+    "code_chunks_total": 45,
+    "estimated_total_loc": 2000,
+    "dependency_levels": 5,
+    "development_approach": "Chunk-by-chunk with mandatory testing",
+    "estimated_timeline": "120-150 hours (sequential) or 40-50 hours (3-4 developers parallel)"
+  },
+
+  "mandatory_workflow": {
+    "rule": "CANNOT move to chunk N+1 until ALL tests for chunk N pass",
+    "steps_per_chunk": [
+      "1. Read chunk specification from breakdown.md",
+      "2. Read corresponding test file from 04-tests/unit/",
+      "3. Implement code for chunk (30-50 LOC)",
+      "4. Run unit tests: pytest tests/unit/test_chunk_{NNN}.py",
+      "5. Fix code until ALL tests pass (100% pass required)",
+      "6. Run integration tests for current level",
+      "7. If all tests pass, move to next chunk",
+      "8. If tests fail, DO NOT PROCEED"
+    ],
+    "enforcement": "Developer agent MUST check test results before proceeding"
+  },
+
+  "architecture_documents": {
+    "must_read_first": [
+      "02-architecture/system-design.md - Overall architecture and decisions",
+      "02-architecture/code-chunks/breakdown.md - ALL 45 chunks with specs",
+      "02-architecture/code-chunks/dependency-graph.md - Execution order",
+      "02-architecture/database-schema.md - Database structure",
+      "02-architecture/technology-stack.md - All libraries and versions",
+      "02-architecture/data-model.md - Field specifications",
+      "02-architecture/api-design.md - API endpoints"
+    ],
+    "reference_documents": [
+      "01-requirements/requirements-specification.md - Original requirements",
+      "01-requirements/database-naming-convention.md - Naming rules",
+      "02-architecture/dependencies/prerequisites-checklist.md - Setup guide"
+    ]
+  },
+
+  "development_setup": {
+    "prerequisites": [
+      "Python 3.9+ installed",
+      "PostgreSQL 15+ with pgvector (on database server)",
+      "Tesseract OCR 4.1+ installed",
+      "Virtual environment created",
+      "All dependencies installed (requirements.txt)",
+      "AI models downloaded",
+      ".env file configured",
+      "Test database created (knowledge_extraction_test)"
+    ],
+    "setup_script": "bash 02-architecture/dependencies/setup.sh",
+    "setup_verification": "Run: python -c \"import fastapi, sqlalchemy, fitz, pytesseract; print('OK')\""
+  },
+
+  "code_chunk_execution_order": {
+    "level_0_foundation": {
+      "chunks": [1, 2, 3, 4, 5, 6, 7, 8],
+      "parallel_possible": "Chunks 4, 5, 6, 8 can be developed in parallel",
+      "critical_path": "CHUNK-001 → CHUNK-002 → CHUNK-003",
+      "estimated_time": "10-15 hours",
+      "must_complete_before": "Starting Level 1"
+    },
+
+    "level_1_core_logic": {
+      "chunks": [9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+      "parallel_possible": "Multiple tracks: OCR (10-11), PDF (12-13), AI (16-18), Utils (14-15)",
+      "critical_path": "CHUNK-009 (depends on CHUNK-003)",
+      "estimated_time": "25-30 hours",
+      "must_complete_before": "Starting Level 2"
+    },
+
+    "level_2_services": {
+      "chunks": [19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30],
+      "parallel_possible": "Agents (19-22) parallel, DB services (24-29) parallel",
+      "critical_path": "CHUNK-019 → CHUNK-023 → CHUNK-030",
+      "estimated_time": "35-40 hours",
+      "must_complete_before": "Starting Level 3"
+    },
+
+    "level_3_presentation": {
+      "chunks": [31, 32, 33, 34, 35, 36, 37, 38, 39, 40],
+      "parallel_possible": "API routes (32-38) parallel after CHUNK-031",
+      "critical_path": "CHUNK-031 → CHUNK-032 → CHUNK-033",
+      "estimated_time": "25-30 hours",
+      "must_complete_before": "Starting Level 4"
+    },
+
+    "level_4_integration": {
+      "chunks": [41, 42, 43, 44, 45],
+      "parallel_possible": "Chunks 41-44 parallel, CHUNK-45 must be last",
+      "critical_path": "CHUNK-045 (depends on all)",
+      "estimated_time": "10-15 hours",
+      "must_complete_before": "Final deployment"
+    }
+  },
+
+  "chunk_details": {
+    "example_chunk_001": {
+      "id": "CHUNK-001",
+      "name": "Configuration Management",
+      "file": "src/config.py",
+      "loc": "40-50",
+      "complexity": "Simple",
+      "effort": "Low (1-2 hours)",
+      "dependencies": [],
+      "test_file": "tests/unit/test_chunk_001.py",
+      "specification": "See 02-architecture/code-chunks/breakdown.md lines 53-98",
+      "key_requirements": [
+        "Load configuration from .env file",
+        "Use Pydantic BaseSettings",
+        "Define all database, path, and processing settings",
+        "Provide default values",
+        "Validate required fields"
+      ]
+    },
+    "note": "Full details for all 45 chunks in breakdown.md"
+  },
+
+  "file_structure_to_create": {
+    "src_directory": {
+      "root_files": [
+        "src/__init__.py",
+        "src/main.py",
+        "src/config.py"
+      ],
+      "database_module": [
+        "src/database/__init__.py",
+        "src/database/connection.py",
+        "src/database/models/books_metadata.py",
+        "src/database/models/__init__.py",
+        "src/database/schemas.py",
+        "src/database/table_creator.py",
+        "src/database/init_db.py",
+        "src/database/services/knowledge_unit_service.py",
+        "src/database/services/image_service.py",
+        "src/database/services/page_service.py",
+        "src/database/services/processing_state_service.py",
+        "src/database/services/book_settings_service.py",
+        "src/database/services/attribute_key_service.py"
+      ],
+      "agents_module": [
+        "src/agents/__init__.py",
+        "src/agents/orchestrator.py",
+        "src/agents/reader/reader_agent.py",
+        "src/agents/reader/pdf_reader.py",
+        "src/agents/reader/pdf_to_image.py",
+        "src/agents/splitter/splitter_agent.py",
+        "src/agents/splitter/embedding_model.py",
+        "src/agents/splitter/text_chunker.py",
+        "src/agents/marker/marker_agent.py",
+        "src/agents/image_reader/image_reader_agent.py",
+        "src/agents/image_reader/image_extractor.py",
+        "src/agents/image_reader/image_captioner.py"
+      ],
+      "api_module": [
+        "src/api/__init__.py",
+        "src/api/routes/__init__.py",
+        "src/api/routes/upload.py",
+        "src/api/routes/processing.py",
+        "src/api/routes/books.py",
+        "src/api/routes/knowledge_units.py",
+        "src/api/routes/images.py",
+        "src/api/routes/pages.py",
+        "src/api/websocket.py",
+        "src/api/background_processor.py"
+      ],
+      "utils_module": [
+        "src/utils/__init__.py",
+        "src/utils/sanitization.py",
+        "src/utils/file_detection.py",
+        "src/utils/logging_config.py",
+        "src/utils/exceptions.py",
+        "src/utils/ocr.py",
+        "src/utils/ocr_retry.py",
+        "src/utils/language_detector.py",
+        "src/utils/image_compression.py"
+      ],
+      "frontend_module": [
+        "src/frontend/templates/upload.html",
+        "src/frontend/templates/dashboard.html",
+        "src/frontend/templates/verify.html",
+        "src/frontend/templates/library.html",
+        "src/frontend/templates/book-settings.html",
+        "src/frontend/static/css/styles.css",
+        "src/frontend/static/js/upload.js",
+        "src/frontend/static/js/dashboard.js",
+        "src/frontend/static/js/verify.js",
+        "src/frontend/static/js/library.js",
+        "src/frontend/static/js/websocket.js"
+      ]
+    },
+    "root_files": [
+      "requirements.txt",
+      ".env.example",
+      ".env (user creates)",
+      "config.yaml",
+      "README.md",
+      ".gitignore"
+    ]
+  },
+
+  "coding_standards": {
+    "style_guide": "PEP8 (Python Enhancement Proposal 8)",
+    "line_length": "88 characters (Black formatter default)",
+    "docstrings": "Google style docstrings for all functions",
+    "type_hints": "Use type hints for all function parameters and returns",
+    "imports": "Sort imports with isort (standard library, third-party, local)",
+    "naming": {
+      "functions": "snake_case (e.g., get_knowledge_units)",
+      "classes": "PascalCase (e.g., ReaderAgent)",
+      "constants": "UPPER_SNAKE_CASE (e.g., MAX_RETRIES)",
+      "private": "Leading underscore (e.g., _internal_function)"
+    },
+    "error_handling": "Use custom exceptions from src/utils/exceptions.py",
+    "logging": "Use logging module, not print() statements",
+    "comments": "Explain WHY, not WHAT (code should be self-documenting)"
+  },
+
+  "quality_gates": {
+    "per_chunk": {
+      "unit_tests": "100% pass rate required",
+      "code_style": "PEP8 compliant (use flake8 or pylint)",
+      "type_checks": "Pass mypy type checking",
+      "no_warnings": "Fix all linter warnings",
+      "code_review": "Self-review against chunk specification"
+    },
+    "per_level": {
+      "integration_tests": "100% pass rate required",
+      "cross_chunk_validation": "Verify chunks work together",
+      "documentation": "Update docstrings and comments",
+      "git_commit": "Commit after each level complete"
+    },
+    "final_system": {
+      "all_tests": "100% pass rate (unit + integration + E2E)",
+      "coverage": "80%+ code coverage",
+      "performance": "Meet performance targets (see test plan)",
+      "documentation": "README complete with setup instructions",
+      "deployment": "System runnable with python src/main.py"
+    }
+  },
+
+  "testing_workflow": {
+    "unit_test_execution": {
+      "single_chunk": "pytest tests/unit/test_chunk_001.py -v",
+      "current_level": "pytest tests/unit/test_chunk_00*.py -v",
+      "all_unit_tests": "pytest tests/unit/ -v",
+      "with_coverage": "pytest tests/unit/ --cov=src --cov-report=html"
+    },
+    "integration_test_execution": {
+      "level_0": "pytest tests/integration/test_level0_foundation.py -v",
+      "level_1": "pytest tests/integration/test_level1_core_logic.py -v",
+      "level_2": "pytest tests/integration/test_level2_services.py -v",
+      "level_3": "pytest tests/integration/test_level3_presentation.py -v",
+      "level_4": "pytest tests/integration/test_level4_integration.py -v"
+    },
+    "e2e_test_execution": {
+      "all_workflows": "pytest tests/e2e/ -v"
+    }
+  },
+
+  "common_patterns": {
+    "database_access": {
+      "pattern": "Use SQLAlchemy session with try/finally",
+      "example": "db = SessionLocal(); try: ... finally: db.close()"
+    },
+    "error_handling": {
+      "pattern": "Use custom exceptions, log errors",
+      "example": "except OCRError as e: logger.error(f'OCR failed: {e}'); raise"
+    },
+    "configuration": {
+      "pattern": "Import settings from src.config",
+      "example": "from src.config import settings; db_url = settings.DATABASE_URL"
+    },
+    "logging": {
+      "pattern": "Get logger at module level",
+      "example": "logger = logging.getLogger(__name__)"
+    },
+    "async_functions": {
+      "pattern": "Use async/await for FastAPI endpoints",
+      "example": "async def upload_file(file: UploadFile): ..."
+    }
+  },
+
+  "debugging_tips": {
+    "database_issues": [
+      "Check DATABASE_URL in .env",
+      "Verify PostgreSQL is running",
+      "Check pgvector extension: SELECT * FROM pg_extension;",
+      "View logs: tail -f /var/log/postgresql/postgresql-15-main.log"
+    ],
+    "ocr_issues": [
+      "Verify Tesseract: tesseract --version",
+      "Check TESSERACT_PATH in .env",
+      "Test manually: tesseract test.png output",
+      "Check language data: tesseract --list-langs"
+    ],
+    "import_errors": [
+      "Verify virtual environment activated: which python",
+      "Check package installed: pip list | grep package_name",
+      "Reinstall: pip install --force-reinstall package_name"
+    ],
+    "test_failures": [
+      "Run single test: pytest tests/unit/test_chunk_001.py::test_function -v",
+      "Add print debugging: Use logging instead",
+      "Check fixtures: Verify test data in tests/fixtures/",
+      "Database state: Verify test database clean between tests"
+    ]
+  },
+
+  "git_workflow": {
+    "branching": "feature/chunk-NNN or feature/level-N",
+    "commits": {
+      "frequency": "Commit after each chunk passes tests",
+      "message_format": "feat: implement CHUNK-NNN - ChunkName\\n\\nDetails...",
+      "examples": [
+        "feat: implement CHUNK-001 - Configuration Management",
+        "feat: implement CHUNK-019 - Reader Agent Main Logic",
+        "test: add unit tests for CHUNK-001",
+        "fix: correct OCR retry logic in CHUNK-011"
+      ]
+    },
+    "pull_requests": "Create PR after each level complete, not per chunk"
+  },
+
+  "performance_considerations": {
+    "database": [
+      "Use batch inserts (CHUNK-024: batch_insert_size = 50)",
+      "Connection pooling configured (CHUNK-002: pool_size = 10)",
+      "Create indexes after bulk inserts, not before"
+    ],
+    "image_processing": [
+      "Compress images with LZ4 (CHUNK-015)",
+      "Resize to max 800x600 (CHUNK-025)",
+      "Generate thumbnails async (CHUNK-025)"
+    ],
+    "ai_models": [
+      "Load models once (singleton pattern - CHUNK-016, CHUNK-018)",
+      "Cache model outputs when possible",
+      "Use CPU inference (no CUDA required)"
+    ],
+    "ocr": [
+      "Skip OCR if native text exists (CHUNK-019)",
+      "Retry only on low confidence (CHUNK-011)",
+      "Process pages sequentially, not parallel (avoid memory issues)"
+    ]
+  },
+
+  "security_considerations": {
+    "note": "Single-user local deployment - minimal security needed",
+    "database": "Use prepared statements (SQLAlchemy ORM prevents SQL injection)",
+    "file_upload": "Validate file type and size (CHUNK-032: max 500MB)",
+    "input_validation": "Use Pydantic schemas for all API inputs (CHUNK-006)",
+    "sensitive_data": "Store database credentials in .env (not in code)",
+    "cors": "Restrict to localhost only (CHUNK-031)"
+  },
+
+  "deployment_checklist": {
+    "prerequisites": [
+      "All 45 chunks implemented",
+      "All tests passing (unit + integration + E2E)",
+      "Database initialized",
+      "AI models downloaded",
+      ".env configured"
+    ],
+    "verification_steps": [
+      "1. Run: python src/main.py",
+      "2. Open: http://localhost:8000",
+      "3. Upload sample PDF (tests/fixtures/sample_english_10pages.pdf)",
+      "4. Start processing",
+      "5. Monitor dashboard (WebSocket updates every 2 seconds)",
+      "6. Verify processing completes",
+      "7. Open verification interface",
+      "8. Verify knowledge units displayed correctly",
+      "9. Test record merge",
+      "10. Test pause/resume"
+    ],
+    "success_criteria": "All verification steps pass without errors"
+  },
+
+  "troubleshooting_guide": {
+    "issue_1_import_error": {
+      "symptom": "ModuleNotFoundError",
+      "cause": "Package not installed or wrong Python",
+      "solution": "Check venv active, reinstall requirements.txt"
+    },
+    "issue_2_database_connection_failed": {
+      "symptom": "sqlalchemy.exc.OperationalError",
+      "cause": "PostgreSQL not running or wrong credentials",
+      "solution": "Check DATABASE_URL, verify PostgreSQL service running"
+    },
+    "issue_3_tesseract_not_found": {
+      "symptom": "TesseractNotFoundError",
+      "cause": "Tesseract not installed or wrong path",
+      "solution": "Install Tesseract, update TESSERACT_PATH in .env"
+    },
+    "issue_4_model_download_fails": {
+      "symptom": "HuggingFace connection timeout",
+      "cause": "Network issue or firewall",
+      "solution": "Check internet, retry download, use VPN if needed"
+    },
+    "issue_5_websocket_connection_error": {
+      "symptom": "WebSocket close code 1006",
+      "cause": "FastAPI not running or CORS issue",
+      "solution": "Check FastAPI running, verify CORS middleware configured"
+    }
+  },
+
+  "success_criteria_summary": {
+    "architecture_phase": "✅ Complete - All documents delivered",
+    "testing_phase": "⏳ Pending - Tester generates tests",
+    "development_phase": "⏳ Pending - Developer implements chunks",
+    "final_validation": [
+      "All 45 chunks implemented (2000 LOC)",
+      "All tests passing (100% pass rate)",
+      "Coverage target met (80%+)",
+      "System runnable and deployable",
+      "Documentation complete",
+      "User can upload, process, and verify documents"
+    ]
+  },
+
+  "handoff_artifacts": {
+    "architecture_documents": "02-architecture/ directory (10+ files)",
+    "code_chunk_specs": "02-architecture/code-chunks/breakdown.md (45 chunks)",
+    "dependency_graph": "02-architecture/code-chunks/dependency-graph.md",
+    "setup_guide": "02-architecture/dependencies/prerequisites-checklist.md",
+    "setup_script": "02-architecture/dependencies/setup.sh",
+    "test_handoff": "02-architecture/.handoff/architect-to-tester.json",
+    "developer_handoff": "02-architecture/.handoff/architect-to-developer-chunks.json (this file)"
+  },
+
+  "next_steps": {
+    "immediate": [
+      "1. Tester Agent: Generate all test files (04-tests/)",
+      "2. Developer Agent: Set up development environment",
+      "3. Developer Agent: Implement CHUNK-001 (Configuration)",
+      "4. Developer Agent: Run tests for CHUNK-001",
+      "5. Developer Agent: Continue chunk-by-chunk"
+    ],
+    "workflow": "Tester generates tests → Developer implements → Tests validate → Repeat for 45 chunks"
+  }
+}

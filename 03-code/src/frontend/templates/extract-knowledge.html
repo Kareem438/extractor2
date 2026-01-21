@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extract Knowledge Units - Knowledge Extraction System</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; background: #f5f5f5; }
+        .header { background: linear-gradient(135deg, #00897B 0%, #00695C 100%); color: white; padding: 20px 30px; }
+        .header h1 { margin: 0; font-size: 24px; }
+        .breadcrumb { background: white; padding: 15px 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .breadcrumb a { color: #2196F3; text-decoration: none; }
+        .breadcrumb a:hover { text-decoration: underline; }
+        .container { max-width: 1400px; margin: 30px auto; padding: 0 20px; }
+
+        /* Top Navigation */
+        .top-nav {
+            background: #2196F3;
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .top-nav-brand { font-size: 20px; font-weight: bold; }
+        .top-nav-links { display: flex; gap: 20px; }
+        .top-nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .top-nav-links a:hover { background: rgba(255,255,255,0.2); }
+
+        /* Sections */
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .section h2 {
+            margin: 0 0 20px 0;
+            color: #333;
+            border-bottom: 2px solid #00897B;
+            padding-bottom: 10px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: #00897B; color: white; }
+        .btn-primary:hover { background: #00695C; }
+        .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-secondary { background: #2196F3; color: white; }
+        .btn-secondary:hover { background: #1976D2; }
+        .btn-warning { background: #FF9800; color: white; }
+        .btn-warning:hover { background: #F57C00; }
+
+        /* Page Selection Table */
+        .pages-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        .pages-table th, .pages-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .pages-table th {
+            background: #f5f5f5;
+            font-weight: bold;
+            color: #666;
+        }
+        .pages-table tr:hover { background: #fafafa; }
+        .pages-table input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .pages-table input[type="checkbox"]:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        /* Status badges */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-not-extracted { background: #fff3e0; color: #e65100; }
+        .status-extracted { background: #e8f5e9; color: #2e7d32; }
+        .status-ready { background: #e3f2fd; color: #1565c0; }
+
+        /* Summary Table */
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .summary-table th, .summary-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .summary-table th {
+            background: #f5f5f5;
+            font-weight: bold;
+            color: #666;
+        }
+        .summary-table tr:hover { background: #fafafa; }
+        .summary-table .count-cell {
+            font-weight: bold;
+        }
+        .summary-table .decoded-count {
+            color: #4CAF50;
+        }
+        .summary-table .pending-count {
+            color: #FF9800;
+        }
+
+        /* Decode Controls */
+        .decode-controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .decode-mode-selector {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .decode-mode-selector label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: 2px solid #e0e0e0;
+            transition: all 0.2s;
+        }
+        .decode-mode-selector label:hover {
+            border-color: #00897B;
+        }
+        .decode-mode-selector input[type="radio"]:checked + span {
+            color: #00897B;
+            font-weight: bold;
+        }
+        .decode-mode-selector label:has(input:checked) {
+            border-color: #00897B;
+            background: #e0f2f1;
+        }
+
+        /* Progress Section */
+        .progress-section {
+            display: none;
+            background: #e0f2f1;
+            border: 2px solid #00897B;
+        }
+        .progress-section.active { display: block; }
+        .progress-bar-container {
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(135deg, #00897B 0%, #00695C 100%);
+            border-radius: 15px;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* Info boxes */
+        .info-box {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #2196F3;
+            margin-bottom: 20px;
+        }
+        .warning-box {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #FF9800;
+            margin-bottom: 20px;
+        }
+        .error-box {
+            background: #ffebee;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #f44336;
+            margin-bottom: 20px;
+        }
+
+        /* Content visibility */
+        .book-content { display: none; }
+        .book-content.visible { display: block; }
+        .no-book-message {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 8px;
+            color: #666;
+        }
+
+        /* Action bar */
+        .action-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        /* Confirmation dialog */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+        }
+        .modal-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .modal-body {
+            margin-bottom: 20px;
+            color: #666;
+        }
+        .modal-body ul {
+            margin: 15px 0;
+            padding-left: 20px;
+        }
+        .modal-body li {
+            margin: 8px 0;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        /* Filter tabs */
+        .filter-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .filter-tab {
+            padding: 8px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .filter-tab:hover { border-color: #00897B; }
+        .filter-tab.active {
+            background: #00897B;
+            color: white;
+            border-color: #00897B;
+        }
+    </style>
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="top-nav-brand">Knowledge Extraction System</div>
+        <div class="top-nav-links">
+            <a href="/library">Library</a>
+            <a href="/auto-slicer">Auto-Slicer</a>
+            <a href="/upload">Upload</a>
+            <a href="/book-settings">Book Settings</a>
+            <a href="/verify-pages">Verify Pages</a>
+            <a href="/edit-paragraphs">Edit Paragraphs</a>
+        </div>
+    </nav>
+
+    <div class="header">
+        <h1>Extract Knowledge Units</h1>
+    </div>
+
+    <div class="breadcrumb">
+        <a href="/library">Library</a> /
+        <a href="/auto-slicer" id="breadcrumb-auto-slicer">Auto-Slicer</a> /
+        <span id="breadcrumb-book">Extract Knowledge Units</span>
+    </div>
+
+    <div class="container">
+        <!-- No Book Selected -->
+        <div class="no-book-message" id="no-book-message">
+            <h2>No Book Selected</h2>
+            <p>Please access this page from the Auto-Slicer page after setting up Layout Detection.</p>
+            <a href="/auto-slicer" class="btn btn-primary" style="display: inline-block; margin-top: 20px;">
+                Go to Auto-Slicer
+            </a>
+        </div>
+
+        <!-- Book Content -->
+        <div class="book-content" id="book-content">
+            <!-- Info Box -->
+            <div class="info-box">
+                <strong>How Extraction Works:</strong><br>
+                1. Select pages that are "Ready for Extraction" from Layout Review<br>
+                2. Paragraphs will be OCR'd using Surya at 600 DPI<br>
+                3. Diagrams, tables, equations, and lists will be saved as images<br>
+                4. Use Claude to decode the images (Batch API at 50% cost or Direct API)
+            </div>
+
+            <!-- Page Selection Section -->
+            <div class="section">
+                <h2>Pages Ready for Extraction</h2>
+                <div class="action-bar">
+                    <button type="button" class="btn btn-secondary" onclick="selectAllPages()">Select All</button>
+                    <button type="button" class="btn btn-secondary" onclick="deselectAllPages()">Deselect All</button>
+                    <div style="flex: 1;"></div>
+                    <button type="button" class="btn btn-primary" id="extract-btn" onclick="showExtractionConfirmation()">
+                        Extract Selected Pages
+                    </button>
+                </div>
+                <div id="pages-table-container">
+                    <table class="pages-table" id="pages-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;"></th>
+                                <th>Page #</th>
+                                <th>Status</th>
+                                <th>Paragraphs</th>
+                                <th>Diagrams</th>
+                                <th>Tables</th>
+                                <th>Equations</th>
+                                <th>Lists</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pages-table-body">
+                            <!-- Rows populated by JavaScript -->
+                        </tbody>
+                    </table>
+                    <div class="empty-state" id="no-pages-message" style="display: none;">
+                        <div class="empty-state-icon">📄</div>
+                        <p>No pages ready for extraction.</p>
+                        <p>Mark pages as "Ready for Extraction" in <a href="/layout-review">Layout Review</a> first.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Section -->
+            <div class="section progress-section" id="progress-section">
+                <h2>Extraction Progress</h2>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progress-bar" style="width: 0%">0%</div>
+                </div>
+                <div class="progress-info">
+                    <span id="progress-current">Processing page 0 of 0</span>
+                    <span id="progress-counts">Paragraphs: 0 | Images: 0</span>
+                </div>
+            </div>
+
+            <!-- Summary Section -->
+            <div class="section" id="summary-section" style="display: none;">
+                <h2>Extraction Summary by L3 Title</h2>
+                <div class="filter-tabs">
+                    <button class="filter-tab active" onclick="filterSummary('all')">All</button>
+                    <button class="filter-tab" onclick="filterSummary('diagram')">Diagrams</button>
+                    <button class="filter-tab" onclick="filterSummary('table')">Tables</button>
+                    <button class="filter-tab" onclick="filterSummary('equation')">Equations</button>
+                    <button class="filter-tab" onclick="filterSummary('list')">Lists</button>
+                </div>
+                <table class="summary-table" id="summary-table">
+                    <thead>
+                        <tr>
+                            <th>L3 Title</th>
+                            <th>Pages</th>
+                            <th>Paragraphs</th>
+                            <th>Diagrams</th>
+                            <th>Tables</th>
+                            <th>Equations</th>
+                            <th>Lists</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summary-table-body">
+                        <!-- Rows populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Decode Section -->
+            <div class="section" id="decode-section" style="display: none;">
+                <h2>Claude Decoding</h2>
+                <div class="decode-controls">
+                    <div class="decode-mode-selector">
+                        <span style="font-weight: bold; margin-right: 10px;">API Mode:</span>
+                        <label>
+                            <input type="radio" name="decode-mode" value="batch" checked>
+                            <span>Batch API (50% cost)</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="decode-mode" value="direct">
+                            <span>Direct API (immediate)</span>
+                        </label>
+                    </div>
+                    <div style="flex: 1;"></div>
+                    <button type="button" class="btn btn-warning" onclick="openPreviewModal()">
+                        Preview Diagram Decoding
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="startDecoding()">
+                        Decode All Diagrams
+                    </button>
+                </div>
+                <div id="batch-status" style="display: none; padding: 15px; background: #fff3e0; border-radius: 4px; margin-top: 15px;">
+                    <strong>Batch Processing Status:</strong>
+                    <span id="batch-status-text">Waiting...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Extraction Confirmation Modal -->
+    <div class="modal-overlay" id="extraction-modal">
+        <div class="modal-content">
+            <div class="modal-title">Ready to Extract</div>
+            <div class="modal-body" id="extraction-modal-body">
+                <ul>
+                    <li>Pages: <strong id="modal-pages-count">0</strong> selected</li>
+                    <li>Paragraphs: <strong id="modal-paragraphs-count">~0</strong> regions</li>
+                    <li>Diagrams: <strong id="modal-diagrams-count">~0</strong> regions</li>
+                    <li>Tables: <strong id="modal-tables-count">~0</strong> regions</li>
+                    <li>Equations: <strong id="modal-equations-count">~0</strong> regions</li>
+                    <li>Lists: <strong id="modal-lists-count">~0</strong> regions</li>
+                </ul>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeExtractionModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="startExtraction()">Extract</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div class="modal-overlay" id="preview-modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-title">Preview Diagram Decoding</div>
+            <div class="modal-body">
+                <div style="display: flex; gap: 20px;">
+                    <div style="flex: 1;">
+                        <div style="margin-bottom: 10px;">
+                            <label style="font-weight: bold; display: block; margin-bottom: 5px;">Filter by Type:</label>
+                            <select id="preview-type-filter" onchange="loadPreviewDiagram()" style="width: 100%; padding: 8px;">
+                                <option value="all">All Types</option>
+                                <option value="diagram">Diagrams</option>
+                                <option value="table">Tables</option>
+                                <option value="equation">Equations</option>
+                                <option value="list_bulleted">Bullet Lists</option>
+                                <option value="list_numbered">Numbered Lists</option>
+                                <option value="list_lettered">Lettered Lists</option>
+                            </select>
+                        </div>
+                        <div style="border: 2px solid #e0e0e0; border-radius: 4px; padding: 10px; min-height: 300px; display: flex; align-items: center; justify-content: center; background: #f5f5f5;">
+                            <img id="preview-image" src="" alt="Diagram preview" style="max-width: 100%; max-height: 400px; display: none;">
+                            <span id="preview-no-image" style="color: #999;">No diagram selected</span>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 13px; color: #666;">
+                            <span id="preview-info">Page: - | Type: - | L3: -</span>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button type="button" class="btn btn-secondary" onclick="prevPreviewDiagram()">Previous</button>
+                            <span id="preview-nav-info" style="padding: 8px;">1 of 0</span>
+                            <button type="button" class="btn btn-secondary" onclick="nextPreviewDiagram()">Next</button>
+                        </div>
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Prompt:</label>
+                        <textarea id="preview-prompt" rows="8" style="width: 100%; padding: 10px; border: 1px solid #e0e0e0; border-radius: 4px; resize: vertical;"></textarea>
+                        <button type="button" class="btn btn-secondary" onclick="testPrompt()" style="margin-top: 10px;">
+                            Test Prompt
+                        </button>
+                        <button type="button" class="btn btn-warning" onclick="saveAsDefaultPrompt()" style="margin-top: 10px; margin-left: 10px;">
+                            Save as Default
+                        </button>
+                        <div style="margin-top: 15px;">
+                            <label style="font-weight: bold; display: block; margin-bottom: 5px;">Claude Response:</label>
+                            <div id="preview-response" style="border: 1px solid #e0e0e0; border-radius: 4px; padding: 10px; min-height: 150px; max-height: 300px; overflow-y: auto; background: #fafafa;">
+                                <span style="color: #999;">Click "Test Prompt" to see Claude's response</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closePreviewModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/extract-knowledge.js"></script>
+</body>
+</html>

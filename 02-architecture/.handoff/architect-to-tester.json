@@ -1,0 +1,422 @@
+{
+  "handoff_metadata": {
+    "from_agent": "architect",
+    "to_agent": "tester",
+    "handoff_date": "2025-11-03",
+    "session_id": "arch-20251103",
+    "confidence_level": 98,
+    "status": "ready_for_testing",
+    "architecture_complete": true
+  },
+
+  "project_overview": {
+    "project_name": "Knowledge Extraction System",
+    "architecture_pattern": "Monolithic Multi-Agent System with Networked Database",
+    "primary_language": "Python 3.9+",
+    "web_framework": "FastAPI",
+    "database": "PostgreSQL 15+ with pgvector",
+    "total_code_chunks": 45,
+    "estimated_loc": 2000,
+    "deployment": "Single-user localhost web application"
+  },
+
+  "architecture_documents": {
+    "core_design": [
+      "02-architecture/system-design.md",
+      "02-architecture/database-schema.md",
+      "02-architecture/technology-stack.md",
+      "02-architecture/data-model.md",
+      "02-architecture/api-design.md"
+    ],
+    "implementation_plan": [
+      "02-architecture/code-chunks/breakdown.md",
+      "02-architecture/code-chunks/dependency-graph.md"
+    ],
+    "setup_guides": [
+      "02-architecture/dependencies/prerequisites-checklist.md",
+      "02-architecture/dependencies/setup.sh"
+    ]
+  },
+
+  "test_requirements": {
+    "testing_philosophy": "Test each code chunk before moving to next chunk. 100% test pass required.",
+    "testing_levels": [
+      "Unit tests for each code chunk (45 chunks = 45 test suites)",
+      "Integration tests for each dependency level (5 levels)",
+      "End-to-end tests for complete workflows",
+      "Performance tests for processing pipeline",
+      "Database tests for all CRUD operations"
+    ],
+    "test_framework": "pytest with pytest-asyncio",
+    "coverage_target": "80%+ code coverage",
+    "critical_areas": [
+      "OCR retry logic (3-attempt strategy)",
+      "Semantic text splitting (SBERT-based)",
+      "Database connection pooling",
+      "Background task processing",
+      "WebSocket real-time updates",
+      "Pause/resume with checkpoint",
+      "30 attribute columns architecture",
+      "Image compression/decompression"
+    ]
+  },
+
+  "test_generation_tasks": {
+    "unit_tests": {
+      "description": "Create unit tests for each of 45 code chunks",
+      "test_file_pattern": "tests/unit/test_chunk_{NNN}.py",
+      "requirements": [
+        "Each chunk must have corresponding test file",
+        "Test all functions in the chunk",
+        "Test happy path and error cases",
+        "Test edge cases and boundary conditions",
+        "Mock external dependencies (database, API calls, file I/O)"
+      ]
+    },
+
+    "integration_tests": {
+      "description": "Create integration tests for each dependency level",
+      "test_files": [
+        "tests/integration/test_level0_foundation.py",
+        "tests/integration/test_level1_core_logic.py",
+        "tests/integration/test_level2_services.py",
+        "tests/integration/test_level3_presentation.py",
+        "tests/integration/test_level4_integration.py"
+      ],
+      "requirements": [
+        "Test interaction between chunks within same level",
+        "Test data flow between levels",
+        "Use test database for integration tests"
+      ]
+    },
+
+    "end_to_end_tests": {
+      "description": "Create E2E tests for complete workflows",
+      "test_files": [
+        "tests/e2e/test_upload_and_process.py",
+        "tests/e2e/test_verification_workflow.py",
+        "tests/e2e/test_pause_resume.py",
+        "tests/e2e/test_attribute_editing.py",
+        "tests/e2e/test_record_merge.py"
+      ],
+      "requirements": [
+        "Test complete user workflows",
+        "Use sample PDF files",
+        "Verify database state after operations",
+        "Test WebSocket updates"
+      ]
+    },
+
+    "api_tests": {
+      "description": "Create API endpoint tests",
+      "test_file": "tests/api/test_endpoints.py",
+      "requirements": [
+        "Test all 25+ HTTP endpoints",
+        "Test WebSocket connection",
+        "Test request validation",
+        "Test error responses",
+        "Test pagination and filtering"
+      ]
+    },
+
+    "database_tests": {
+      "description": "Create database operation tests",
+      "test_file": "tests/database/test_db_operations.py",
+      "requirements": [
+        "Test dynamic table creation",
+        "Test CRUD operations for all entities",
+        "Test connection pooling",
+        "Test transactions and rollbacks",
+        "Test pgvector operations"
+      ]
+    },
+
+    "performance_tests": {
+      "description": "Create performance benchmarks",
+      "test_file": "tests/performance/test_benchmarks.py",
+      "requirements": [
+        "Test page processing time (target: < 15 seconds per page)",
+        "Test database query performance",
+        "Test WebSocket update frequency",
+        "Test image compression ratio",
+        "Test checkpoint save time (target: < 2 minutes)"
+      ]
+    }
+  },
+
+  "test_data_requirements": {
+    "sample_pdfs": [
+      "tests/fixtures/sample_english_10pages.pdf",
+      "tests/fixtures/sample_arabic_10pages.pdf",
+      "tests/fixtures/sample_mixed_5pages.pdf",
+      "tests/fixtures/sample_scanned_5pages.pdf (for OCR testing)",
+      "tests/fixtures/sample_images_heavy_10pages.pdf"
+    ],
+    "mock_data": [
+      "tests/fixtures/mock_knowledge_units.json",
+      "tests/fixtures/mock_images.json",
+      "tests/fixtures/mock_processing_state.json"
+    ],
+    "test_database": "Create separate test database: knowledge_extraction_test"
+  },
+
+  "critical_test_scenarios": {
+    "scenario_1_ocr_retry": {
+      "description": "Test OCR 3-attempt retry logic",
+      "steps": [
+        "Provide low-quality scanned PDF page",
+        "Verify attempt 1 fails (confidence < 70%)",
+        "Verify attempt 2 with 200% zoom",
+        "Verify attempt 3 with region segmentation",
+        "Verify final result or graceful failure"
+      ],
+      "expected_outcome": "OCR succeeds on attempt 2 or 3, or returns best attempt result"
+    },
+
+    "scenario_2_semantic_splitting": {
+      "description": "Test semantic text chunking",
+      "steps": [
+        "Provide multi-paragraph text (5 paragraphs)",
+        "Run splitter agent",
+        "Verify chunks are 3-5 lines each",
+        "Verify semantic boundaries respected",
+        "Verify confidence scores assigned"
+      ],
+      "expected_outcome": "Text split into appropriate 3-5 line chunks with >80% confidence"
+    },
+
+    "scenario_3_pause_resume": {
+      "description": "Test pause/resume with checkpoint",
+      "steps": [
+        "Start processing 50-page book",
+        "Pause at page 25",
+        "Verify state saved to database",
+        "Simulate application shutdown",
+        "Restart application",
+        "Resume processing",
+        "Verify continues from page 25"
+      ],
+      "expected_outcome": "Processing resumes exactly from page 25, no data loss"
+    },
+
+    "scenario_4_attribute_editing": {
+      "description": "Test 30 attribute key editing",
+      "steps": [
+        "Upload book with 10 attributes defined",
+        "Edit attribute 5 key name from 'Keywords' to 'Tags'",
+        "Verify attribute_keys table updated",
+        "Verify verification UI shows new label 'Tags'",
+        "Attempt to edit attribute 1 (should fail - system-defined)"
+      ],
+      "expected_outcome": "Attributes 2-30 editable, attribute 1 locked, UI reflects changes"
+    },
+
+    "scenario_5_record_merge": {
+      "description": "Test knowledge unit merge",
+      "steps": [
+        "Create two knowledge units with low confidence (<70%)",
+        "View record in verification UI",
+        "See merge context displayed automatically",
+        "Click 'Merge with Next'",
+        "Verify text combined",
+        "Verify one record deleted, other updated"
+      ],
+      "expected_outcome": "Records merged successfully, database consistent"
+    },
+
+    "scenario_6_websocket_updates": {
+      "description": "Test real-time dashboard updates",
+      "steps": [
+        "Start processing book",
+        "Open dashboard with WebSocket connection",
+        "Verify updates received every 2 seconds",
+        "Verify progress percentage updates",
+        "Verify checkpoint event received at page 50",
+        "Verify completion event when done"
+      ],
+      "expected_outcome": "WebSocket delivers updates reliably, no missed events"
+    },
+
+    "scenario_7_image_extraction": {
+      "description": "Test image extraction and AI description",
+      "steps": [
+        "Process page with 3 images (diagram, chart, photo)",
+        "Verify all 3 images extracted",
+        "Verify BLIP descriptions generated",
+        "Verify images compressed with LZ4",
+        "Verify thumbnails created (200x200)",
+        "Verify images stored in database"
+      ],
+      "expected_outcome": "All images extracted, described, compressed, stored"
+    },
+
+    "scenario_8_marker_generation": {
+      "description": "Test marker agent rectangle drawing",
+      "steps": [
+        "Process page with 5 knowledge units and 1 image",
+        "Verify marked page image generated",
+        "Verify 5 green rectangles drawn (text)",
+        "Verify coordinates match knowledge unit positions",
+        "Verify rectangle data stored in JSON format"
+      ],
+      "expected_outcome": "Marked image has correct rectangles, visually accurate"
+    },
+
+    "scenario_9_bilingual_support": {
+      "description": "Test English + Arabic processing",
+      "steps": [
+        "Process English-only page",
+        "Verify language detected as 'english'",
+        "Process Arabic-only page",
+        "Verify language detected as 'arabic', OCR uses 'ara' model",
+        "Process mixed page",
+        "Verify language detected as 'mixed'"
+      ],
+      "expected_outcome": "Language detection accurate, OCR uses correct model"
+    },
+
+    "scenario_10_partial_processing": {
+      "description": "Test partial processing mode",
+      "steps": [
+        "Upload 100-page book",
+        "Enable partial processing: first 10 pages",
+        "Start processing",
+        "Verify only 10 pages processed",
+        "Verify status set to 'completed' after page 10",
+        "Verify no errors for remaining 90 pages"
+      ],
+      "expected_outcome": "Only first 10 pages processed, clean completion"
+    }
+  },
+
+  "test_coverage_requirements": {
+    "level0_foundation": {
+      "chunks": 8,
+      "target_coverage": "90%+",
+      "focus_areas": [
+        "Configuration loading",
+        "Database connection pooling",
+        "Sanitization edge cases",
+        "Error class handling"
+      ]
+    },
+
+    "level1_core_logic": {
+      "chunks": 10,
+      "target_coverage": "85%+",
+      "focus_areas": [
+        "OCR retry logic (all 3 attempts)",
+        "PDF text extraction (native + OCR)",
+        "Language detection accuracy",
+        "Semantic splitting algorithm",
+        "Image compression ratio"
+      ]
+    },
+
+    "level2_services": {
+      "chunks": 12,
+      "target_coverage": "80%+",
+      "focus_areas": [
+        "Agent orchestration",
+        "Background processing",
+        "Database CRUD operations",
+        "Transaction management",
+        "State persistence"
+      ]
+    },
+
+    "level3_presentation": {
+      "chunks": 10,
+      "target_coverage": "75%+",
+      "focus_areas": [
+        "API endpoint responses",
+        "Request validation",
+        "Error handling",
+        "WebSocket connection",
+        "File upload handling"
+      ]
+    },
+
+    "level4_integration": {
+      "chunks": 5,
+      "target_coverage": "70%+",
+      "focus_areas": [
+        "Database initialization",
+        "Setup script execution",
+        "Configuration validation",
+        "System startup"
+      ]
+    }
+  },
+
+  "test_execution_order": {
+    "phase_1_unit_tests": "Run unit tests for each chunk as it's implemented (chunk-by-chunk)",
+    "phase_2_integration_tests": "Run integration tests after each level complete",
+    "phase_3_e2e_tests": "Run E2E tests after Level 4 complete",
+    "phase_4_performance_tests": "Run performance tests after all functionality working"
+  },
+
+  "tester_deliverables": {
+    "required_files": [
+      "04-tests/unit/ (45 test files, one per chunk)",
+      "04-tests/integration/ (5 test files, one per level)",
+      "04-tests/e2e/ (5 workflow test files)",
+      "04-tests/api/ (1 comprehensive API test file)",
+      "04-tests/database/ (1 database operations test file)",
+      "04-tests/performance/ (1 benchmark test file)",
+      "04-tests/fixtures/ (sample PDFs and mock data)",
+      "04-tests/conftest.py (pytest configuration and fixtures)",
+      "04-tests/test-plan.md (comprehensive test plan document)",
+      "04-tests/.handoff/tester-to-developer.json (handoff manifest)"
+    ],
+    "test_documentation": [
+      "Test plan with coverage matrix",
+      "Test case descriptions",
+      "Expected outcomes",
+      "Setup instructions for test database",
+      "Continuous integration recommendations"
+    ]
+  },
+
+  "testing_environment": {
+    "python_version": "3.9+",
+    "test_framework": "pytest 7.4.3",
+    "async_testing": "pytest-asyncio 0.21.1",
+    "http_testing": "httpx 0.25.2 (for FastAPI TestClient)",
+    "database": "PostgreSQL 15+ (test database)",
+    "mock_framework": "unittest.mock (Python standard library)",
+    "fixtures": "pytest fixtures in conftest.py"
+  },
+
+  "special_testing_notes": {
+    "note_1": "Tests must be runnable BEFORE development starts (test-first approach)",
+    "note_2": "Each chunk test must be independent and isolated",
+    "note_3": "Use test database (knowledge_extraction_test) for all DB tests",
+    "note_4": "Mock external dependencies (Tesseract, AI models) for speed",
+    "note_5": "Create sample PDFs with known content for predictable testing",
+    "note_6": "WebSocket tests require async test support",
+    "note_7": "Performance tests should have reasonable thresholds",
+    "note_8": "Database tests should clean up after themselves (rollback)",
+    "note_9": "OCR tests require actual Tesseract installation",
+    "note_10": "AI model tests can use mock responses for speed"
+  },
+
+  "success_criteria": {
+    "test_generation_complete": "All 45 chunk tests + integration + E2E tests created",
+    "test_documentation_complete": "Test plan and coverage matrix documented",
+    "fixtures_ready": "Sample PDFs and mock data created",
+    "runnable": "All tests can run with 'pytest' command",
+    "developer_ready": "Tests provide clear success/failure criteria for each chunk"
+  },
+
+  "next_phase": {
+    "handoff_to": "developer",
+    "prerequisites": [
+      "All test files generated",
+      "Test plan documented",
+      "Fixtures created",
+      "Test database setup instructions ready"
+    ],
+    "developer_workflow": "For each chunk: Implement code → Run chunk tests → All tests pass → Move to next chunk"
+  }
+}

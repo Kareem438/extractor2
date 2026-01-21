@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Paragraphs - Knowledge Extraction System</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; background: #f5f5f5; }
+
+        /* Top Navigation */
+        .top-nav {
+            background: #2196F3;
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+        .top-nav-brand { font-size: 20px; font-weight: bold; }
+        .top-nav-links { display: flex; gap: 20px; }
+        .top-nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .top-nav-links a:hover { background: rgba(255,255,255,0.2); }
+        .top-nav-links a.active { background: rgba(255,255,255,0.3); font-weight: bold; }
+        body { padding-top: 65px; }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .header h1 { margin: 0; font-size: 24px; }
+        .header p { margin: 5px 0 0 0; opacity: 0.9; }
+
+        /* Main Content */
+        .main-content {
+            padding: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Book Selector */
+        .book-selector {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .book-selector label {
+            font-weight: bold;
+            color: #666;
+        }
+
+        .book-selector select {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .btn-back {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background: #2196F3;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn-back:hover {
+            opacity: 0.85;
+        }
+
+        /* Paragraphs Gallery */
+        .paragraphs-container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .paragraphs-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+            color: #333;
+        }
+
+        .paragraphs-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* Paragraph Item */
+        .paragraph-item {
+            display: flex;
+            gap: 20px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+            transition: all 0.2s;
+        }
+
+        .paragraph-item:hover {
+            border-color: #2196F3;
+            box-shadow: 0 3px 8px rgba(33, 150, 243, 0.2);
+        }
+
+        .paragraph-thumbnail {
+            flex-shrink: 0;
+            width: 200px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .paragraph-thumbnail img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .paragraph-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .paragraph-meta {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        .meta-item {
+            display: flex;
+            gap: 8px;
+        }
+
+        .meta-label {
+            font-weight: bold;
+            color: #666;
+        }
+
+        .meta-value {
+            color: #333;
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-new {
+            background: #FFEBEE;
+            color: #C62828;
+            border: 1px solid #EF5350;
+        }
+
+        .status-scanned {
+            background: #E8F5E9;
+            color: #2E7D32;
+            border: 1px solid #66BB6A;
+        }
+
+        .status-pending {
+            background: #FFF3E0;
+            color: #E65100;
+            border: 1px solid #FFB74D;
+        }
+
+        .status-approved {
+            background: #E8F5E9;
+            color: #2E7D32;
+            border: 1px solid #66BB6A;
+        }
+
+        .status-rejected {
+            background: #FFEBEE;
+            color: #C62828;
+            border: 1px solid #EF5350;
+        }
+
+        .status-reviewed {
+            background: #E3F2FD;
+            color: #1565C0;
+            border: 1px solid #42A5F5;
+        }
+
+        /* Merge Button */
+        .merge-button-container {
+            display: flex;
+            justify-content: center;
+            padding: 10px 0;
+        }
+
+        .btn-merge {
+            padding: 8px 24px;
+            border: 2px solid #9C27B0;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);
+            color: white;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(156, 39, 176, 0.3);
+        }
+
+        .btn-merge:hover {
+            background: linear-gradient(135deg, #7B1FA2 0%, #6A1B9A 100%);
+            box-shadow: 0 3px 6px rgba(156, 39, 176, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .btn-merge:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(156, 39, 176, 0.4);
+        }
+
+        /* Action Buttons */
+        .paragraph-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: auto;
+        }
+
+        .btn-action {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+
+        .btn-action:hover { opacity: 0.85; }
+
+        .btn-approve {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-reject {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-delete {
+            background: #9E9E9E;
+            color: white;
+        }
+
+        /* Loading & Empty States */
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2196F3;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #666;
+        }
+
+        .empty-state h2 { color: #999; margin-bottom: 20px; }
+
+        /* Full Details Button */
+        .btn-full-details {
+            background: #2196F3;
+            color: white;
+        }
+
+        /* Full Details Modal */
+        .details-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .details-modal-overlay.visible {
+            display: flex;
+        }
+
+        .details-modal {
+            width: 90%;
+            max-width: 1000px;
+            max-height: 90%;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .details-modal-header {
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .details-modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .details-modal-close {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .details-modal-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .details-modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .details-section {
+            margin-bottom: 25px;
+        }
+
+        .details-section-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1976D2;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .details-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .details-field.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .details-field label {
+            font-size: 12px;
+            font-weight: bold;
+            color: #666;
+        }
+
+        .details-field input,
+        .details-field select,
+        .details-field textarea {
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .details-field input:disabled,
+        .details-field select:disabled,
+        .details-field textarea:disabled {
+            background: #f5f5f5;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .details-field textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .details-field .readonly-value {
+            padding: 8px 10px;
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .details-image-preview {
+            max-width: 100%;
+            min-height: 400px;
+            max-height: 720px;
+            width: auto;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            object-fit: contain;
+            background: #f9f9f9;
+        }
+
+        .details-modal-footer {
+            padding: 15px 20px;
+            background: #f5f5f5;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .btn-modal {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-modal-cancel {
+            background: #9E9E9E;
+            color: white;
+        }
+
+        .btn-modal-save {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-modal:hover {
+            opacity: 0.9;
+        }
+
+        /* Collapsible Sections */
+        .collapsible-section {
+            margin-bottom: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .collapsible-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .collapsible-header:hover {
+            background: linear-gradient(135deg, #e8e8e8 0%, #dadada 100%);
+        }
+
+        .collapsible-header-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1976D2;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .collapsible-icon {
+            font-size: 12px;
+            transition: transform 0.3s;
+            color: #666;
+        }
+
+        .collapsible-header.expanded .collapsible-icon {
+            transform: rotate(90deg);
+        }
+
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background: white;
+        }
+
+        .collapsible-content.expanded {
+            max-height: 2000px;
+            transition: max-height 0.5s ease-in;
+        }
+
+        .collapsible-inner {
+            padding: 20px;
+        }
+
+        /* Override details-section for collapsible */
+        .collapsible-section .details-section {
+            margin-bottom: 0;
+        }
+
+        .collapsible-section .details-section-title {
+            display: none;
+        }
+
+        /* Navigation Buttons */
+        .modal-footer-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .modal-nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-nav {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            background: #2196F3;
+            color: white;
+            transition: opacity 0.2s;
+        }
+
+        .btn-nav:hover:not(:disabled) {
+            opacity: 0.85;
+        }
+
+        .btn-nav:disabled {
+            background: #ccc;
+            color: #888;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        /* Attribute Field Styles */
+        .attr-field-container {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .attr-field-content {
+            flex: 1;
+        }
+
+        .attr-field-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 4px;
+        }
+
+        .attr-field-label .attr-number {
+            color: #888;
+            font-weight: normal;
+        }
+
+        .attr-textarea {
+            width: 100%;
+            min-height: 60px;
+            padding: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: inherit;
+            resize: both;
+            transition: border-color 0.2s;
+        }
+
+        .attr-textarea:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+
+        .attr-textarea.modified {
+            border-color: #FF9800;
+        }
+
+        .attr-textarea.saved {
+            border-color: #4CAF50;
+        }
+
+        .attr-save-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            background: #2196F3;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+            margin-top: 20px;
+        }
+
+        .attr-save-btn:hover {
+            background: #1976D2;
+        }
+
+        .attr-save-btn.saving {
+            background: #FF9800;
+            cursor: wait;
+        }
+
+        .attr-save-btn.saved {
+            background: #4CAF50;
+        }
+
+        .attr-save-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Attribute Group Headers */
+        .attr-group-header {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .attr-group-count {
+            font-size: 12px;
+            color: #888;
+            font-weight: normal;
+            margin-left: 8px;
+        }
+
+        /* Attribute Grid */
+        .attr-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+            padding: 8px 0;
+        }
+
+        /* Linked Diagrams Section */
+        .linked-diagrams-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .linked-diagram-slot {
+            border: 2px dashed #e0e0e0;
+            border-radius: 8px;
+            padding: 8px;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #fafafa;
+            position: relative;
+        }
+
+        .linked-diagram-slot.filled {
+            border-style: solid;
+            border-color: #FF9800;
+            background: white;
+        }
+
+        .linked-diagram-slot-label {
+            font-size: 10px;
+            color: #999;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+
+        .linked-diagram-thumbnail {
+            width: 100%;
+            height: 60px;
+            object-fit: contain;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .linked-diagram-thumbnail:hover {
+            opacity: 0.8;
+        }
+
+        .linked-diagram-info {
+            font-size: 9px;
+            color: #666;
+            margin-top: 4px;
+            text-align: center;
+        }
+
+        .linked-diagram-empty {
+            color: #ccc;
+            font-size: 12px;
+            font-style: italic;
+        }
+
+        .btn-unlink-diagram {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.8;
+        }
+
+        .btn-unlink-diagram:hover {
+            opacity: 1;
+        }
+
+        .btn-link-new-diagram {
+            padding: 8px 16px;
+            background: #FF9800;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 12px;
+        }
+
+        .btn-link-new-diagram:hover {
+            background: #F57C00;
+        }
+
+        .btn-link-new-diagram:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .no-linked-diagrams {
+            text-align: center;
+            color: #999;
+            font-style: italic;
+            padding: 20px;
+        }
+
+        /* Diagram Picker Modal */
+        .diagram-picker-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .diagram-picker-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .diagram-picker-modal {
+            background: white;
+            border-radius: 8px;
+            width: 600px;
+            max-height: 80vh;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .diagram-picker-header {
+            padding: 15px 20px;
+            background: #FF9800;
+            color: white;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .diagram-picker-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .diagram-picker-body {
+            padding: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .diagram-picker-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .diagram-picker-item {
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .diagram-picker-item:hover {
+            border-color: #FF9800;
+            box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
+        }
+
+        .diagram-picker-item.already-linked {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .diagram-picker-item img {
+            width: 100%;
+            height: 80px;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+
+        .diagram-picker-item-info {
+            font-size: 10px;
+            color: #666;
+            margin-top: 4px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="top-nav-brand">📚 Knowledge Extraction System</div>
+        <div class="top-nav-links">
+            <a href="/library">📚 Library</a>
+            <a href="/auto-slicer">🔪 Auto-Slicer</a>
+            <a href="/upload">📤 Upload</a>
+            <a href="/verification">✅ Verification</a>
+            <a href="/book-settings">⚙️ Book Settings</a>
+            <a href="/verify-pages">🔍 Verify Pages</a>
+            <a href="/edit-paragraphs" class="active">✏️ Edit Paragraphs</a>
+            <a href="/edit-diagrams">📊 Edit Diagrams</a>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <div class="header">
+        <h1>✏️ Edit Paragraphs</h1>
+        <p>Review, merge, and manage paragraph image clips</p>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Book Selector -->
+        <div class="book-selector">
+            <label>Select Book:</label>
+            <select id="book-select">
+                <option value="">Loading books...</option>
+            </select>
+            <button id="back-to-verify-btn" class="btn-back" style="display: none;">
+                ← Back to Verify Pages
+            </button>
+            <button id="back-to-autoslicer-btn" class="btn-back" style="display: none; background: #9C27B0;">
+                ← Back to Auto-Slicer
+            </button>
+        </div>
+
+        <!-- Paragraphs Container -->
+        <div class="paragraphs-container">
+            <div class="paragraphs-header">📝 Paragraph Clips</div>
+            <div id="paragraphs-content" class="empty-state">
+                <h2>📖 No Book Selected</h2>
+                <p>Select a book above to view and edit paragraph clips.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Full Details Modal -->
+    <div class="details-modal-overlay" id="details-modal">
+        <div class="details-modal">
+            <div class="details-modal-header">
+                <h3 id="details-modal-title">Paragraph Details</h3>
+                <button class="details-modal-close" onclick="closeDetailsModal()">×</button>
+            </div>
+            <div class="details-modal-body" id="details-modal-body">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+            <div class="details-modal-footer">
+                <div class="modal-footer-nav">
+                    <div class="modal-nav-buttons">
+                        <button class="btn-nav" id="btn-prev-paragraph" onclick="navigateToPreviousParagraph()">◀ Previous</button>
+                        <button class="btn-nav" id="btn-next-paragraph" onclick="navigateToNextParagraph()">Next ▶</button>
+                        <button class="btn-nav" id="btn-back-to-autoslicer-modal" style="display: none; background: #9C27B0; color: white;" onclick="goBackToAutoSlicer()">← Back to Auto-Slicer</button>
+                    </div>
+                    <div class="modal-action-buttons">
+                        <button class="btn-modal btn-modal-cancel" onclick="closeDetailsModal()">Cancel</button>
+                        <button class="btn-modal btn-modal-save" onclick="saveFullDetails()">💾 Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Diagram Picker Modal -->
+    <div class="diagram-picker-overlay" id="diagram-picker-modal">
+        <div class="diagram-picker-modal">
+            <div class="diagram-picker-header">
+                <span>🔗 Link Diagram to Paragraph</span>
+                <button class="diagram-picker-close" onclick="closeDiagramPicker()">×</button>
+            </div>
+            <div class="diagram-picker-body">
+                <div id="diagram-picker-content">
+                    <!-- Diagrams will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/edit-paragraphs.js?v=20260111-linking"></script>
+</body>
+</html>

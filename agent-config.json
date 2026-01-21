@@ -1,0 +1,82 @@
+{
+  "schema_version": "1.0.0",
+  "_comment": "Main configuration file - customize for your project. See agent-config.defaults.json for all options.",
+
+  "project_metadata": {
+    "project_name": "auto",
+    "git_enabled": true
+  },
+
+  "folder_structure": {
+    "requirements": "01-requirements",
+    "architecture": "02-architecture",
+    "code": "03-code",
+    "tests": "04-tests",
+    "agent_status": ".agent-status"
+  },
+
+  "environment": {
+    "venv_path": "venv",
+    "python_version": "auto",
+    "node_version": "auto"
+  },
+
+  "quality_gates": {
+    "ba_confidence_threshold": 95,
+    "test_pass_rate_per_chunk": 100,
+    "final_test_pass_rate": 95,
+    "code_coverage_threshold": 80
+  },
+
+  "progress_tracking": {
+    "checkpoint_files": {
+      "session_metadata": ".agent-status/session-metadata.json",
+      "orchestrator_progress": ".agent-status/orchestrator-progress.json",
+      "ba_checkpoint": ".agent-status/ba-checkpoint.json",
+      "architect_checkpoint": ".agent-status/architect-checkpoint.json",
+      "developer_checkpoint": ".agent-status/developer-checkpoint.json",
+      "tester_checkpoint": ".agent-status/tester-checkpoint.json",
+      "execution_trace": ".agent-status/execution-trace.log"
+    },
+    "progress_dashboard": {
+      "enabled": true,
+      "dashboard_file": ".agent-status/progress-dashboard.json"
+    },
+    "monitoring": {
+      "heartbeat_enabled": true,
+      "heartbeat_file": ".agent-status/heartbeat.json"
+    }
+  },
+
+  "defect_tracking": {
+    "enabled": true,
+    "defect_file": "04-tests/bug-reports/defects.json"
+  },
+
+  "status_reporting": {
+    "enabled": true,
+    "consolidated_status_file": ".agent-status/project-status.json",
+    "human_readable_summary": ".agent-status/project-status.md"
+  },
+
+  "conversation_history": {
+    "enabled": true,
+    "prompts_file": "prompts.md",
+    "description": "Tracks all prompts and responses with timestamps for complete development session audit trail"
+  },
+
+  "agent_behavior": {
+    "business_analyst": {
+      "target_confidence": 95,
+      "max_questions_total": 40
+    },
+    "architect": {
+      "chunk_size_loc": [30, 50],
+      "prefer_simplicity": true
+    },
+    "developer": {
+      "enforce_venv": true,
+      "coding_standard": "pep8"
+    }
+  }
+}

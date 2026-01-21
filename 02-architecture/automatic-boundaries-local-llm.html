@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local LLM for Arabic Document Layout Analysis</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --success-color: #16a34a;
+            --warning-color: #d97706;
+            --danger-color: #dc2626;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --code-bg: #1e293b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 3px solid var(--primary-color);
+        }
+
+        h2 {
+            color: var(--secondary-color);
+            font-size: 1.75rem;
+            margin: 2rem 0 1rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        h3 {
+            color: var(--text-color);
+            font-size: 1.35rem;
+            margin: 1.5rem 0 0.75rem 0;
+        }
+
+        h4 {
+            color: var(--text-color);
+            font-size: 1.15rem;
+            margin: 1.25rem 0 0.5rem 0;
+        }
+
+        p {
+            margin-bottom: 1rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+        }
+
+        .card-header {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #dbeafe 0%, #ede9fe 100%);
+            border-left: 4px solid var(--primary-color);
+            padding: 1rem 1.5rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .success-box {
+            background: #dcfce7;
+            border-left: 4px solid var(--success-color);
+            padding: 1rem 1.5rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .warning-box {
+            background: #fef3c7;
+            border-left: 4px solid var(--warning-color);
+            padding: 1rem 1.5rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            background: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        th {
+            background: var(--primary-color);
+            color: white;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        tr:hover {
+            background: #f1f5f9;
+        }
+
+        code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+            color: var(--danger-color);
+        }
+
+        pre {
+            background: var(--code-bg);
+            color: #e2e8f0;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+        }
+
+        ul, ol {
+            margin: 1rem 0;
+            padding-left: 2rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .tier-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px 8px 0 0;
+            margin-top: 2rem;
+        }
+
+        .tier-content {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            padding: 1.5rem;
+        }
+
+        .model-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .model-card h4 {
+            color: var(--primary-color);
+            margin-top: 0;
+        }
+
+        .model-card.recommended {
+            border: 2px solid var(--success-color);
+            background: linear-gradient(to right, #f0fdf4, var(--card-bg));
+        }
+
+        .pros-cons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .pros {
+            background: #f0fdf4;
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .cons {
+            background: #fef2f2;
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .pros h5, .cons h5 {
+            margin-bottom: 0.5rem;
+        }
+
+        .pros h5 {
+            color: var(--success-color);
+        }
+
+        .cons h5 {
+            color: var(--danger-color);
+        }
+
+        .question-block {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .question-block strong {
+            color: var(--primary-color);
+        }
+
+        .answer {
+            background: #f0fdf4;
+            border-left: 4px solid var(--success-color);
+            padding: 0.75rem 1rem;
+            margin-top: 0.75rem;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .toc {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .toc h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .toc li {
+            padding: 0.25rem 0;
+        }
+
+        .toc a {
+            display: block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .toc a:hover {
+            background: #f1f5f9;
+            text-decoration: none;
+        }
+
+        .strategy-box {
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .strategy-box.recommended {
+            border-color: var(--success-color);
+        }
+
+        .strategy-box h4 {
+            margin-top: 0;
+        }
+
+        hr {
+            border: none;
+            border-top: 2px solid var(--border-color);
+            margin: 2rem 0;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .summary-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .summary-item .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .summary-item .label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .pros-cons {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
+
+            table {
+                font-size: 0.85rem;
+            }
+
+            th, td {
+                padding: 8px 12px;
+            }
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+
+            .card, .model-card, .question-block {
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Local LLM for Arabic Document Layout Analysis</h1>
+
+        <!-- Table of Contents -->
+        <div class="toc">
+            <h3>Table of Contents</h3>
+            <ul>
+                <li><a href="#overview">Project Overview</a></li>
+                <li><a href="#hardware">Hardware Constraints</a></li>
+                <li><a href="#requirements">Requirements Gathering (Q&A)</a></li>
+                <li><a href="#consolidated">Consolidated Requirements Summary</a></li>
+                <li><a href="#research">Research Findings</a></li>
+                <li><a href="#comparison">Model Comparison Matrix</a></li>
+                <li><a href="#analysis">Detailed Model Analysis</a></li>
+                <li><a href="#arabic">Arabic Language Specific Findings</a></li>
+                <li><a href="#recommended">Recommended Solutions</a></li>
+                <li><a href="#implementation">Implementation Plan</a></li>
+                <li><a href="#configuration">Configuration for 6GB GPU</a></li>
+                <li><a href="#summary">Summary</a></li>
+                <li><a href="#concurrent">Concurrent VRAM Analysis</a></li>
+            </ul>
+        </div>
+
+        <!-- Project Overview -->
+        <section id="overview">
+            <h2>Project Overview</h2>
+            <div class="highlight-box">
+                <p>Research and requirements gathering for running a local open-source LLM on a PC with 6GB GPU to automatically identify page boundaries in Arabic documents, outlining paragraphs, titles, and diagrams.</p>
+            </div>
+        </section>
+
+        <!-- Hardware Constraints -->
+        <section id="hardware">
+            <h2>Hardware Constraints</h2>
+            <div class="card">
+                <table>
+                    <tr>
+                        <th>Component</th>
+                        <th>Specification</th>
+                    </tr>
+                    <tr>
+                        <td><strong>GPU</strong></td>
+                        <td>NVIDIA RTX 4070 Laptop (8GB VRAM total)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>System RAM</strong></td>
+                        <td>64GB</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Platform</strong></td>
+                        <td>Windows</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Reserved for Surya OCR</strong></td>
+                        <td>~2GB (user estimate)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Available for Layout Detection</strong></td>
+                        <td>~6GB</td>
+                    </tr>
+                </table>
+            </div>
+        </section>
+
+        <!-- Requirements Gathering -->
+        <section id="requirements">
+            <h2>Requirements Gathering</h2>
+
+            <h3>Batch 1 - Questions & Answers</h3>
+
+            <div class="question-block">
+                <strong>Q1: What is the primary document format you'll be processing?</strong>
+                <ul>
+                    <li>A) Scanned PDFs (image-based)</li>
+                    <li>B) Native/Digital PDFs (text-layer present)</li>
+                    <li>C) Mixed (both scanned and digital)</li>
+                    <li>D) Images only (JPG, PNG, TIFF)</li>
+                </ul>
+                <div class="answer"><strong>Answer:</strong> A) Scanned PDFs (image-based)</div>
+            </div>
+
+            <div class="question-block">
+                <strong>Q2: What is the expected volume of documents to process?</strong>
+                <ul>
+                    <li>A) Small batch (1-10 documents at a time)</li>
+                    <li>B) Medium batch (10-50 documents at a time)</li>
+                    <li>C) Large batch (50-200 documents at a time)</li>
+                    <li>D) Continuous processing (streaming/real-time)</li>
+                </ul>
+                <div class="answer"><strong>Answer:</strong> Custom - The system will process images from the Knowledge Extractor system, where a single book can have 300-2000 pages, and each page is stored as a single image.</div>
+            </div>
+
+            <h3>Batch 2 - Questions & Answers</h3>
+
+            <div class="question-block">
+                <strong>Q3: What level of accuracy is required for boundary detection?</strong>
+                <ul>
+                    <li>A) High accuracy (&gt;95%) - manual review acceptable for corrections</li>
+                    <li>B) Very high accuracy (&gt;98%) - minimal manual intervention</li>
+                    <li>C) Perfect accuracy (&gt;99%) - critical documents, no errors allowed</li>
+                    <li>D) Moderate accuracy (&gt;85%) - speed prioritized over precision</li>
+                </ul>
+                <div class="answer"><strong>Answer:</strong> Aiming for 98% (very high), but flexible based on hardware constraints. User wants to see options with their hardware requirements. <strong>Important:</strong> Documents can be in Arabic OR English - need to clarify if one LLM can handle both languages.</div>
+            </div>
+
+            <div class="question-block">
+                <strong>Q4: What is the expected output format for detected boundaries?</strong>
+                <ul>
+                    <li>A) Bounding box coordinates (x, y, width, height)</li>
+                    <li>B) Polygon coordinates (for irregular shapes)</li>
+                    <li>C) Segmented image crops (separate images per region)</li>
+                    <li>D) All of the above</li>
+                </ul>
+                <div class="answer">
+                    <strong>Answer:</strong> Bounding boxes with:
+                    <ul>
+                        <li>Classification: diagram vs paragraph</li>
+                        <li>For diagrams: parent paragraph identification</li>
+                        <li>Integration: Will programmatically call extractor APIs to define paragraphs and diagrams automatically</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Batch 3 - Questions & Answers</h3>
+
+            <div class="question-block">
+                <strong>Q5: What types of diagrams need to be detected?</strong>
+                <ul>
+                    <li>A) Simple charts (bar, line, pie)</li>
+                    <li>B) Complex diagrams (flowcharts, network diagrams, scientific figures)</li>
+                    <li>C) Tables and structured data</li>
+                    <li>D) All types including mixed content</li>
+                </ul>
+                <div class="answer"><strong>Answer:</strong> D) All types including mixed content</div>
+            </div>
+
+            <div class="question-block">
+                <strong>Q6: How should the system handle complex page layouts?</strong>
+                <ul>
+                    <li>A) Single-column text only</li>
+                    <li>B) Multi-column layouts (newspapers, textbooks)</li>
+                    <li>C) Mixed layouts with floating elements</li>
+                    <li>D) All layout types</li>
+                </ul>
+                <div class="answer"><strong>Answer:</strong> D) All layout types</div>
+            </div>
+
+            <h3>Batch 4 - Questions & Answers</h3>
+
+            <div class="question-block">
+                <strong>Q7: What is your preference for processing speed vs accuracy trade-off?</strong>
+                <ul>
+                    <li>A) Accuracy first (slower, but higher quality)</li>
+                    <li>B) Balanced (reasonable speed with good accuracy)</li>
+                    <li>C) Speed first (faster, may sacrifice some accuracy)</li>
+                    <li>D) Configurable per-run</li>
+                </ul>
+                <div class="answer"><strong>Answer:</strong> A) Accuracy first</div>
+            </div>
+
+            <div class="question-block">
+                <strong>Q8: Should the solution integrate with your existing OCR engines (PaddleOCR, Surya, Tesseract)?</strong>
+                <ul>
+                    <li>A) Yes, use layout detection + existing OCR</li>
+                    <li>B) No, use a single all-in-one solution</li>
+                    <li>C) Hybrid - layout detection local, OCR can be either</li>
+                    <li>D) Prefer solutions that include their own OCR</li>
+                </ul>
+                <div class="answer"><strong>Answer:</strong> A) Yes - integrate with existing OCR, specifically <strong>Surya OCR at 600 DPI only</strong> for text extraction</div>
+            </div>
+
+            <h3>Batch 5 - Questions & Answers</h3>
+
+            <div class="question-block">
+                <strong>Q9: What is your preference for model deployment/management?</strong>
+                <ul>
+                    <li>A) Simple single-file model (easy to manage)</li>
+                    <li>B) Hugging Face integration (access to model hub)</li>
+                    <li>C) Docker container (isolated environment)</li>
+                    <li>D) Direct Python integration (pip install)</li>
+                </ul>
+                <div class="answer"><strong>Answer:</strong> Prefer simple local deployments, but open to other options if they provide better results. Research should present multiple options with trade-offs.</div>
+            </div>
+
+            <div class="question-block">
+                <strong>Q10: Do you need the system to learn and improve from corrections?</strong>
+                <ul>
+                    <li>A) No, static model is fine</li>
+                    <li>B) Yes, fine-tune on my specific documents</li>
+                    <li>C) Yes, but only store corrections for future reference</li>
+                    <li>D) Prefer out-of-the-box models with no training</li>
+                </ul>
+                <div class="answer"><strong>Answer:</strong> Prefer out-of-the-box/static models, but fine-tuning capability would be a nice-to-have bonus.</div>
+            </div>
+
+            <h3>Batch 6 - Questions & Answers</h3>
+
+            <div class="question-block">
+                <strong>Q11: What is the typical quality of your scanned documents?</strong>
+                <ul>
+                    <li>A) High quality (clean scans, good contrast)</li>
+                    <li>B) Medium quality (some noise, occasional skew)</li>
+                    <li>C) Low quality (poor scans, significant noise)</li>
+                    <li>D) Variable (mix of all quality levels)</li>
+                </ul>
+                <div class="answer"><strong>Answer:</strong> A) High quality (clean scans, good contrast)</div>
+            </div>
+
+            <div class="question-block">
+                <strong>Q12: Do you need real-time preview of detected boundaries before processing?</strong>
+                <ul>
+                    <li>A) Yes, interactive preview and adjustment</li>
+                    <li>B) Yes, but just visual confirmation</li>
+                    <li>C) No, batch process without preview</li>
+                    <li>D) Optional - nice to have but not required</li>
+                </ul>
+                <div class="answer">
+                    <strong>Answer:</strong> Configurable hybrid approach:
+                    <ul>
+                        <li>User specifies N pages for interactive preview/adjustment</li>
+                        <li>After N pages, switch to automated batch processing without user review</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>Batch 7 - Final Confirmation</h3>
+
+            <div class="question-block">
+                <strong>Q13: To summarize, should the LLM/model be specifically for layout detection only (then pass to Surya OCR), or should it also handle text reading?</strong>
+                <ul>
+                    <li>A) Layout detection only (paragraph/diagram boundaries) - OCR by Surya</li>
+                    <li>B) Layout detection + text reading in one model</li>
+                    <li>C) Layout detection + optional OCR capability</li>
+                </ul>
+                <div class="answer"><strong>Answer:</strong> A) Layout detection only + minimal reading capability to understand diagram titles (for correctly linking diagrams to parent paragraphs). Full OCR handled by Surya.</div>
+            </div>
+
+            <div class="question-block">
+                <strong>Q14: What is the priority order for the research?</strong>
+                <ul>
+                    <li>A) Focus on models that fit 6GB GPU first</li>
+                    <li>B) Focus on accuracy first, then check GPU requirements</li>
+                    <li>C) Provide tiered options (light/medium/heavy models)</li>
+                    <li>D) All options with clear trade-off analysis</li>
+                </ul>
+                <div class="answer"><strong>Answer:</strong> D) All options with clear trade-off analysis</div>
+            </div>
+        </section>
+
+        <!-- Consolidated Requirements Summary -->
+        <section id="consolidated">
+            <h2>Consolidated Requirements Summary</h2>
+
+            <div class="card">
+                <h3>Hardware Constraints</h3>
+                <ul>
+                    <li><strong>GPU:</strong> NVIDIA RTX 4070 Laptop (8GB VRAM total)</li>
+                    <li><strong>System RAM:</strong> 64GB</li>
+                    <li><strong>Platform:</strong> Windows</li>
+                    <li><strong>VRAM Budget:</strong> ~6GB for layout model (reserving ~2GB for Surya OCR)</li>
+                    <li><strong>Preference:</strong> Simple local deployment</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>Functional Requirements</h3>
+                <h4>1. Document Layout Detection</h4>
+                <ul>
+                    <li>Detect paragraph boundaries (bounding boxes)</li>
+                    <li>Detect diagram boundaries (bounding boxes)</li>
+                    <li>Classify regions as paragraph vs diagram</li>
+                    <li>Link diagrams to parent paragraphs via title reading</li>
+                </ul>
+
+                <h4>2. Language Support</h4>
+                <ul>
+                    <li>Arabic documents (primary)</li>
+                    <li>English documents (secondary)</li>
+                    <li>Single model should handle both languages</li>
+                </ul>
+
+                <h4>3. Integration</h4>
+                <ul>
+                    <li>Output bounding boxes to existing Knowledge Extractor system</li>
+                    <li>Use Surya OCR at 600 DPI for text extraction</li>
+                    <li>Programmatic API calls to define paragraphs/diagrams</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>Processing Requirements</h3>
+                <ul>
+                    <li><strong>Volume:</strong> 300-2000 pages per book, each page as separate image</li>
+                    <li><strong>Quality:</strong> High quality scans (clean, good contrast)</li>
+                    <li><strong>Accuracy Target:</strong> 98% (flexible based on hardware)</li>
+                    <li><strong>Speed:</strong> Accuracy prioritized over speed</li>
+                    <li><strong>Layouts:</strong> All types (single-column, multi-column, mixed, floating elements)</li>
+                    <li><strong>Diagram Types:</strong> All (charts, flowcharts, tables, scientific figures, mixed)</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>Workflow Requirements</h3>
+                <ul>
+                    <li>Configurable interactive preview for N pages (user-specified)</li>
+                    <li>Then switch to automated batch processing</li>
+                    <li>Out-of-the-box models preferred (fine-tuning as nice-to-have)</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>Research Scope</h3>
+                <ul>
+                    <li>Provide all viable options with trade-off analysis</li>
+                    <li>Compare VRAM requirements, accuracy, speed</li>
+                    <li>Clarify if single model handles Arabic + English</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Research Findings -->
+        <section id="research">
+            <h2>Research Findings</h2>
+
+            <div class="highlight-box">
+                <strong>Research Date:</strong> January 2026
+            </div>
+
+            <div class="card">
+                <h3>Sources Consulted</h3>
+                <ul>
+                    <li>GitHub repositories (Surya, PaddleOCR, DocLayout-YOLO, Marker, LayoutParser, Unstructured.io)</li>
+                    <li>Hugging Face model documentation</li>
+                    <li>ArXiv papers (DiT, DocLayout-YOLO, RT-DETR)</li>
+                    <li>PyPI package documentation</li>
+                    <li>Microsoft Research (LayoutLM, DiT, Florence-2)</li>
+                    <li>Technical blogs and benchmarks (Roboflow, MarkTechPost, E2E Networks)</li>
+                    <li>KITAB-Bench Arabic OCR benchmark (ACL 2025)</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Model Comparison Matrix -->
+        <section id="comparison">
+            <h2>Model Comparison Matrix</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>VRAM (Inference)</th>
+                        <th>Arabic Support</th>
+                        <th>Accuracy (mAP)</th>
+                        <th>Speed</th>
+                        <th>Fits 6GB?</th>
+                        <th>Layout + Classify</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>DocLayout-YOLO</strong></td>
+                        <td>~4-6 GB</td>
+                        <td>Yes (universal)</td>
+                        <td>70-79%</td>
+                        <td>85.5 FPS</td>
+                        <td><span class="badge badge-success">YES</span></td>
+                        <td><span class="badge badge-success">YES</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Surya Layout</strong></td>
+                        <td>~7 GB (default)</td>
+                        <td>Yes (90+ langs)</td>
+                        <td>High</td>
+                        <td>Good</td>
+                        <td><span class="badge badge-warning">CONFIGURABLE</span></td>
+                        <td><span class="badge badge-success">YES</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>PaddleOCR PP-Structure</strong></td>
+                        <td>~3-4 GB</td>
+                        <td>Yes (109 langs)</td>
+                        <td>Good</td>
+                        <td>Fast</td>
+                        <td><span class="badge badge-success">YES</span></td>
+                        <td><span class="badge badge-success">YES</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Marker</strong></td>
+                        <td>~2 GB/task</td>
+                        <td>Yes (Surya-based)</td>
+                        <td>High</td>
+                        <td>122 pg/s</td>
+                        <td><span class="badge badge-success">YES</span></td>
+                        <td><span class="badge badge-success">YES</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>DiT-base</strong></td>
+                        <td>~1-2 GB</td>
+                        <td>Universal</td>
+                        <td>Good</td>
+                        <td>Fast</td>
+                        <td><span class="badge badge-success">YES</span></td>
+                        <td><span class="badge badge-success">YES</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>DiT-large</strong></td>
+                        <td>~2-4 GB</td>
+                        <td>Universal</td>
+                        <td>Higher</td>
+                        <td>Medium</td>
+                        <td><span class="badge badge-success">YES</span></td>
+                        <td><span class="badge badge-success">YES</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>LayoutParser</strong></td>
+                        <td>~4-8 GB</td>
+                        <td>Depends on model</td>
+                        <td>Good</td>
+                        <td>Medium</td>
+                        <td><span class="badge badge-warning">BORDERLINE</span></td>
+                        <td><span class="badge badge-success">YES</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Florence-2</strong></td>
+                        <td>~5-6 GB (BF16)</td>
+                        <td>Yes</td>
+                        <td>High</td>
+                        <td>~1s/img</td>
+                        <td><span class="badge badge-info">YES (BF16)</span></td>
+                        <td><span class="badge badge-success">YES</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Qwen2.5-VL-3B</strong></td>
+                        <td>~5.75 GB (BF16)</td>
+                        <td>Yes</td>
+                        <td>High</td>
+                        <td>Medium</td>
+                        <td><span class="badge badge-info">YES (BF16)</span></td>
+                        <td><span class="badge badge-success">YES</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Detailed Model Analysis -->
+        <section id="analysis">
+            <h2>Detailed Model Analysis</h2>
+
+            <div class="tier-header">
+                <h3 style="margin:0; color:white;">Tier 1: Recommended for 6GB GPU (Native Fit)</h3>
+            </div>
+            <div class="tier-content">
+
+                <div class="model-card recommended">
+                    <h4>1. DocLayout-YOLO (TOP RECOMMENDATION)</h4>
+                    <p><strong>GitHub:</strong> <a href="https://github.com/opendatalab/DocLayout-YOLO" target="_blank">https://github.com/opendatalab/DocLayout-YOLO</a></p>
+                    <p><strong>Installation:</strong> <code>pip install doclayout-yolo</code></p>
+
+                    <table>
+                        <tr><td><strong>VRAM</strong></td><td>~4-6 GB for inference (YOLOv10-based, efficient)</td></tr>
+                        <tr><td><strong>Accuracy</strong></td><td>70.3% (D4LA), 79.7% (DocLayNet), 78.8% (DocStructBench)</td></tr>
+                        <tr><td><strong>Speed</strong></td><td>85.5 FPS (real-time capable)</td></tr>
+                        <tr><td><strong>Languages</strong></td><td>Universal (language-agnostic for layout detection)</td></tr>
+                        <tr><td><strong>Output</strong></td><td>Bounding boxes with class labels (title, text, figure, table, etc.)</td></tr>
+                    </table>
+
+                    <div class="pros-cons">
+                        <div class="pros">
+                            <h5>Pros</h5>
+                            <ul>
+                                <li>State-of-the-art for document layout</li>
+                                <li>Fast and accurate</li>
+                                <li>Simple Python API</li>
+                                <li>Handles complex layouts</li>
+                                <li>Hugging Face integration</li>
+                            </ul>
+                        </div>
+                        <div class="cons">
+                            <h5>Cons</h5>
+                            <ul>
+                                <li>Layout detection only (needs separate OCR)</li>
+                                <li>May need fine-tuning for Arabic-specific layouts</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="model-card">
+                    <h4>2. Marker PDF (INTEGRATED SOLUTION)</h4>
+                    <p><strong>GitHub:</strong> <a href="https://github.com/datalab-to/marker" target="_blank">https://github.com/datalab-to/marker</a></p>
+                    <p><strong>Installation:</strong> <code>pip install marker-pdf[full]</code></p>
+
+                    <table>
+                        <tr><td><strong>VRAM</strong></td><td>~2 GB per task</td></tr>
+                        <tr><td><strong>Speed</strong></td><td>122 pages/second on H100</td></tr>
+                        <tr><td><strong>Languages</strong></td><td>90+ including Arabic (uses Surya internally)</td></tr>
+                        <tr><td><strong>Output</strong></td><td>Structured markdown with bounding box JSON</td></tr>
+                    </table>
+
+                    <div class="pros-cons">
+                        <div class="pros">
+                            <h5>Pros</h5>
+                            <ul>
+                                <li>Already uses Surya OCR internally</li>
+                                <li>Multi-column layout handling</li>
+                                <li>Table and equation support</li>
+                                <li>Debug mode saves layout images with bounding boxes</li>
+                                <li>Preprocesses (deskew, noise removal)</li>
+                            </ul>
+                        </div>
+                        <div class="cons">
+                            <h5>Cons</h5>
+                            <ul>
+                                <li>Full pipeline (may want layout-only mode)</li>
+                                <li>Outputs markdown, not raw bounding boxes</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="model-card">
+                    <h4>3. PaddleOCR PP-StructureV3 (MOST EFFICIENT)</h4>
+                    <p><strong>GitHub:</strong> <a href="https://github.com/PaddlePaddle/PaddleOCR" target="_blank">https://github.com/PaddlePaddle/PaddleOCR</a></p>
+                    <p><strong>Installation:</strong> <code>pip install paddleocr</code></p>
+
+                    <table>
+                        <tr><td><strong>VRAM</strong></td><td>~3-4 GB (configurable)</td></tr>
+                        <tr><td><strong>Languages</strong></td><td>109 languages including Arabic</td></tr>
+                        <tr><td><strong>Speed</strong></td><td>Varies by model variant (mobile/server)</td></tr>
+                        <tr><td><strong>Accuracy</strong></td><td>Good for standard documents</td></tr>
+                    </table>
+
+                    <div class="pros-cons">
+                        <div class="pros">
+                            <h5>Pros</h5>
+                            <ul>
+                                <li>Most resource-efficient</li>
+                                <li>Server and mobile variants</li>
+                                <li>CPU fallback available</li>
+                                <li>Extensive Arabic support</li>
+                            </ul>
+                        </div>
+                        <div class="cons">
+                            <h5>Cons</h5>
+                            <ul>
+                                <li>Requires Flash Attention 2 for Arabic (reduces VRAM from 40GB to 3.3GB!)</li>
+                                <li>PaddlePaddle framework (not PyTorch)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="model-card">
+                    <h4>4. DiT (Document Image Transformer)</h4>
+                    <p><strong>Hugging Face:</strong> <a href="https://huggingface.co/microsoft/dit-large" target="_blank">https://huggingface.co/microsoft/dit-large</a></p>
+
+                    <table>
+                        <tr><td><strong>VRAM (DiT-base)</strong></td><td>~1-2 GB (~86M params)</td></tr>
+                        <tr><td><strong>VRAM (DiT-large)</strong></td><td>~2-4 GB (~304M params)</td></tr>
+                        <tr><td><strong>Languages</strong></td><td>Universal (self-supervised pre-training)</td></tr>
+                        <tr><td><strong>Tasks</strong></td><td>Layout analysis, table detection, document classification</td></tr>
+                    </table>
+
+                    <div class="pros-cons">
+                        <div class="pros">
+                            <h5>Pros</h5>
+                            <ul>
+                                <li>Very lightweight</li>
+                                <li>Microsoft-backed</li>
+                                <li>Pre-trained on 42M document images</li>
+                                <li>Multiple sizes available</li>
+                            </ul>
+                        </div>
+                        <div class="cons">
+                            <h5>Cons</h5>
+                            <ul>
+                                <li>May need fine-tuning for specific use cases</li>
+                                <li>Lower out-of-box accuracy than specialized models</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tier-header" style="background: linear-gradient(135deg, #d97706, #b45309);">
+                <h3 style="margin:0; color:white;">Tier 2: Configurable for 6GB GPU</h3>
+            </div>
+            <div class="tier-content">
+                <div class="model-card">
+                    <h4>5. Surya Layout Detection</h4>
+                    <p><strong>GitHub:</strong> <a href="https://github.com/datalab-to/surya" target="_blank">https://github.com/datalab-to/surya</a></p>
+                    <p><strong>Installation:</strong> <code>pip install surya-ocr</code></p>
+
+                    <table>
+                        <tr><td><strong>VRAM (default)</strong></td><td>~7 GB (batch size 32)</td></tr>
+                        <tr><td><strong>VRAM (configurable)</strong></td><td>~220 MB per batch item</td></tr>
+                        <tr><td><strong>Languages</strong></td><td>90+ including Arabic</td></tr>
+                        <tr><td><strong>Accuracy</strong></td><td>High (used by Marker)</td></tr>
+                    </table>
+
+                    <p><strong>Configuration for 6GB:</strong></p>
+                    <pre><code>export LAYOUT_BATCH_SIZE=24  # ~5.3 GB
+export DETECTOR_BATCH_SIZE=20  # ~5.6 GB</code></pre>
+
+                    <div class="pros-cons">
+                        <div class="pros">
+                            <h5>Pros</h5>
+                            <ul>
+                                <li>Already in your system</li>
+                                <li>Excellent multilingual support</li>
+                                <li>Reading order detection</li>
+                                <li>Table recognition</li>
+                            </ul>
+                        </div>
+                        <div class="cons">
+                            <h5>Cons</h5>
+                            <ul>
+                                <li>Default settings exceed 6GB</li>
+                                <li>Need to tune batch sizes</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tier-header" style="background: linear-gradient(135deg, #7c3aed, #5b21b6);">
+                <h3 style="margin:0; color:white;">Tier 3: Vision-Language Models (Advanced)</h3>
+            </div>
+            <div class="tier-content">
+                <div class="model-card">
+                    <h4>6. Florence-2 (Microsoft)</h4>
+                    <p><strong>Hugging Face:</strong> <a href="https://huggingface.co/microsoft/Florence-2-large" target="_blank">https://huggingface.co/microsoft/Florence-2-large</a></p>
+
+                    <table>
+                        <tr><td><strong>VRAM</strong></td><td>~5-6 GB (BF16/FP16)</td></tr>
+                        <tr><td><strong>Languages</strong></td><td>Multilingual including Arabic</td></tr>
+                        <tr><td><strong>Tasks</strong></td><td>OCR, layout, VQA, captioning, detection</td></tr>
+                    </table>
+
+                    <div class="pros-cons">
+                        <div class="pros">
+                            <h5>Pros</h5>
+                            <ul>
+                                <li>Multi-task single model</li>
+                                <li>Can understand diagram titles (your requirement!)</li>
+                                <li>Good for linking diagrams to paragraphs</li>
+                            </ul>
+                        </div>
+                        <div class="cons">
+                            <h5>Cons</h5>
+                            <ul>
+                                <li>~1 second per image inference</li>
+                                <li>May need BF16 precision to fit</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="model-card">
+                    <h4>7. Qwen2.5-VL-3B</h4>
+
+                    <table>
+                        <tr><td><strong>VRAM (FP32)</strong></td><td>11.5 GB</td></tr>
+                        <tr><td><strong>VRAM (BF16)</strong></td><td>5.75 GB</td></tr>
+                        <tr><td><strong>Languages</strong></td><td>Excellent multilingual including Arabic</td></tr>
+                    </table>
+
+                    <div class="pros-cons">
+                        <div class="pros">
+                            <h5>Pros</h5>
+                            <ul>
+                                <li>State-of-the-art VLM capabilities</li>
+                                <li>Can understand document context</li>
+                                <li>Text reading for diagram titles</li>
+                            </ul>
+                        </div>
+                        <div class="cons">
+                            <h5>Cons</h5>
+                            <ul>
+                                <li>Requires BF16 precision</li>
+                                <li>Slower than specialized layout models</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tier-header" style="background: linear-gradient(135deg, #6b7280, #4b5563);">
+                <h3 style="margin:0; color:white;">Tier 4: Requires More VRAM (Reference Only)</h3>
+            </div>
+            <div class="tier-content">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>VRAM Required</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Surya (defaults)</td>
+                            <td>9-10 GB</td>
+                            <td>Reduce batch size for 6GB</td>
+                        </tr>
+                        <tr>
+                            <td>Donut</td>
+                            <td>16+ GB</td>
+                            <td>OCR-free document understanding</td>
+                        </tr>
+                        <tr>
+                            <td>LayoutLMv3</td>
+                            <td>8+ GB</td>
+                            <td>For fine-tuning; inference may fit</td>
+                        </tr>
+                        <tr>
+                            <td>Florence-2 (fine-tuning)</td>
+                            <td>20 GB</td>
+                            <td>Inference only on 6GB</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Arabic Language Specific Findings -->
+        <section id="arabic">
+            <h2>Arabic Language Specific Findings</h2>
+
+            <div class="card">
+                <h3>KITAB-Bench (ACL 2025)</h3>
+                <p>The most comprehensive Arabic OCR benchmark evaluates layout detection with:</p>
+                <ul>
+                    <li>8,809 samples across 9 domains</li>
+                    <li>mAP@0.5 and mAP@0.5:0.95 metrics</li>
+                    <li>Tests headers, paragraphs, and complex layouts</li>
+                </ul>
+
+                <div class="highlight-box">
+                    <strong>Key Finding:</strong> For Arabic documents:
+                    <ul>
+                        <li>GPT-4o and Gemini significantly outperform traditional OCR</li>
+                        <li>Surya performs well for standard text but struggles with tables/charts</li>
+                        <li>RT-DETR Layout achieves competitive performance for layout detection</li>
+                        <li><strong>PaddleOCR with Flash Attention 2 is critical</strong> for Arabic (reduces VRAM from 40GB to 3.3GB)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Arabic-Specific Challenges</h3>
+                <ul>
+                    <li>Right-to-left text direction</li>
+                    <li>Connected script requiring special handling</li>
+                    <li>Diacritical marks affecting line boundaries</li>
+                    <li>Multi-script documents (Arabic + English mixed)</li>
+                </ul>
+            </div>
+
+            <div class="success-box">
+                <h3>Recommended Approach for Arabic</h3>
+                <ol>
+                    <li>Use <strong>DocLayout-YOLO</strong> for layout detection (language-agnostic)</li>
+                    <li>Use <strong>Surya OCR at 600 DPI</strong> for text extraction (90+ language support)</li>
+                    <li>For diagram title reading, use <strong>Florence-2</strong> or pass to Claude API</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- Recommended Solutions -->
+        <section id="recommended">
+            <h2>Recommended Solutions</h2>
+
+            <div class="model-card recommended">
+                <h3>Primary Recommendation: DocLayout-YOLO + Surya Integration</h3>
+
+                <p><strong>Why:</strong></p>
+                <ul>
+                    <li>DocLayout-YOLO fits comfortably in 6GB VRAM</li>
+                    <li>Already using Surya for OCR (no new dependencies)</li>
+                    <li>State-of-the-art layout detection accuracy</li>
+                    <li>Real-time processing speed</li>
+                    <li>Language-agnostic (works for Arabic + English)</li>
+                </ul>
+
+                <p><strong>Architecture:</strong></p>
+                <pre><code>Page Image
+    ↓
+DocLayout-YOLO (layout detection, ~4 GB VRAM)
+    ↓
+Bounding Boxes + Classes (paragraph, title, figure, table, etc.)
+    ↓
+For each region:
+    - If paragraph/title → Surya OCR at 600 DPI
+    - If diagram → Store as diagram, optionally use Florence-2 for title
+    ↓
+Output to Knowledge Extractor API</code></pre>
+            </div>
+
+            <div class="card">
+                <h3>Alternative 1: Marker (All-in-One)</h3>
+                <p>Use if you want a single integrated solution. Marker already uses Surya internally and provides layout + OCR + structured output.</p>
+            </div>
+
+            <div class="card">
+                <h3>Alternative 2: DiT + Surya</h3>
+                <p>Use DiT-base for minimal VRAM usage (~1-2 GB) if you need to run other processes simultaneously.</p>
+            </div>
+
+            <div class="card">
+                <h3>Alternative 3: Florence-2 (For Diagram Understanding)</h3>
+                <p>Add Florence-2 specifically for understanding diagram titles and linking to parent paragraphs. Can run alongside DocLayout-YOLO.</p>
+            </div>
+        </section>
+
+        <!-- Implementation Plan -->
+        <section id="implementation">
+            <h2>Implementation Plan</h2>
+
+            <div class="card">
+                <h3>Phase 1: Setup DocLayout-YOLO</h3>
+                <pre><code># Installation
+pip install doclayout-yolo
+
+# Basic usage
+from doclayout_yolo import DocLayoutYOLO
+
+model = DocLayoutYOLO.from_pretrained()
+results = model.predict("page_image.png")
+
+# Results contain bounding boxes with classes:
+# - title, text, figure, table, list, etc.</code></pre>
+            </div>
+
+            <div class="card">
+                <h3>Phase 2: Integration with Knowledge Extractor</h3>
+                <ol>
+                    <li>Add new API endpoint: <code>POST /api/auto-boundaries/{book_id}/detect</code></li>
+                    <li>Process page images from database</li>
+                    <li>Return bounding boxes with classifications</li>
+                    <li>Store results for review</li>
+                </ol>
+            </div>
+
+            <div class="card">
+                <h3>Phase 3: Workflow Integration</h3>
+                <ol>
+                    <li>User opens Auto-Boundaries page</li>
+                    <li>Selects page range for processing</li>
+                    <li>Model detects layouts and classifies regions</li>
+                    <li>Interactive review for N pages</li>
+                    <li>Automated processing for remaining pages</li>
+                    <li>Results stored as paragraph_images and diagram_images</li>
+                </ol>
+            </div>
+
+            <div class="card">
+                <h3>Phase 4: Optional Florence-2 for Diagrams</h3>
+                <pre><code># For diagram title extraction
+from transformers import AutoProcessor, AutoModelForCausalLM
+
+processor = AutoProcessor.from_pretrained("microsoft/Florence-2-base")
+model = AutoModelForCausalLM.from_pretrained("microsoft/Florence-2-base")
+
+# Use for linking diagrams to parent paragraphs</code></pre>
+            </div>
+        </section>
+
+        <!-- Configuration for 6GB GPU -->
+        <section id="configuration">
+            <h2>Configuration for 6GB GPU</h2>
+
+            <div class="card">
+                <h3>DocLayout-YOLO</h3>
+                <pre><code># Runs efficiently on 6GB by default
+# For memory-constrained scenarios:
+model.predict(image, batch_size=1)  # Single image at a time</code></pre>
+            </div>
+
+            <div class="card">
+                <h3>Surya (Existing)</h3>
+                <pre><code># Set environment variables before running
+export LAYOUT_BATCH_SIZE=20    # ~4.4 GB
+export DETECTOR_BATCH_SIZE=16  # ~4.5 GB
+export RECOGNITION_BATCH_SIZE=256  # ~10 GB → reduce to 64 for ~2.5 GB</code></pre>
+            </div>
+
+            <div class="card">
+                <h3>Florence-2 (Optional)</h3>
+                <pre><code># Use bfloat16 to fit in 6GB
+model = AutoModelForCausalLM.from_pretrained(
+    "microsoft/Florence-2-base",
+    torch_dtype=torch.bfloat16
+)</code></pre>
+            </div>
+        </section>
+
+        <!-- Summary -->
+        <section id="summary">
+            <h2>Summary</h2>
+
+            <div class="success-box">
+                <h3>Can you run a local LLM for Arabic document layout analysis on 6GB GPU?</h3>
+                <p style="font-size: 1.5rem; font-weight: bold; color: #166534;">YES - Multiple viable options exist!</p>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Priority</th>
+                        <th>Model</th>
+                        <th>Fits 6GB?</th>
+                        <th>Arabic</th>
+                        <th>Accuracy</th>
+                        <th>Recommendation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>DocLayout-YOLO</td>
+                        <td><span class="badge badge-success">YES</span></td>
+                        <td><span class="badge badge-success">YES</span></td>
+                        <td>79.7%</td>
+                        <td><strong>PRIMARY CHOICE</strong></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>Marker</td>
+                        <td><span class="badge badge-success">YES</span></td>
+                        <td><span class="badge badge-success">YES</span></td>
+                        <td>High</td>
+                        <td>INTEGRATED</td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>DiT-base</td>
+                        <td><span class="badge badge-success">YES</span></td>
+                        <td><span class="badge badge-success">YES</span></td>
+                        <td>Good</td>
+                        <td>LIGHTWEIGHT</td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td>Florence-2</td>
+                        <td><span class="badge badge-info">YES (BF16)</span></td>
+                        <td><span class="badge badge-success">YES</span></td>
+                        <td>High</td>
+                        <td>FOR DIAGRAMS</td>
+                    </tr>
+                    <tr>
+                        <td>5</td>
+                        <td>Surya (tuned)</td>
+                        <td><span class="badge badge-success">YES</span></td>
+                        <td><span class="badge badge-success">YES</span></td>
+                        <td>High</td>
+                        <td>ALREADY HAVE</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="card">
+                <h3>Next Steps</h3>
+                <ol>
+                    <li>Confirm recommendation (DocLayout-YOLO + existing Surya)</li>
+                    <li>Create integration plan for Knowledge Extractor</li>
+                    <li>Implement API endpoints</li>
+                    <li>Build UI for boundary review</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- Concurrent VRAM Analysis -->
+        <section id="concurrent">
+            <h2>Concurrent VRAM Analysis: DocLayout-YOLO + Surya OCR</h2>
+
+            <div class="card">
+                <h3>Your Hardware Profile</h3>
+                <table>
+                    <tr><th>Component</th><th>Specification</th></tr>
+                    <tr><td>GPU</td><td>NVIDIA RTX 4070 Laptop</td></tr>
+                    <tr><td>VRAM</td><td>8GB GDDR6</td></tr>
+                    <tr><td>CUDA Cores</td><td>4,608</td></tr>
+                    <tr><td>Memory Bus</td><td>128-bit @ 16 Gbps</td></tr>
+                    <tr><td>System RAM</td><td>64GB</td></tr>
+                    <tr><td>Platform</td><td>Windows</td></tr>
+                </table>
+            </div>
+
+            <div class="card">
+                <h3>Surya OCR VRAM Usage (Research Findings)</h3>
+                <p>Based on research from GitHub issues and documentation:</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Surya Component</th>
+                            <th>Per-Batch VRAM</th>
+                            <th>Default Batch</th>
+                            <th>Default Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Text Detector</td>
+                            <td>280 MB/item</td>
+                            <td>32</td>
+                            <td>~9 GB</td>
+                        </tr>
+                        <tr>
+                            <td>Text Recognition</td>
+                            <td>50 MB/item</td>
+                            <td>256</td>
+                            <td>~12.8 GB</td>
+                        </tr>
+                        <tr>
+                            <td>Layout Detection</td>
+                            <td>220 MB/item</td>
+                            <td>32</td>
+                            <td>~7 GB</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="highlight-box">
+                    <p><strong>Real-World Observation:</strong> Users report Surya using ~6.2 GB VRAM with default settings on RTX 4090 (GitHub Issue #183).</p>
+                    <p><strong>On RTX 3050 8GB:</strong> Confirmed working with "decent speed" when compiled.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>DocLayout-YOLO VRAM Usage (Estimated)</h3>
+                <p>DocLayout-YOLO is based on YOLOv10. Typical YOLO inference memory:</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Model Variant</th>
+                            <th>Approximate VRAM (Inference)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>YOLOv10n (nano)</td><td>~0.5-1 GB</td></tr>
+                        <tr><td>YOLOv10s (small)</td><td>~1-1.5 GB</td></tr>
+                        <tr><td>YOLOv10m (medium)</td><td>~1.5-2.5 GB</td></tr>
+                        <tr><td>YOLOv10l (large)</td><td>~2.5-4 GB</td></tr>
+                        <tr><td>DocLayout-YOLO</td><td>~2-4 GB (estimated)</td></tr>
+                    </tbody>
+                </table>
+
+                <p><em>Note: Exact DocLayout-YOLO inference VRAM not published; estimates based on YOLOv10 architecture.</em></p>
+            </div>
+
+            <h3>Concurrent Usage Strategies</h3>
+
+            <div class="strategy-box recommended">
+                <h4>Strategy 1: Sequential Processing (RECOMMENDED - SAFEST)</h4>
+                <p>Run models one after the other, not simultaneously.</p>
+
+                <pre><code>Step 1: Load DocLayout-YOLO → Detect layouts → Unload
+Step 2: Load Surya OCR → Extract text from regions → Unload</code></pre>
+
+                <p><strong>VRAM Usage:</strong> Maximum of single largest model (~4-6 GB)<br>
+                <strong>Pros:</strong> No VRAM conflicts, maximum stability<br>
+                <strong>Cons:</strong> Slight overhead from model loading/unloading</p>
+
+                <p><strong>Implementation:</strong></p>
+                <pre><code>import torch
+import gc
+
+def detect_layout(image):
+    model = load_doclayout_yolo()
+    results = model.predict(image)
+    del model
+    torch.cuda.empty_cache()
+    gc.collect()
+    return results
+
+def extract_text(image_region):
+    # Surya OCR loads here
+    text = surya_ocr(image_region)
+    torch.cuda.empty_cache()
+    return text</code></pre>
+            </div>
+
+            <div class="strategy-box">
+                <h4>Strategy 2: Concurrent with Reduced Batch Sizes (POSSIBLE)</h4>
+                <p>Run both models with aggressive memory tuning.</p>
+
+                <p><strong>Configuration for 8GB Total:</strong></p>
+                <pre><code># Surya OCR - Reduced batch sizes
+export DETECTOR_BATCH_SIZE=4      # ~1.1 GB (vs 9 GB default)
+export RECOGNITION_BATCH_SIZE=16  # ~0.8 GB (vs 12.8 GB default)
+export LAYOUT_BATCH_SIZE=4        # ~0.9 GB (vs 7 GB default)</code></pre>
+
+                <p><strong>Estimated VRAM Split:</strong></p>
+                <table>
+                    <tr><th>Model</th><th>Configured VRAM</th></tr>
+                    <tr><td>DocLayout-YOLO</td><td>~2-3 GB</td></tr>
+                    <tr><td>Surya (tuned)</td><td>~2-3 GB</td></tr>
+                    <tr><td>CUDA overhead</td><td>~1 GB</td></tr>
+                    <tr><td><strong>Total</strong></td><td><strong>~5-7 GB</strong></td></tr>
+                </table>
+
+                <p><strong>Pros:</strong> Faster overall processing<br>
+                <strong>Cons:</strong> Reduced throughput, potential instability</p>
+            </div>
+
+            <div class="strategy-box">
+                <h4>Strategy 3: Hybrid - Layout on GPU, OCR Uses CPU Fallback</h4>
+                <p>Use GPU for fast layout detection, fall back to CPU for OCR.</p>
+
+                <pre><code># Force Surya to CPU
+export TORCH_DEVICE=cpu</code></pre>
+
+                <p><strong>VRAM Usage:</strong> ~2-4 GB (DocLayout-YOLO only)<br>
+                <strong>System RAM:</strong> Surya uses your 64GB RAM<br>
+                <strong>Pros:</strong> Full GPU power for layout, stable<br>
+                <strong>Cons:</strong> OCR slower on CPU (~10x), but you have 64GB RAM</p>
+            </div>
+
+            <div class="card">
+                <h3>Recommended Configuration for RTX 4070 Laptop (8GB)</h3>
+                <pre><code># File: set_vram_config.bat (Windows)
+# Run before starting the Knowledge Extractor
+
+# DocLayout-YOLO settings
+set DOCLAYOUT_BATCH_SIZE=1
+
+# Surya OCR settings for 8GB GPU
+set DETECTOR_BATCH_SIZE=8
+set RECOGNITION_BATCH_SIZE=32
+set LAYOUT_BATCH_SIZE=8
+set TORCH_DEVICE=cuda
+
+# PyTorch memory management
+set PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512</code></pre>
+
+                <p><strong>Estimated VRAM with these settings:</strong></p>
+                <table>
+                    <tr><th>Component</th><th>VRAM</th></tr>
+                    <tr><td>DocLayout-YOLO (batch 1)</td><td>~2 GB</td></tr>
+                    <tr><td>Surya Detector (batch 8)</td><td>~2.2 GB</td></tr>
+                    <tr><td>Surya Recognition (batch 32)</td><td>~1.6 GB</td></tr>
+                    <tr><td>CUDA/PyTorch overhead</td><td>~1 GB</td></tr>
+                    <tr><td><strong>Total (if sequential)</strong></td><td><strong>~3-4 GB</strong></td></tr>
+                    <tr><td><strong>Total (if concurrent)</strong></td><td><strong>~6-7 GB</strong></td></tr>
+                </table>
+            </div>
+
+            <div class="card">
+                <h3>Performance Expectations</h3>
+
+                <h4>Sequential Processing (Recommended)</h4>
+                <table>
+                    <tr><th>Operation</th><th>Time per Page (Est.)</th></tr>
+                    <tr><td>Load DocLayout-YOLO</td><td>~2-3 sec (once)</td></tr>
+                    <tr><td>Layout detection</td><td>~0.1-0.2 sec</td></tr>
+                    <tr><td>Unload + Load Surya</td><td>~3-4 sec</td></tr>
+                    <tr><td>OCR per region</td><td>~1-2 sec</td></tr>
+                    <tr><td><strong>Total per page</strong></td><td><strong>~5-8 sec</strong></td></tr>
+                </table>
+
+                <h4>For a 500-page book:</h4>
+                <ul>
+                    <li>Layout detection: ~100 seconds (~1.5 min)</li>
+                    <li>OCR (with model swapping): ~40-50 minutes</li>
+                    <li><strong>Total: ~45-55 minutes</strong></li>
+                </ul>
+
+                <h4>With Concurrent Processing (If Stable):</h4>
+                <ul>
+                    <li><strong>Total: ~25-35 minutes</strong> (estimated 30-40% faster)</li>
+                </ul>
+            </div>
+
+            <div class="warning-box">
+                <h3>Memory Overflow Protection</h3>
+                <p>Your 64GB system RAM provides a safety net. Windows/CUDA can use "shared GPU memory" which borrows from system RAM when VRAM is full.</p>
+                <p><strong>However, shared memory is ~10x slower than dedicated VRAM.</strong></p>
+                <p>To prevent this:</p>
+                <pre><code># In your Python code
+import torch
+torch.cuda.set_per_process_memory_fraction(0.90)  # Use max 90% of VRAM</code></pre>
+            </div>
+
+            <div class="card">
+                <h3>Verification Commands</h3>
+                <p>Run these to monitor VRAM usage during testing:</p>
+
+                <pre><code># Windows PowerShell - Real-time monitoring
+nvidia-smi -l 1
+
+# Or one-time check
+nvidia-smi --query-gpu=memory.used,memory.total --format=csv</code></pre>
+
+                <p><strong>Python VRAM check:</strong></p>
+                <pre><code>import torch
+print(f"VRAM Allocated: {torch.cuda.memory_allocated() / 1e9:.2f} GB")
+print(f"VRAM Cached: {torch.cuda.memory_reserved() / 1e9:.2f} GB")</code></pre>
+            </div>
+
+            <div class="card">
+                <h3>Final Answer: Can Both Models Run Together?</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Scenario</th>
+                            <th>Fits in 8GB?</th>
+                            <th>Recommendation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Sequential (one at a time)</td>
+                            <td><span class="badge badge-success">YES</span></td>
+                            <td><strong>RECOMMENDED</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Concurrent (both loaded, tuned batches)</td>
+                            <td><span class="badge badge-warning">BORDERLINE</span></td>
+                            <td>Test carefully</td>
+                        </tr>
+                        <tr>
+                            <td>Concurrent (default settings)</td>
+                            <td><span class="badge badge-danger">NO</span></td>
+                            <td>Will overflow to shared memory</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="success-box">
+                    <h4>Bottom Line:</h4>
+                    <ul>
+                        <li><strong>YES</strong>, DocLayout-YOLO and Surya OCR can coexist on your 8GB RTX 4070</li>
+                        <li><strong>Best approach:</strong> Sequential processing with model swapping</li>
+                        <li><strong>Alternative:</strong> Concurrent with reduced batch sizes (test for stability)</li>
+                        <li>Your <strong>64GB system RAM</strong> provides an excellent safety net if VRAM overflows</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <hr>
+
+        <footer style="text-align: center; color: var(--text-muted); padding: 2rem 0;">
+            <p>Generated: January 2026 | Knowledge Extraction System - Local LLM Research</p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Document - Knowledge Extraction System</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .top-nav {
+            background: #2196F3;
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .top-nav-brand { font-size: 20px; font-weight: bold; }
+        .top-nav-links { display: flex; gap: 20px; }
+        .top-nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .top-nav-links a:hover { background: rgba(255,255,255,0.2); }
+        .top-nav-links a.active { background: rgba(255,255,255,0.3); font-weight: bold; }
+    </style>
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="top-nav-brand">📚 Knowledge Extraction System</div>
+        <div class="top-nav-links">
+            <a href="/library">📚 Library</a>
+            <a href="/auto-slicer">🔪 Auto-Slicer</a>
+            <a href="/upload" class="active">📤 Upload</a>
+            <a href="/verification">✅ Verification</a>
+            <a href="/book-settings">⚙️ Book Settings</a>
+            <a href="/verify-pages">🔍 Verify Pages</a>
+        </div>
+    </nav>
+    <div class="container">
+        <header>
+            <h1>Knowledge Extraction System</h1>
+            <p>Upload and process documents with AI-powered OCR</p>
+        </header>
+
+        <div class="upload-container">
+            <!-- Storage Location Display -->
+            <div id="storage-location-info" style="background: #e3f2fd; padding: 15px; border-radius: 4px; border-left: 4px solid #2196F3; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>📁 Upload Storage Location:</strong> <span id="storage-path">Loading...</span>
+                        <p id="storage-warning" style="margin-top: 5px; color: #FF9800; font-weight: bold; display: none;"></p>
+                    </div>
+                    <button onclick="openStorageModal()" style="padding: 8px 16px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                        ⚙️ Manage Storage
+                    </button>
+                </div>
+            </div>
+
+            <!-- Two-Column Layout: Upload New OR Select Existing -->
+            <div id="book-selection-section" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
+                <!-- Left Column: Upload New Book -->
+                <div style="background: white; padding: 25px; border-radius: 8px; border: 2px solid #4CAF50;">
+                    <h2 style="color: #4CAF50; margin-bottom: 20px;">📤 Upload New Book</h2>
+
+                    <div class="file-upload">
+                        <label for="file-input" class="file-label">
+                            <span>Choose File or Drag & Drop</span>
+                            <input type="file" id="file-input" name="file" accept=".pdf,.png,.jpg,.jpeg">
+                        </label>
+                        <div id="file-info"></div>
+                    </div>
+
+                    <div id="upload-message" style="margin-top: 15px; padding: 10px; border-radius: 4px; display: none;"></div>
+
+                    <button type="button" id="proceed-upload-btn" class="btn-primary" style="width: 100%; margin-top: 20px; padding: 15px; background: #4CAF50; border: none; border-radius: 4px; color: white; font-size: 16px; cursor: pointer; font-weight: bold;" disabled>
+                        ➡️ Proceed with New Upload
+                    </button>
+                </div>
+
+                <!-- Right Column: Select Existing Book -->
+                <div style="background: white; padding: 25px; border-radius: 8px; border: 2px solid #2196F3;">
+                    <h2 style="color: #2196F3; margin-bottom: 20px;">📚 Select Existing Book</h2>
+
+                    <div id="existing-books-list" style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
+                        <div class="loading" style="text-align: center; padding: 30px; color: #666;">
+                            Loading books...
+                        </div>
+                    </div>
+
+                    <button type="button" id="proceed-existing-btn" class="btn-primary" style="width: 100%; margin-top: 20px; padding: 15px; background: #2196F3; border: none; border-radius: 4px; color: white; font-size: 16px; cursor: pointer; font-weight: bold;" disabled>
+                        ➡️ Proceed with Selected Book
+                    </button>
+                </div>
+            </div>
+
+            <form id="upload-form" enctype="multipart/form-data" style="display: none;">
+
+                <div class="presets-section" style="margin-top: 30px;">
+                    <h2>Processing Preset (Optional)</h2>
+                    <div class="preset-buttons" style="display: flex; gap: 10px; margin-top: 15px;">
+                        <button type="button" class="preset-btn" data-preset="quick" style="flex: 1; padding: 12px; border: 2px solid #2196F3; background: #2196F3; color: white; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                            ⚡ Quick Scan
+                        </button>
+                        <button type="button" class="preset-btn" data-preset="balanced" style="flex: 1; padding: 12px; border: 2px solid #2196F3; background: white; color: #2196F3; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                            ⚖️ Balanced
+                        </button>
+                        <button type="button" class="preset-btn" data-preset="deep" style="flex: 1; padding: 12px; border: 2px solid #2196F3; background: white; color: #2196F3; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                            🔬 Deep Analysis
+                        </button>
+                        <button type="button" class="preset-btn" data-preset="custom" style="flex: 1; padding: 12px; border: 2px solid #2196F3; background: white; color: #2196F3; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                            ⚙️ Custom
+                        </button>
+                    </div>
+                    <p class="hint" style="margin-top: 10px; font-size: 12px; color: #666;">
+                        Quick Scan: Fast processing, basic extraction | Balanced: Good balance of speed and quality | Deep Analysis: Thorough, high-quality extraction with all features
+                    </p>
+                </div>
+
+                <div class="settings-section">
+                    <h2>Processing Settings</h2>
+
+                    <div class="form-group">
+                        <label for="language-setting">Language:</label>
+                        <select id="language-setting" name="language_setting">
+                            <option value="auto">Auto-Detect</option>
+                            <option value="english">English</option>
+                            <option value="arabic">Arabic</option>
+                            <option value="mixed">Mixed</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="llm-model">LLM Model (Image Analysis):</label>
+                        <select id="llm-model" name="llm_model">
+                            <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5</option>
+                        </select>
+                        <p class="hint" style="font-size: 12px; color: #666; margin-top: 5px;">
+                            Uses Claude Code Pro subscription for AI-powered image analysis and SVG generation
+                        </p>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="partial-processing" name="partial_processing_enabled">
+                            Partial Processing (process only first N pages)
+                        </label>
+                        <input type="number" id="partial-pages" name="partial_processing_pages"
+                               min="1" placeholder="Number of pages" disabled>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label for="book-instructions">📝 Special Instructions for This Book (Optional)</label>
+                        <textarea id="book-instructions" name="book_instructions" rows="4"
+                                  placeholder="Enter any special processing instructions for this specific book...
+
+Examples:
+- This book has handwritten notes in margins - please OCR those as well
+- Chapter headings are in Arabic, content is in English
+- Ignore page headers and footers
+- Focus only on code examples and technical diagrams
+- This is a math textbook - pay special attention to equations"></textarea>
+                        <p class="hint">These instructions will be saved to the database and used ONLY for processing this specific book. The AI agents will follow these guidelines during extraction.</p>
+                    </div>
+                </div>
+
+                <div class="attribute-keys-section" style="margin-top: 30px;">
+                    <h2>Define Custom Attribute Names (72 Available)</h2>
+                    <p class="hint" style="margin-bottom: 15px;">
+                        Define attribute names that will be used for ALL records in this book. You can use these to categorize and tag extracted knowledge units.
+                        <strong>Attributes 1-8 are system-reserved.</strong> Attributes 9-80 are user-defined (72 custom attributes available) - leave blank if not needed.
+                    </p>
+
+                    <!-- System-Reserved Attributes (1-8) Info Box -->
+                    <div style="background: #fff3cd; padding: 15px; border-radius: 4px; border-left: 4px solid #FF9800; margin-bottom: 20px;">
+                        <strong>🔒 System-Reserved Attributes (1-8):</strong><br>
+                        • Attribute 1: related_image (image linking)<br>
+                        • Attribute 2: easyocr_text (EasyOCR full result)<br>
+                        • Attribute 3: surya_ocr_text (Surya OCR full result)<br>
+                        • Attribute 4: tesseract_text (Tesseract full result)<br>
+                        • Attribute 5: easyocr_confidence (0-100)<br>
+                        • Attribute 6: surya_ocr_confidence (0-100)<br>
+                        • Attribute 7: tesseract_confidence (0-100)<br>
+                        • <strong style="color: #4CAF50;">Attribute 8: record_status (enabled/disabled for merge tracking)</strong><br>
+                        <strong>These are automatically populated by the system.</strong>
+                    </div>
+
+                    <!-- How it works Info Box -->
+                    <div style="background: #e3f2fd; padding: 15px; border-radius: 4px; border-left: 4px solid #2196F3; margin-bottom: 20px;">
+                        <strong>💡 How User-Defined Attributes Work:</strong><br>
+                        • Define attribute KEY NAMES here (once per book)<br>
+                        • During verification, you'll only enter VALUES for each record<br>
+                        • Example: If you set Attribute 9 = "Difficulty Level", you'll enter values like "Beginner", "Intermediate", "Advanced" during verification
+                    </div>
+
+                    <!-- User-Defined Attributes (9-80) -->
+                    <div id="attribute-inputs" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                        <!-- Row 1: Attributes 9-11 -->
+                        <div class="form-group">
+                            <label for="attr9">Attribute 9</label>
+                            <input type="text" id="attr9" name="attr9" placeholder="e.g., Difficulty Level">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr10">Attribute 10</label>
+                            <input type="text" id="attr10" name="attr10" placeholder="e.g., Topic Category">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr11">Attribute 11</label>
+                            <input type="text" id="attr11" name="attr11" placeholder="e.g., Importance">
+                        </div>
+
+                        <!-- Row 2: Attributes 12-14 -->
+                        <div class="form-group">
+                            <label for="attr12">Attribute 12</label>
+                            <input type="text" id="attr12" name="attr12" placeholder="e.g., Keywords">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr13">Attribute 13</label>
+                            <input type="text" id="attr13" name="attr13" placeholder="e.g., Prerequisites">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr14">Attribute 14</label>
+                            <input type="text" id="attr14" name="attr14" placeholder="e.g., Related Concepts">
+                        </div>
+
+                        <!-- Row 3: Attributes 15-17 -->
+                        <div class="form-group">
+                            <label for="attr15">Attribute 15</label>
+                            <input type="text" id="attr15" name="attr15" placeholder="e.g., Application Area">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr16">Attribute 16</label>
+                            <input type="text" id="attr16" name="attr16" placeholder="e.g., Author Opinion">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr17">Attribute 17</label>
+                            <input type="text" id="attr17" name="attr17" placeholder="e.g., Code Example">
+                        </div>
+
+                        <!-- Remaining attributes 18-80 -->
+                        <div class="form-group">
+                            <label for="attr18">Attribute 18</label>
+                            <input type="text" id="attr18" name="attr18" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr19">Attribute 19</label>
+                            <input type="text" id="attr19" name="attr19" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr20">Attribute 20</label>
+                            <input type="text" id="attr20" name="attr20" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr21">Attribute 21</label>
+                            <input type="text" id="attr21" name="attr21" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr22">Attribute 22</label>
+                            <input type="text" id="attr22" name="attr22" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr23">Attribute 23</label>
+                            <input type="text" id="attr23" name="attr23" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr24">Attribute 24</label>
+                            <input type="text" id="attr24" name="attr24" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr25">Attribute 25</label>
+                            <input type="text" id="attr25" name="attr25" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr26">Attribute 26</label>
+                            <input type="text" id="attr26" name="attr26" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr27">Attribute 27</label>
+                            <input type="text" id="attr27" name="attr27" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr28">Attribute 28</label>
+                            <input type="text" id="attr28" name="attr28" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr29">Attribute 29</label>
+                            <input type="text" id="attr29" name="attr29" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr30">Attribute 30</label>
+                            <input type="text" id="attr30" name="attr30" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr31">Attribute 31</label>
+                            <input type="text" id="attr31" name="attr31" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr32">Attribute 32</label>
+                            <input type="text" id="attr32" name="attr32" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr33">Attribute 33</label>
+                            <input type="text" id="attr33" name="attr33" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr34">Attribute 34</label>
+                            <input type="text" id="attr34" name="attr34" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr35">Attribute 35</label>
+                            <input type="text" id="attr35" name="attr35" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr36">Attribute 36</label>
+                            <input type="text" id="attr36" name="attr36" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr37">Attribute 37</label>
+                            <input type="text" id="attr37" name="attr37" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr38">Attribute 38</label>
+                            <input type="text" id="attr38" name="attr38" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr39">Attribute 39</label>
+                            <input type="text" id="attr39" name="attr39" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr40">Attribute 40</label>
+                            <input type="text" id="attr40" name="attr40" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr41">Attribute 41</label>
+                            <input type="text" id="attr41" name="attr41" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr42">Attribute 42</label>
+                            <input type="text" id="attr42" name="attr42" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr43">Attribute 43</label>
+                            <input type="text" id="attr43" name="attr43" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr44">Attribute 44</label>
+                            <input type="text" id="attr44" name="attr44" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr45">Attribute 45</label>
+                            <input type="text" id="attr45" name="attr45" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr46">Attribute 46</label>
+                            <input type="text" id="attr46" name="attr46" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr47">Attribute 47</label>
+                            <input type="text" id="attr47" name="attr47" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr48">Attribute 48</label>
+                            <input type="text" id="attr48" name="attr48" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr49">Attribute 49</label>
+                            <input type="text" id="attr49" name="attr49" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr50">Attribute 50</label>
+                            <input type="text" id="attr50" name="attr50" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr51">Attribute 51</label>
+                            <input type="text" id="attr51" name="attr51" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr52">Attribute 52</label>
+                            <input type="text" id="attr52" name="attr52" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr53">Attribute 53</label>
+                            <input type="text" id="attr53" name="attr53" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr54">Attribute 54</label>
+                            <input type="text" id="attr54" name="attr54" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr55">Attribute 55</label>
+                            <input type="text" id="attr55" name="attr55" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr56">Attribute 56</label>
+                            <input type="text" id="attr56" name="attr56" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr57">Attribute 57</label>
+                            <input type="text" id="attr57" name="attr57" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr58">Attribute 58</label>
+                            <input type="text" id="attr58" name="attr58" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr59">Attribute 59</label>
+                            <input type="text" id="attr59" name="attr59" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr60">Attribute 60</label>
+                            <input type="text" id="attr60" name="attr60" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr61">Attribute 61</label>
+                            <input type="text" id="attr61" name="attr61" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr62">Attribute 62</label>
+                            <input type="text" id="attr62" name="attr62" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr63">Attribute 63</label>
+                            <input type="text" id="attr63" name="attr63" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr64">Attribute 64</label>
+                            <input type="text" id="attr64" name="attr64" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr65">Attribute 65</label>
+                            <input type="text" id="attr65" name="attr65" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr66">Attribute 66</label>
+                            <input type="text" id="attr66" name="attr66" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr67">Attribute 67</label>
+                            <input type="text" id="attr67" name="attr67" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr68">Attribute 68</label>
+                            <input type="text" id="attr68" name="attr68" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr69">Attribute 69</label>
+                            <input type="text" id="attr69" name="attr69" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr70">Attribute 70</label>
+                            <input type="text" id="attr70" name="attr70" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr71">Attribute 71</label>
+                            <input type="text" id="attr71" name="attr71" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr72">Attribute 72</label>
+                            <input type="text" id="attr72" name="attr72" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr73">Attribute 73</label>
+                            <input type="text" id="attr73" name="attr73" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr74">Attribute 74</label>
+                            <input type="text" id="attr74" name="attr74" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr75">Attribute 75</label>
+                            <input type="text" id="attr75" name="attr75" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr76">Attribute 76</label>
+                            <input type="text" id="attr76" name="attr76" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr77">Attribute 77</label>
+                            <input type="text" id="attr77" name="attr77" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr78">Attribute 78</label>
+                            <input type="text" id="attr78" name="attr78" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr79">Attribute 79</label>
+                            <input type="text" id="attr79" name="attr79" placeholder="(Optional)">
+                        </div>
+                        <div class="form-group">
+                            <label for="attr80">Attribute 80</label>
+                            <input type="text" id="attr80" name="attr80" placeholder="(Optional)">
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-left: 5px solid #FFC107; border-radius: 4px;">
+                        <strong>📌 Important:</strong> User-defined attribute names (9-80) will be saved to the database and apply to ALL knowledge units in this book.
+                        You can edit these attribute names later via the Book Settings page (accessible from Book Library), and changes will be reflected in the verification interface.
+                    </div>
+                </div>
+
+                <!-- Sequential OCR Processing Buttons -->
+                <div class="ocr-buttons-section" style="margin-top: 40px;">
+                    <h2>Start OCR Processing</h2>
+
+                    <div style="background: #e3f2fd; padding: 15px; border-radius: 4px; border-left: 4px solid #2196F3; margin-bottom: 20px;">
+                        <strong>📖 How Sequential OCR Works:</strong><br>
+                        • Run one or more OCR engines to extract text from your document<br>
+                        • Images/diagrams are analyzed automatically during the FIRST OCR run<br>
+                        • Click "Evaluate, Split and Mark" when ready to finalize<br>
+                        • System will select the best OCR result based on confidence scores
+                    </div>
+
+                    <!-- OCR Engine Buttons -->
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="margin-bottom: 15px;">⚡ OCR Engines (Run independently):</h3>
+
+                        <button type="button" id="start-easyocr" class="btn-primary" style="width: 100%; margin-bottom: 10px; padding: 15px; background: #4CAF50; border: none; border-radius: 4px; color: white; font-size: 16px; cursor: pointer; font-weight: bold;">
+                            🚀 Start with EasyOCR (GPU)
+                        </button>
+                        <p class="hint" style="margin-bottom: 20px; font-size: 12px; color: #666;">
+                            Fast, GPU-accelerated, good for clean text. ~30 mins for 500 pages. Uses 6GB GPU memory.
+                        </p>
+
+                        <button type="button" id="start-surya" class="btn-primary" style="width: 100%; margin-bottom: 10px; padding: 15px; background: #2196F3; border: none; border-radius: 4px; color: white; font-size: 16px; cursor: pointer; font-weight: bold;">
+                            🎯 Start with Surya OCR (GPU)
+                        </button>
+                        <p class="hint" style="margin-bottom: 20px; font-size: 12px; color: #666;">
+                            Slower, higher quality, excellent multilingual support. ~60 mins for 500 pages. Uses 2GB GPU memory.
+                        </p>
+
+                        <button type="button" id="start-tesseract" class="btn-primary" style="width: 100%; margin-bottom: 10px; padding: 15px; background: #9C27B0; border: none; border-radius: 4px; color: white; font-size: 16px; cursor: pointer; font-weight: bold;">
+                            🛡️ Start with Tesseract (CPU)
+                        </button>
+                        <p class="hint" style="margin-bottom: 20px; font-size: 12px; color: #666;">
+                            CPU-based fallback, very reliable. ~45 mins for 500 pages. No GPU required.
+                        </p>
+                    </div>
+
+                    <!-- Evaluation Button -->
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="margin-bottom: 15px;">After OCR engines complete:</h3>
+
+                        <button type="button" id="evaluate-split-mark" class="btn-primary" style="width: 100%; padding: 15px; background: #FF9800; border: none; border-radius: 4px; color: white; font-size: 16px; cursor: pointer; font-weight: bold;">
+                            ✅ Evaluate, Split and Mark
+                        </button>
+                        <p class="hint" style="font-size: 12px; color: #666;">
+                            Compares OCR results, selects best text based on confidence, runs splitter and marker agents.
+                        </p>
+                    </div>
+
+                    <div style="background: #fff3cd; padding: 15px; border-radius: 4px; border-left: 4px solid #FFC107;">
+                        💡 <strong>Tip:</strong> Run all 3 OCR engines for best quality comparison, then click "Evaluate, Split and Mark" to let the system automatically pick the highest quality result.
+                    </div>
+                </div>
+
+                <button type="submit" id="submit-btn" class="btn-primary" style="margin-top: 30px; display: none;">Upload & Start Processing</button>
+            </form>
+
+            <div id="upload-status" class="status-message" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script src="/static/js/upload.js"></script>
+</body>
+</html>

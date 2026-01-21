@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup: Image Detail View (UPDATED)</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .mockup { background: white; padding: 20px; border-radius: 8px; max-width: 1400px; margin: 0 auto; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #333; border-bottom: 2px solid #9C27B0; padding-bottom: 10px; }
+        .breadcrumb { color: #666; font-size: 14px; margin-bottom: 20px; }
+        .breadcrumb a { color: #2196F3; text-decoration: none; }
+        .container { display: flex; gap: 30px; }
+        .left-section { flex: 1; }
+        .right-section { flex: 1; }
+        .image-display { background: #fafafa; padding: 20px; border-radius: 8px; border: 2px solid #e0e0e0; text-align: center; }
+        .image-display img { max-width: 100%; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .image-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
+        .meta-item { background: #f9f9f9; padding: 12px; border-radius: 4px; border-left: 4px solid #9C27B0; }
+        .meta-label { font-size: 11px; color: #666; margin-bottom: 5px; text-transform: uppercase; }
+        .meta-value { font-weight: bold; color: #333; }
+        .description-box { background: #f0f4ff; padding: 20px; border-radius: 8px; border-left: 5px solid #2196F3; margin: 20px 0; }
+        .json-viewer { background: #1e1e1e; color: #e0e0e0; padding: 20px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 13px; overflow-x: auto; }
+        .json-key { color: #9cdcfe; }
+        .json-string { color: #ce9178; }
+        .json-number { color: #b5cea8; }
+        .json-boolean { color: #569cd6; }
+        .related-text { background: #e8f5e9; padding: 15px; border-radius: 8px; border-left: 5px solid #4CAF50; margin: 10px 0; }
+        .btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin: 5px; }
+        .btn-edit { background: #FF9800; color: white; }
+        .btn-link { background: #2196F3; color: white; }
+        .btn-delete { background: #f44336; color: white; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin: 25px 0 15px 0; }
+        h2 { margin: 0; color: #555; }
+        .tag { display: inline-block; padding: 5px 12px; background: #E1BEE7; color: #6A1B9A; border-radius: 12px; font-size: 12px; margin: 3px; }
+        .page-previews { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+        .page-preview { background: white; padding: 15px; border-radius: 8px; border: 2px solid #e0e0e0; }
+        .page-preview h4 { margin: 0 0 10px 0; color: #555; }
+        .page-marker-legend { display: flex; gap: 15px; margin-top: 10px; font-size: 12px; }
+        .marker-indicator { display: flex; align-items: center; gap: 5px; }
+        .marker-box { width: 20px; height: 15px; border-radius: 3px; }
+        .marker-green { background: rgba(76, 175, 80, 0.3); border: 2px solid #4CAF50; }
+        .marker-orange { background: rgba(255, 152, 0, 0.3); border: 2px solid #FF9800; }
+    </style>
+</head>
+<body>
+    <div class="mockup">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb">
+            <a href="#">Library</a> >
+            <a href="#">Machine Learning Fundamentals</a> >
+            <strong>Image IMG-68 (Figure 5.3)</strong>
+        </div>
+
+        <h1>🖼️ Image Detail View with Linked Text Pages</h1>
+
+        <div class="container">
+            <!-- Left Section -->
+            <div class="left-section">
+                <!-- Image Display -->
+                <div class="image-display">
+                    <!-- Simulated neural network diagram -->
+                    <svg width="500" height="400" style="background: white; border-radius: 4px;">
+                        <!-- Neural Network Diagram -->
+                        <text x="250" y="30" text-anchor="middle" font-size="16" font-weight="bold" fill="#333">Figure 5.3: Neural Network Architecture</text>
+
+                        <!-- Input Layer -->
+                        <circle cx="100" cy="120" r="20" fill="#4CAF50" stroke="#333" stroke-width="2"/>
+                        <circle cx="100" cy="180" r="20" fill="#4CAF50" stroke="#333" stroke-width="2"/>
+                        <circle cx="100" cy="240" r="20" fill="#4CAF50" stroke="#333" stroke-width="2"/>
+                        <text x="100" y="290" text-anchor="middle" font-size="12" fill="#666">Input Layer</text>
+
+                        <!-- Hidden Layer -->
+                        <circle cx="250" cy="100" r="20" fill="#2196F3" stroke="#333" stroke-width="2"/>
+                        <circle cx="250" cy="160" r="20" fill="#2196F3" stroke="#333" stroke-width="2"/>
+                        <circle cx="250" cy="220" r="20" fill="#2196F3" stroke="#333" stroke-width="2"/>
+                        <circle cx="250" cy="280" r="20" fill="#2196F3" stroke="#333" stroke-width="2"/>
+                        <text x="250" y="320" text-anchor="middle" font-size="12" fill="#666">Hidden Layer</text>
+
+                        <!-- Output Layer -->
+                        <circle cx="400" cy="160" r="20" fill="#FF9800" stroke="#333" stroke-width="2"/>
+                        <circle cx="400" cy="220" r="20" fill="#FF9800" stroke="#333" stroke-width="2"/>
+                        <text x="400" y="270" text-anchor="middle" font-size="12" fill="#666">Output Layer</text>
+
+                        <!-- Connections (simplified) -->
+                        <line x1="120" y1="120" x2="230" y2="100" stroke="#ccc" stroke-width="1"/>
+                        <line x1="120" y1="120" x2="230" y2="160" stroke="#ccc" stroke-width="1"/>
+                        <line x1="120" y1="180" x2="230" y2="160" stroke="#ccc" stroke-width="2"/>
+                        <line x1="120" y1="180" x2="230" y2="220" stroke="#ccc" stroke-width="2"/>
+                        <line x1="120" y1="240" x2="230" y2="220" stroke="#ccc" stroke-width="1"/>
+                        <line x1="120" y1="240" x2="230" y2="280" stroke="#ccc" stroke-width="1"/>
+
+                        <line x1="270" y1="100" x2="380" y2="160" stroke="#ccc" stroke-width="1"/>
+                        <line x1="270" y1="160" x2="380" y2="160" stroke="#ccc" stroke-width="2"/>
+                        <line x1="270" y1="220" x2="380" y2="220" stroke="#ccc" stroke-width="2"/>
+                        <line x1="270" y1="280" x2="380" y2="220" stroke="#ccc" stroke-width="1"/>
+
+                        <!-- Legend -->
+                        <rect x="320" y="350" width="15" height="15" fill="#4CAF50"/>
+                        <text x="340" y="362" font-size="11" fill="#666">Input</text>
+                        <rect x="380" y="350" width="15" height="15" fill="#2196F3"/>
+                        <text x="400" y="362" font-size="11" fill="#666">Hidden</text>
+                        <rect x="450" y="350" width="15" height="15" fill="#FF9800"/>
+                        <text x="470" y="362" font-size="11" fill="#666">Output</text>
+                    </svg>
+                </div>
+
+                <!-- Image Metadata -->
+                <div class="image-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">Image ID</div>
+                        <div class="meta-value">IMG-68</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Source Page</div>
+                        <div class="meta-value">Page 136</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Image Type</div>
+                        <div class="meta-value">Diagram</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Dimensions</div>
+                        <div class="meta-value">800 x 600 px</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">File Size</div>
+                        <div class="meta-value">234 KB</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Confidence</div>
+                        <div class="meta-value" style="color: #4CAF50;">94%</div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn btn-edit">✏️ Edit Description</button>
+                    <button class="btn btn-link">🔗 Link to Text</button>
+                    <button class="btn" style="background: #9C27B0; color: white;">💾 Download</button>
+                </div>
+            </div>
+
+            <!-- Right Section -->
+            <div class="right-section">
+                <!-- AI Description -->
+                <div class="section-header">
+                    <h2>📝 AI-Generated Description</h2>
+                    <button class="btn btn-edit" style="padding: 6px 12px; font-size: 12px;">✏️ Edit</button>
+                </div>
+                <div class="description-box">
+                    <p><strong>Summary:</strong> This diagram illustrates a feedforward neural network architecture with three distinct layers.</p>
+                    <p><strong>Components Identified:</strong></p>
+                    <ul>
+                        <li><strong>Input Layer:</strong> 3 neurons (green circles) representing the input features</li>
+                        <li><strong>Hidden Layer:</strong> 4 neurons (blue circles) for feature transformation and learning</li>
+                        <li><strong>Output Layer:</strong> 2 neurons (orange circles) for classification or prediction outputs</li>
+                    </ul>
+                    <p><strong>Connections:</strong> All neurons in each layer are fully connected to neurons in the subsequent layer, showing a typical dense neural network structure. Line thickness appears to represent connection weights.</p>
+                    <p><strong>Context:</strong> This is Figure 5.3 from Chapter 5 on Neural Networks, used to explain the basic multilayer perceptron architecture.</p>
+                </div>
+
+                <!-- Structured JSON -->
+                <div class="section-header">
+                    <h2>🔧 Structured Data (JSON)</h2>
+                </div>
+                <div class="json-viewer">
+{<br>
+  <span class="json-key">"image_id"</span>: <span class="json-string">"IMG-68"</span>,<br>
+  <span class="json-key">"type"</span>: <span class="json-string">"diagram"</span>,<br>
+  <span class="json-key">"subtype"</span>: <span class="json-string">"neural_network_architecture"</span>,<br>
+  <span class="json-key">"components"</span>: [<br>
+    {<br>
+      <span class="json-key">"layer"</span>: <span class="json-string">"input"</span>,<br>
+      <span class="json-key">"neuron_count"</span>: <span class="json-number">3</span>,<br>
+      <span class="json-key">"color"</span>: <span class="json-string">"green"</span><br>
+    },<br>
+    {<br>
+      <span class="json-key">"layer"</span>: <span class="json-string">"hidden"</span>,<br>
+      <span class="json-key">"neuron_count"</span>: <span class="json-number">4</span>,<br>
+      <span class="json-key">"color"</span>: <span class="json-string">"blue"</span><br>
+    },<br>
+    {<br>
+      <span class="json-key">"layer"</span>: <span class="json-string">"output"</span>,<br>
+      <span class="json-key">"neuron_count"</span>: <span class="json-number">2</span>,<br>
+      <span class="json-key">"color"</span>: <span class="json-string">"orange"</span><br>
+    }<br>
+  ],<br>
+  <span class="json-key">"figure_number"</span>: <span class="json-string">"5.3"</span>,<br>
+  <span class="json-key">"caption"</span>: <span class="json-string">"Neural Network Architecture"</span>,<br>
+  <span class="json-key">"fully_connected"</span>: <span class="json-boolean">true</span><br>
+}
+                </div>
+
+                <!-- Related Text Units with Page Previews (NEW - Multi-page display) -->
+                <div class="section-header">
+                    <h2>🔗 Related Text Units & Page Previews</h2>
+                    <button class="btn btn-link" style="padding: 6px 12px; font-size: 12px;">+ Add Link</button>
+                </div>
+
+                <div class="page-marker-legend">
+                    <div class="marker-indicator">
+                        <div class="marker-box marker-green"></div>
+                        <span>Green = Original Image Location</span>
+                    </div>
+                    <div class="marker-indicator">
+                        <div class="marker-box marker-orange"></div>
+                        <span>Orange = Linked Text Location</span>
+                    </div>
+                </div>
+
+                <div class="page-previews">
+                    <!-- Original Image Page (Page 136) -->
+                    <div class="page-preview">
+                        <h4>📄 Page 136 - Original Image Location</h4>
+                        <svg width="280" height="350" style="background: white; border: 1px solid #ddd; border-radius: 4px;">
+                            <rect width="280" height="350" fill="#fefefe"/>
+                            <text x="140" y="25" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">Chapter 5: Neural Networks</text>
+                            <line x1="30" y1="35" x2="250" y2="35" stroke="#ccc" stroke-width="1"/>
+
+                            <!-- GREEN RECTANGLE around image -->
+                            <rect x="25" y="50" width="230" height="150" fill="rgba(76, 175, 80, 0.15)" stroke="#4CAF50" stroke-width="3" rx="5"/>
+                            <text x="140" y="80" text-anchor="middle" font-size="10" fill="#666">Figure 5.3:</text>
+                            <text x="140" y="100" text-anchor="middle" font-size="10" fill="#666">Neural Network Architecture</text>
+                            <text x="140" y="120" text-anchor="middle" font-size="9" fill="#999">[Diagram of neural network]</text>
+                            <text x="140" y="135" text-anchor="middle" font-size="9" fill="#999">Input → Hidden → Output</text>
+
+                            <text x="30" y="220" font-size="9" fill="#333">The diagram above shows a basic</text>
+                            <text x="30" y="235" font-size="9" fill="#333">three-layer neural network...</text>
+
+                            <text x="140" y="335" text-anchor="middle" font-size="9" fill="#999">136</text>
+                        </svg>
+                        <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                            <strong>Green Rectangle:</strong> Original location of IMG-68
+                        </p>
+                    </div>
+
+                    <!-- Linked Text Page 1 (Page 142) -->
+                    <div class="page-preview">
+                        <h4>📄 Page 142 - Linked Text (KU-487)</h4>
+                        <svg width="280" height="350" style="background: white; border: 1px solid #ddd; border-radius: 4px;">
+                            <rect width="280" height="350" fill="#fefefe"/>
+                            <text x="140" y="25" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">Chapter 5: Neural Networks</text>
+                            <line x1="30" y1="35" x2="250" y2="35" stroke="#ccc" stroke-width="1"/>
+
+                            <text x="30" y="60" font-size="9" fill="#333">Backpropagation is the algorithm used to</text>
+                            <text x="30" y="75" font-size="9" fill="#333">train neural networks by calculating</text>
+                            <text x="30" y="90" font-size="9" fill="#333">gradients and updating weights iteratively.</text>
+
+                            <!-- ORANGE RECTANGLE around linked text -->
+                            <rect x="25" y="100" width="230" height="50" fill="rgba(255, 152, 0, 0.15)" stroke="#FF9800" stroke-width="3" rx="5"/>
+                            <text x="30" y="115" font-size="9" font-weight="bold" fill="#000">Each connection has a weight that adjusts</text>
+                            <text x="30" y="130" font-size="9" font-weight="bold" fill="#000">during training through backpropagation to</text>
+                            <text x="30" y="145" font-size="9" font-weight="bold" fill="#000">minimize prediction errors.</text>
+
+                            <text x="30" y="170" font-size="9" fill="#333">The activation function determines the</text>
+                            <text x="30" y="185" font-size="9" fill="#333">output of a neuron based on its input...</text>
+
+                            <text x="140" y="335" text-anchor="middle" font-size="9" fill="#999">142</text>
+                        </svg>
+                        <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                            <strong>Orange Rectangle:</strong> KU-487 - Explains weight adjustment<br>
+                            <a href="#" style="color: #2196F3;">View Full Record</a> | <a href="#" style="color: #f44336;">Remove Link</a>
+                        </p>
+                    </div>
+
+                    <!-- Linked Text Page 2 (Page 144) -->
+                    <div class="page-preview">
+                        <h4>📄 Page 144 - Linked Text (KU-495)</h4>
+                        <svg width="280" height="350" style="background: white; border: 1px solid #ddd; border-radius: 4px;">
+                            <rect width="280" height="350" fill="#fefefe"/>
+                            <text x="140" y="25" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">Chapter 5: Neural Networks</text>
+                            <line x1="30" y1="35" x2="250" y2="35" stroke="#ccc" stroke-width="1"/>
+
+                            <text x="30" y="60" font-size="9" fill="#333">Neural networks learn complex patterns</text>
+                            <text x="30" y="75" font-size="9" fill="#333">through multiple layers of processing.</text>
+
+                            <!-- ORANGE RECTANGLE around linked text -->
+                            <rect x="25" y="90" width="230" height="65" fill="rgba(255, 152, 0, 0.15)" stroke="#FF9800" stroke-width="3" rx="5"/>
+                            <text x="30" y="105" font-size="9" font-weight="bold" fill="#000">The input layer receives raw data, the</text>
+                            <text x="30" y="120" font-size="9" font-weight="bold" fill="#000">hidden layer processes and transforms it,</text>
+                            <text x="30" y="135" font-size="9" font-weight="bold" fill="#000">and the output layer produces the final</text>
+                            <text x="30" y="150" font-size="9" font-weight="bold" fill="#000">prediction or classification.</text>
+
+                            <text x="30" y="175" font-size="9" fill="#333">This architecture allows the network to</text>
+                            <text x="30" y="190" font-size="9" fill="#333">learn hierarchical representations...</text>
+
+                            <text x="140" y="335" text-anchor="middle" font-size="9" fill="#999">144</text>
+                        </svg>
+                        <p style="font-size: 11px; color: #666; margin-top: 8px;">
+                            <strong>Orange Rectangle:</strong> KU-495 - Describes layer functions<br>
+                            <a href="#" style="color: #2196F3;">View Full Record</a> | <a href="#" style="color: #f44336;">Remove Link</a>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Tags -->
+                <div class="section-header">
+                    <h2>🏷️ Tags</h2>
+                    <button class="btn" style="padding: 6px 12px; font-size: 12px; background: #E1BEE7; color: #6A1B9A;">+ Add Tag</button>
+                </div>
+                <div>
+                    <span class="tag">neural-network</span>
+                    <span class="tag">architecture</span>
+                    <span class="tag">mlp</span>
+                    <span class="tag">diagram</span>
+                    <span class="tag">chapter-5</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

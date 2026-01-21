@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagram Section Mockup V3 - Complete Layout</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .mockup-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .description {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="mockup-container">
+        <h1>Verify Pages - Diagram Section V3 (Complete)</h1>
+        <div class="description">
+            <strong>Complete Layout with:</strong>
+            <ul>
+                <li>LEFT: Page Image + Knowledge Units Preview</li>
+                <li>RIGHT: Cropped Preview + 5 Level Titles + Associated Text + Claude Analysis</li>
+            </ul>
+        </div>
+
+        <svg viewBox="0 0 1400 950" xmlns="http://www.w3.org/2000/svg">
+            <!-- Background -->
+            <rect width="1400" height="950" fill="#f5f5f5"/>
+
+            <!-- ==================== LEFT PANEL ==================== -->
+            <rect x="20" y="20" width="560" height="910" rx="12" fill="white" stroke="#e0e0e0" stroke-width="2"/>
+
+            <!-- Left Panel Header -->
+            <rect x="20" y="20" width="560" height="45" rx="12" fill="#667eea"/>
+            <rect x="20" y="50" width="560" height="15" fill="#667eea"/>
+            <text x="40" y="50" font-size="16" font-weight="bold" fill="white">📄 Original Page Image</text>
+
+            <!-- Page Image Placeholder -->
+            <rect x="40" y="80" width="520" height="350" rx="8" fill="#f9f9f9" stroke="#ddd" stroke-width="1"/>
+            <text x="300" y="240" font-size="14" fill="#999" text-anchor="middle">Page Image</text>
+            <text x="300" y="265" font-size="12" fill="#bbb" text-anchor="middle">(with diagram selection shown)</text>
+
+            <!-- Green selection rectangle on page -->
+            <rect x="280" y="180" width="200" height="140" rx="4" fill="rgba(76, 175, 80, 0.2)" stroke="#4CAF50" stroke-width="2" stroke-dasharray="5,3"/>
+            <text x="380" y="255" font-size="10" fill="#4CAF50" text-anchor="middle">Selected Diagram</text>
+
+            <!-- ===== Knowledge Units Preview Section ===== -->
+            <rect x="40" y="450" width="520" height="460" rx="8" fill="#FAFAFA" stroke="#e0e0e0" stroke-width="1"/>
+
+            <!-- KU Section Header -->
+            <rect x="40" y="450" width="520" height="35" rx="8" fill="#9C27B0"/>
+            <rect x="40" y="475" width="520" height="10" fill="#9C27B0"/>
+            <text x="60" y="475" font-size="14" font-weight="bold" fill="white">📝 Knowledge Units on This Page</text>
+            <text x="480" y="475" font-size="11" fill="white" opacity="0.9">5 items</text>
+
+            <!-- KU Item 1 -->
+            <rect x="55" y="500" width="490" height="65" rx="6" fill="white" stroke="#E1BEE7" stroke-width="1"/>
+            <circle cx="75" cy="532" r="12" fill="#9C27B0"/>
+            <text x="75" y="536" font-size="10" fill="white" text-anchor="middle">1</text>
+            <text x="95" y="520" font-size="12" font-weight="bold" fill="#333">KU #825 - Chapter Title</text>
+            <text x="95" y="537" font-size="11" fill="#666">Chapter 3: Process Management</text>
+            <text x="95" y="552" font-size="10" fill="#999">Level 1 • Confidence: 95%</text>
+            <circle cx="520" cy="532" r="10" fill="white" stroke="#9C27B0" stroke-width="2"/>
+
+            <!-- KU Item 2 -->
+            <rect x="55" y="575" width="490" height="65" rx="6" fill="white" stroke="#E1BEE7" stroke-width="1"/>
+            <circle cx="75" cy="607" r="12" fill="#9C27B0"/>
+            <text x="75" y="611" font-size="10" fill="white" text-anchor="middle">2</text>
+            <text x="95" y="595" font-size="12" font-weight="bold" fill="#333">KU #826 - Section Header</text>
+            <text x="95" y="612" font-size="11" fill="#666">3.1 Introduction to Workflows</text>
+            <text x="95" y="627" font-size="10" fill="#999">Level 2 • Confidence: 92%</text>
+            <circle cx="520" cy="607" r="10" fill="white" stroke="#9C27B0" stroke-width="2"/>
+
+            <!-- KU Item 3 - Selected -->
+            <rect x="55" y="650" width="490" height="65" rx="6" fill="#F3E5F5" stroke="#9C27B0" stroke-width="2"/>
+            <circle cx="75" cy="682" r="12" fill="#9C27B0"/>
+            <text x="75" y="686" font-size="10" fill="white" text-anchor="middle">3</text>
+            <text x="95" y="670" font-size="12" font-weight="bold" fill="#333">KU #827 - Paragraph</text>
+            <text x="95" y="687" font-size="11" fill="#666">As shown in Figure 3.1, the process involves...</text>
+            <text x="95" y="702" font-size="10" fill="#999">Level 3 • Confidence: 89%</text>
+            <circle cx="520" cy="682" r="10" fill="#9C27B0" stroke="#9C27B0" stroke-width="2"/>
+            <circle cx="520" cy="682" r="4" fill="white"/>
+
+            <!-- KU Item 4 -->
+            <rect x="55" y="725" width="490" height="65" rx="6" fill="white" stroke="#E1BEE7" stroke-width="1"/>
+            <circle cx="75" cy="757" r="12" fill="#9C27B0"/>
+            <text x="75" y="761" font-size="10" fill="white" text-anchor="middle">4</text>
+            <text x="95" y="745" font-size="12" font-weight="bold" fill="#333">KU #828 - Paragraph</text>
+            <text x="95" y="762" font-size="11" fill="#666">The diagram above illustrates the key steps...</text>
+            <text x="95" y="777" font-size="10" fill="#999">Level 3 • Confidence: 87%</text>
+            <circle cx="520" cy="757" r="10" fill="white" stroke="#9C27B0" stroke-width="2"/>
+
+            <!-- KU Item 5 -->
+            <rect x="55" y="800" width="490" height="65" rx="6" fill="white" stroke="#E1BEE7" stroke-width="1"/>
+            <circle cx="75" cy="832" r="12" fill="#9C27B0"/>
+            <text x="75" y="836" font-size="10" fill="white" text-anchor="middle">5</text>
+            <text x="95" y="820" font-size="12" font-weight="bold" fill="#333">KU #829 - Note</text>
+            <text x="95" y="837" font-size="11" fill="#666">Note: This process applies to all modules...</text>
+            <text x="95" y="852" font-size="10" fill="#999">Level 4 • Confidence: 91%</text>
+            <circle cx="520" cy="832" r="10" fill="white" stroke="#9C27B0" stroke-width="2"/>
+
+            <!-- Scroll indicator -->
+            <rect x="545" y="500" width="6" height="365" rx="3" fill="#eee"/>
+            <rect x="545" y="500" width="6" height="150" rx="3" fill="#9C27B0" opacity="0.5"/>
+
+
+            <!-- ==================== RIGHT PANEL ==================== -->
+            <rect x="600" y="20" width="780" height="910" rx="12" fill="white" stroke="#e0e0e0" stroke-width="2"/>
+
+            <!-- Right Panel Header -->
+            <rect x="600" y="20" width="780" height="45" rx="12" fill="#FF9800"/>
+            <rect x="600" y="50" width="780" height="15" fill="#FF9800"/>
+            <text x="620" y="50" font-size="16" font-weight="bold" fill="white">📊 Diagram Details</text>
+            <text x="1300" y="50" font-size="11" fill="white" opacity="0.9">Clip + OCR Mode</text>
+
+            <!-- ===== Cropped Diagram Preview ===== -->
+            <rect x="620" y="80" width="740" height="130" rx="8" fill="#FFF8E1" stroke="#FFB74D" stroke-width="2"/>
+            <text x="640" y="105" font-size="13" font-weight="bold" fill="#E65100">Cropped Diagram Preview</text>
+
+            <!-- Diagram image placeholder -->
+            <rect x="640" y="115" width="180" height="80" rx="4" fill="#f9f9f9" stroke="#ddd" stroke-width="1"/>
+            <text x="730" y="160" font-size="11" fill="#999" text-anchor="middle">Diagram Image</text>
+
+            <!-- Diagram info -->
+            <text x="840" y="135" font-size="11" fill="#666">Size: 200 x 140 px</text>
+            <text x="840" y="155" font-size="11" fill="#666">Format: PNG</text>
+            <text x="840" y="175" font-size="11" fill="#666">Page: 45</text>
+
+            <!-- ===== Section 1: 5 Level Titles ===== -->
+            <rect x="620" y="225" width="740" height="180" rx="8" fill="#E8F5E9" stroke="#81C784" stroke-width="2"/>
+            <text x="640" y="250" font-size="13" font-weight="bold" fill="#2E7D32">1. Diagram Hierarchy (5 Levels)</text>
+            <text x="880" y="250" font-size="10" fill="#666">(assign titles to position diagram in book structure)</text>
+
+            <!-- Level 1 -->
+            <text x="640" y="280" font-size="11" font-weight="bold" fill="#1B5E20">Level 1:</text>
+            <rect x="710" y="265" width="280" height="28" rx="4" fill="white" stroke="#A5D6A7" stroke-width="1"/>
+            <text x="720" y="284" font-size="11" fill="#666">Chapter 3: Process Management</text>
+            <rect x="1000" y="265" width="60" height="28" rx="4" fill="#4CAF50"/>
+            <text x="1012" y="284" font-size="10" fill="white">🎯 OCR</text>
+
+            <!-- Level 2 -->
+            <text x="640" y="310" font-size="11" font-weight="bold" fill="#2E7D32">Level 2:</text>
+            <rect x="710" y="295" width="280" height="28" rx="4" fill="white" stroke="#A5D6A7" stroke-width="1"/>
+            <text x="720" y="314" font-size="11" fill="#666">3.1 Introduction to Workflows</text>
+            <rect x="1000" y="295" width="60" height="28" rx="4" fill="#4CAF50"/>
+            <text x="1012" y="314" font-size="10" fill="white">🎯 OCR</text>
+
+            <!-- Level 3 -->
+            <text x="640" y="340" font-size="11" font-weight="bold" fill="#388E3C">Level 3:</text>
+            <rect x="710" y="325" width="280" height="28" rx="4" fill="white" stroke="#A5D6A7" stroke-width="1"/>
+            <text x="720" y="344" font-size="11" fill="#999">Click OCR or type...</text>
+            <rect x="1000" y="325" width="60" height="28" rx="4" fill="#4CAF50"/>
+            <text x="1012" y="344" font-size="10" fill="white">🎯 OCR</text>
+
+            <!-- Level 4 -->
+            <text x="640" y="370" font-size="11" font-weight="bold" fill="#43A047">Level 4:</text>
+            <rect x="710" y="355" width="280" height="28" rx="4" fill="white" stroke="#A5D6A7" stroke-width="1"/>
+            <text x="720" y="374" font-size="11" fill="#999">Click OCR or type...</text>
+            <rect x="1000" y="355" width="60" height="28" rx="4" fill="#4CAF50"/>
+            <text x="1012" y="374" font-size="10" fill="white">🎯 OCR</text>
+
+            <!-- Level 5 -->
+            <text x="640" y="400" font-size="11" font-weight="bold" fill="#66BB6A">Level 5:</text>
+            <rect x="710" y="385" width="280" height="28" rx="4" fill="white" stroke="#A5D6A7" stroke-width="1"/>
+            <text x="720" y="404" font-size="11" fill="#999">Click OCR or type...</text>
+            <rect x="1000" y="385" width="60" height="28" rx="4" fill="#4CAF50"/>
+            <text x="1012" y="404" font-size="10" fill="white">🎯 OCR</text>
+
+            <!-- Save Levels Button -->
+            <rect x="1080" y="325" width="70" height="88" rx="4" fill="#2E7D32"/>
+            <text x="1095" y="365" font-size="10" fill="white">💾</text>
+            <text x="1090" y="385" font-size="9" fill="white">Save</text>
+            <text x="1088" y="400" font-size="9" fill="white">Levels</text>
+
+            <!-- ===== Section 2: Associated Text ===== -->
+            <rect x="620" y="420" width="740" height="120" rx="8" fill="#F3E5F5" stroke="#BA68C8" stroke-width="2"/>
+            <text x="640" y="445" font-size="13" font-weight="bold" fill="#7B1FA2">2. Associated Text</text>
+            <text x="790" y="445" font-size="10" fill="#666">(select from Knowledge Units on left panel)</text>
+
+            <!-- Selected KU Display -->
+            <rect x="640" y="460" width="700" height="60" rx="4" fill="white" stroke="#BA68C8" stroke-width="1"/>
+            <text x="655" y="485" font-size="12" font-weight="bold" fill="#7B1FA2">✓ KU #827 Selected</text>
+            <text x="655" y="505" font-size="11" fill="#666">"As shown in Figure 3.1, the process involves multiple steps that must be completed in sequence..."</text>
+
+            <!-- Clear button -->
+            <rect x="1300" y="465" width="30" height="25" rx="4" fill="#f5f5f5" stroke="#ccc" stroke-width="1"/>
+            <text x="1310" y="482" font-size="10" fill="#666">✕</text>
+
+            <!-- ===== Section 3: Claude Vision Analysis ===== -->
+            <rect x="620" y="555" width="740" height="310" rx="8" fill="#E3F2FD" stroke="#64B5F6" stroke-width="2"/>
+            <text x="640" y="580" font-size="13" font-weight="bold" fill="#1565C0">3. AI Analysis (Claude Vision)</text>
+
+            <!-- Status Badge -->
+            <rect x="820" y="565" width="80" height="22" rx="11" fill="#C8E6C9"/>
+            <text x="835" y="580" font-size="10" fill="#2E7D32">✓ Complete</text>
+
+            <!-- Analyze Button -->
+            <rect x="1220" y="562" width="130" height="30" rx="4" fill="#2196F3"/>
+            <text x="1245" y="582" font-size="11" font-weight="bold" fill="white">🤖 Re-Analyze</text>
+
+            <!-- Analysis Result Textarea -->
+            <rect x="640" y="600" width="710" height="200" rx="4" fill="white" stroke="#90CAF9" stroke-width="1"/>
+
+            <!-- Analysis content -->
+            <text x="655" y="625" font-size="12" fill="#1565C0" font-weight="bold">Diagram Type: Flowchart</text>
+
+            <text x="655" y="650" font-size="11" fill="#333" font-weight="bold">Components:</text>
+            <text x="655" y="668" font-size="11" fill="#666">• Start node, Process A, Decision diamond, Process B, Process C, End node</text>
+
+            <text x="655" y="695" font-size="11" fill="#333" font-weight="bold">Relationships:</text>
+            <text x="655" y="713" font-size="11" fill="#666">• Sequential flow from Start → Process A → Decision</text>
+            <text x="655" y="731" font-size="11" fill="#666">• Decision branches to Process B (Yes) or Process C (No)</text>
+            <text x="655" y="749" font-size="11" fill="#666">• Both branches converge to End node</text>
+
+            <text x="655" y="776" font-size="11" fill="#333" font-weight="bold">Description:</text>
+            <text x="655" y="794" font-size="11" fill="#666">This flowchart illustrates a decision-making process with two possible paths...</text>
+
+            <!-- Edit indicator -->
+            <rect x="1290" y="775" width="50" height="20" rx="10" fill="#E3F2FD"/>
+            <text x="1300" y="789" font-size="9" fill="#1565C0">✏️ Edit</text>
+
+            <!-- ===== Bottom Action Bar ===== -->
+            <rect x="620" y="875" width="740" height="2" fill="#e0e0e0"/>
+
+            <!-- Help text -->
+            <text x="640" y="905" font-size="10" fill="#999">💡 Levels help organize diagrams in the book hierarchy. Associated text improves AI understanding.</text>
+
+            <!-- Cancel Button -->
+            <rect x="1170" y="885" width="80" height="35" rx="4" fill="white" stroke="#999" stroke-width="1"/>
+            <text x="1192" y="908" font-size="12" fill="#666">Cancel</text>
+
+            <!-- Save Button -->
+            <rect x="1260" y="885" width="120" height="35" rx="4" fill="#4CAF50"/>
+            <text x="1285" y="908" font-size="12" font-weight="bold" fill="white">💾 Save All</text>
+
+            <!-- ==================== Connection Arrow ==================== -->
+            <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#9C27B0"/>
+                </marker>
+            </defs>
+            <path d="M 555 682 Q 590 682 590 490 Q 590 470 620 470" stroke="#9C27B0" stroke-width="2" fill="none" stroke-dasharray="5,3" marker-end="url(#arrowhead)"/>
+
+        </svg>
+
+        <h2 style="margin-top: 30px;">Complete Layout Summary</h2>
+        <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
+            <h3>RIGHT PANEL Sections:</h3>
+            <ol>
+                <li><strong>Cropped Diagram Preview</strong> - Shows the clipped diagram image with size/format info</li>
+                <li><strong>5 Level Titles</strong> - Each level has:
+                    <ul>
+                        <li>Text input field (editable)</li>
+                        <li>"🎯 OCR" button to extract from page selection</li>
+                        <li>"Save Levels" button to save all at once</li>
+                    </ul>
+                </li>
+                <li><strong>Associated Text</strong> - Selected from KU list on left panel</li>
+                <li><strong>Claude Vision Analysis</strong> - AI-generated description (editable)</li>
+            </ol>
+
+            <h3 style="margin-top: 20px;">Database Fields:</h3>
+            <ul>
+                <li><code>diagram_images.level_1_title</code> - NEW</li>
+                <li><code>diagram_images.level_2_title</code> - NEW</li>
+                <li><code>diagram_images.level_3_title</code> - NEW</li>
+                <li><code>diagram_images.level_4_title</code> - NEW</li>
+                <li><code>diagram_images.level_5_title</code> - NEW</li>
+                <li><code>diagram_images.linked_knowledge_unit_id</code> - EXISTS</li>
+                <li><code>diagram_images.description</code> - EXISTS (Claude analysis)</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

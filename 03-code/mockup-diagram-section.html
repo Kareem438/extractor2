@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagram Section Mockup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .mockup-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .description {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="mockup-container">
+        <h1>Diagram Section Mockup - Verify Pages</h1>
+        <div class="description">
+            <strong>Context:</strong> This section appears after clicking "Add as Diagram" button in Clip+OCR mode.
+            <br><br>
+            <strong>Workflow:</strong>
+            <ol>
+                <li>User selects diagram area on page image</li>
+                <li>User clicks "Add as Diagram"</li>
+                <li>This expanded section appears below the cropped image</li>
+                <li>User fills in Title and Associated Text selections</li>
+                <li>Claude Vision analyzes the diagram</li>
+                <li>User can edit the analysis result</li>
+                <li>User clicks Save to store everything</li>
+            </ol>
+        </div>
+
+        <svg viewBox="0 0 800 650" xmlns="http://www.w3.org/2000/svg">
+            <!-- Background -->
+            <rect width="800" height="650" fill="#f5f5f5"/>
+
+            <!-- Main Container -->
+            <rect x="20" y="20" width="760" height="610" rx="12" fill="white" stroke="#e0e0e0" stroke-width="2"/>
+
+            <!-- Header -->
+            <rect x="20" y="20" width="760" height="50" rx="12" fill="#FF9800"/>
+            <rect x="20" y="50" width="760" height="20" fill="#FF9800"/>
+            <text x="40" y="52" font-size="18" font-weight="bold" fill="white">📊 Diagram Details</text>
+            <text x="680" y="52" font-size="12" fill="white" opacity="0.9">Step 1 of 3</text>
+
+            <!-- Section 1: Diagram Title -->
+            <rect x="40" y="85" width="720" height="120" rx="8" fill="#FFF3E0" stroke="#FFB74D" stroke-width="2"/>
+            <text x="60" y="110" font-size="14" font-weight="bold" fill="#E65100">1. Diagram Title</text>
+            <text x="60" y="130" font-size="11" fill="#666">Select the title/caption of the diagram from the page, or type manually</text>
+
+            <!-- Title Input Area -->
+            <rect x="60" y="145" width="540" height="40" rx="4" fill="white" stroke="#FFB74D" stroke-width="1"/>
+            <text x="75" y="170" font-size="13" fill="#999">Click "Select from Page" or type diagram title here...</text>
+
+            <!-- Select from Page Button -->
+            <rect x="615" y="145" width="125" height="40" rx="4" fill="#FF9800"/>
+            <text x="632" y="170" font-size="12" font-weight="bold" fill="white">🎯 Select Title</text>
+
+            <!-- Section 2: Associated Text -->
+            <rect x="40" y="220" width="720" height="150" rx="8" fill="#E8F5E9" stroke="#81C784" stroke-width="2"/>
+            <text x="60" y="245" font-size="14" font-weight="bold" fill="#2E7D32">2. Associated Text (Context)</text>
+            <text x="60" y="265" font-size="11" fill="#666">Select the paragraph/text that references or explains this diagram</text>
+
+            <!-- Associated Text Display -->
+            <rect x="60" y="280" width="540" height="70" rx="4" fill="white" stroke="#81C784" stroke-width="1"/>
+            <text x="75" y="305" font-size="13" fill="#999">Click "Select Text" to choose related paragraph from page...</text>
+            <text x="75" y="325" font-size="11" fill="#999" font-style="italic">(This helps Claude understand the diagram context)</text>
+
+            <!-- Select Text Button -->
+            <rect x="615" y="280" width="125" height="35" rx="4" fill="#4CAF50"/>
+            <text x="635" y="303" font-size="12" font-weight="bold" fill="white">🎯 Select Text</text>
+
+            <!-- Or Dropdown -->
+            <text x="615" y="335" font-size="10" fill="#666">or choose existing:</text>
+            <rect x="615" y="340" width="125" height="25" rx="4" fill="white" stroke="#81C784" stroke-width="1"/>
+            <text x="625" y="357" font-size="10" fill="#666">▼ From KU list...</text>
+
+            <!-- Section 3: Claude Vision Analysis -->
+            <rect x="40" y="385" width="720" height="200" rx="8" fill="#E3F2FD" stroke="#64B5F6" stroke-width="2"/>
+            <text x="60" y="410" font-size="14" font-weight="bold" fill="#1565C0">3. AI Analysis (Claude Vision)</text>
+
+            <!-- Status Badge -->
+            <rect x="230" y="395" width="100" height="22" rx="11" fill="#BBDEFB"/>
+            <text x="250" y="411" font-size="11" fill="#1565C0">⏳ Pending</text>
+
+            <!-- Analyze Button -->
+            <rect x="615" y="395" width="125" height="30" rx="4" fill="#2196F3"/>
+            <text x="628" y="415" font-size="12" font-weight="bold" fill="white">🤖 Analyze Now</text>
+
+            <!-- Analysis Result Textarea -->
+            <rect x="60" y="435" width="680" height="100" rx="4" fill="white" stroke="#64B5F6" stroke-width="1"/>
+            <text x="75" y="460" font-size="12" fill="#999">Claude Vision analysis will appear here...</text>
+            <text x="75" y="480" font-size="11" fill="#999">• Diagram type detected</text>
+            <text x="75" y="498" font-size="11" fill="#999">• Components identified</text>
+            <text x="75" y="516" font-size="11" fill="#999">• Relationships described</text>
+
+            <!-- Editable indicator -->
+            <text x="660" y="525" font-size="10" fill="#1565C0">✏️ Editable</text>
+
+            <!-- Bottom Action Bar -->
+            <rect x="40" y="595" width="720" height="2" fill="#e0e0e0"/>
+
+            <!-- Cancel Button -->
+            <rect x="480" y="600" width="100" height="36" rx="4" fill="white" stroke="#999" stroke-width="1"/>
+            <text x="507" y="623" font-size="13" fill="#666">Cancel</text>
+
+            <!-- Save Button -->
+            <rect x="595" y="600" width="145" height="36" rx="4" fill="#4CAF50"/>
+            <text x="618" y="623" font-size="13" font-weight="bold" fill="white">💾 Save Diagram</text>
+
+            <!-- Legend/Help -->
+            <rect x="40" y="600" width="200" height="30" rx="4" fill="#FFFDE7"/>
+            <text x="50" y="620" font-size="10" fill="#F57F17">💡 All fields are optional except the diagram image</text>
+        </svg>
+
+        <h2 style="margin-top: 30px;">Alternative Layout - Compact Version</h2>
+
+        <svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+            <!-- Background -->
+            <rect width="800" height="500" fill="#f5f5f5"/>
+
+            <!-- Main Container -->
+            <rect x="20" y="20" width="760" height="460" rx="12" fill="white" stroke="#e0e0e0" stroke-width="2"/>
+
+            <!-- Header with Orange gradient -->
+            <defs>
+                <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#FF9800"/>
+                    <stop offset="100%" style="stop-color:#F57C00"/>
+                </linearGradient>
+            </defs>
+            <rect x="20" y="20" width="760" height="45" rx="12" fill="url(#headerGrad)"/>
+            <rect x="20" y="50" width="760" height="15" fill="url(#headerGrad)"/>
+            <text x="40" y="50" font-size="16" font-weight="bold" fill="white">📊 Add Diagram - Complete Details</text>
+
+            <!-- Two Column Layout -->
+            <!-- Left Column: Title + Associated Text -->
+            <rect x="40" y="80" width="350" height="320" rx="8" fill="#FAFAFA" stroke="#e0e0e0" stroke-width="1"/>
+
+            <!-- Title Section -->
+            <text x="55" y="105" font-size="13" font-weight="bold" fill="#E65100">📝 Title</text>
+            <rect x="55" y="115" width="270" height="35" rx="4" fill="white" stroke="#FFB74D" stroke-width="1"/>
+            <text x="65" y="137" font-size="11" fill="#999">Enter or select title...</text>
+            <rect x="330" y="115" width="45" height="35" rx="4" fill="#FF9800"/>
+            <text x="340" y="137" font-size="10" fill="white">🎯</text>
+
+            <!-- Associated Text Section -->
+            <text x="55" y="175" font-size="13" font-weight="bold" fill="#2E7D32">📄 Associated Text</text>
+            <rect x="55" y="185" width="320" height="80" rx="4" fill="white" stroke="#81C784" stroke-width="1"/>
+            <text x="65" y="210" font-size="11" fill="#999">Select related paragraph...</text>
+
+            <!-- Dropdown for existing KUs -->
+            <text x="55" y="285" font-size="11" fill="#666">Or link to existing:</text>
+            <rect x="55" y="295" width="320" height="30" rx="4" fill="white" stroke="#81C784" stroke-width="1"/>
+            <text x="65" y="315" font-size="11" fill="#666">▼ Select from knowledge units on this page</text>
+
+            <!-- Type Selection -->
+            <text x="55" y="350" font-size="11" fill="#666">Diagram Type:</text>
+            <rect x="55" y="360" width="150" height="28" rx="4" fill="white" stroke="#ccc" stroke-width="1"/>
+            <text x="65" y="379" font-size="11" fill="#666">▼ Auto-detect</text>
+
+            <!-- Right Column: Claude Analysis -->
+            <rect x="410" y="80" width="350" height="320" rx="8" fill="#E3F2FD" stroke="#64B5F6" stroke-width="2"/>
+
+            <text x="425" y="105" font-size="13" font-weight="bold" fill="#1565C0">🤖 Claude Vision Analysis</text>
+
+            <!-- Analyze Button -->
+            <rect x="600" y="85" width="140" height="30" rx="4" fill="#2196F3"/>
+            <text x="620" y="105" font-size="11" font-weight="bold" fill="white">⚡ Run Analysis</text>
+
+            <!-- Analysis Result -->
+            <rect x="425" y="125" width="320" height="220" rx="4" fill="white" stroke="#90CAF9" stroke-width="1"/>
+            <text x="440" y="150" font-size="12" fill="#999">Analysis results will appear here...</text>
+            <text x="440" y="175" font-size="11" fill="#bbb">────────────────────────────</text>
+            <text x="440" y="195" font-size="11" fill="#666">• Type: [detected type]</text>
+            <text x="440" y="215" font-size="11" fill="#666">• Components: [list]</text>
+            <text x="440" y="235" font-size="11" fill="#666">• Relationships: [list]</text>
+            <text x="440" y="255" font-size="11" fill="#666">• Description: [AI generated]</text>
+
+            <!-- Edit indicator -->
+            <rect x="680" y="325" width="50" height="18" rx="9" fill="#E3F2FD"/>
+            <text x="690" y="338" font-size="9" fill="#1565C0">✏️ Edit</text>
+
+            <!-- Status -->
+            <rect x="425" y="355" width="90" height="22" rx="11" fill="#BBDEFB"/>
+            <text x="440" y="370" font-size="10" fill="#1565C0">⏳ Not run yet</text>
+
+            <!-- Bottom Actions -->
+            <rect x="40" y="415" width="720" height="50" rx="0" fill="#FAFAFA"/>
+            <rect x="40" y="415" width="720" height="1" fill="#e0e0e0"/>
+
+            <!-- Help text -->
+            <text x="55" y="445" font-size="10" fill="#999">💡 Title and Associated Text help Claude provide better analysis</text>
+
+            <!-- Buttons -->
+            <rect x="520" y="425" width="90" height="35" rx="4" fill="white" stroke="#999" stroke-width="1"/>
+            <text x="545" y="448" font-size="12" fill="#666">Cancel</text>
+
+            <rect x="625" y="425" width="130" height="35" rx="4" fill="#4CAF50"/>
+            <text x="648" y="448" font-size="12" font-weight="bold" fill="white">💾 Save All</text>
+        </svg>
+
+        <h2 style="margin-top: 30px;">User Flow Description</h2>
+        <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
+            <h3>Step-by-Step Flow:</h3>
+            <ol>
+                <li><strong>User selects diagram area</strong> on page image (green selection in OCR mode)</li>
+                <li><strong>Clicks "Add as Diagram"</strong> button</li>
+                <li><strong>Expanded section appears</strong> with three parts:
+                    <ul>
+                        <li><strong>Title:</strong> User can type or click "Select Title" to draw a new selection for title text</li>
+                        <li><strong>Associated Text:</strong> User can select related paragraph or choose from existing knowledge units dropdown</li>
+                        <li><strong>Claude Analysis:</strong> Click "Run Analysis" to send to Claude Vision API</li>
+                    </ul>
+                </li>
+                <li><strong>Claude analyzes</strong> the diagram image + title + context</li>
+                <li><strong>User reviews/edits</strong> the analysis result</li>
+                <li><strong>Clicks "Save All"</strong> to store diagram, title, link, and analysis</li>
+            </ol>
+
+            <h3 style="margin-top: 20px;">Data Stored:</h3>
+            <ul>
+                <li><code>diagram_images.image_data</code> - The cropped diagram image</li>
+                <li><code>diagram_images.title</code> - User-provided title (NEW field needed)</li>
+                <li><code>diagram_images.linked_knowledge_unit_id</code> - Link to associated text</li>
+                <li><code>diagram_images.description</code> - Claude Vision analysis (editable)</li>
+                <li><code>diagram_images.diagram_type</code> - Detected type (flowchart, hierarchy, etc.)</li>
+                <li><code>diagram_images.structured_json</code> - Full AI analysis JSON</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

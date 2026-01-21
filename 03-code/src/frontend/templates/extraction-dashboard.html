@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extraction Dashboard - Knowledge Extraction System</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: Arial, sans-serif; background: #1a1a2e; color: #eee; overflow: hidden; }
+
+        /* Top Navigation */
+        .top-nav {
+            background: #16213e;
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #0f3460;
+        }
+        .top-nav-brand { font-size: 18px; font-weight: bold; }
+        .top-nav-info { display: flex; gap: 20px; align-items: center; }
+        .top-nav-info span { font-size: 14px; color: #aaa; }
+        .top-nav-info .book-name { color: #4fc3f7; font-weight: bold; }
+        .top-nav-controls { display: flex; gap: 15px; align-items: center; }
+        .top-nav-links { display: flex; gap: 10px; }
+        .top-nav-links a, .top-nav-links button {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            background: #0f3460;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .top-nav-links a:hover, .top-nav-links button:hover { background: #1a4a7a; }
+        .top-nav-links .btn-success { background: #2e7d32; }
+        .top-nav-links .btn-success:hover { background: #388e3c; }
+        .top-nav-links .btn-primary { background: #00897B; }
+        .top-nav-links .btn-primary:hover { background: #00695C; }
+
+        /* API Mode Toggle */
+        .api-mode-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #0f3460;
+            padding: 6px 12px;
+            border-radius: 4px;
+        }
+        .api-mode-toggle label { font-size: 13px; color: #aaa; }
+        .api-mode-toggle select {
+            background: #1a4a7a;
+            color: white;
+            border: 1px solid #2a5a8a;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        /* Main Layout */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 56px);
+        }
+
+        /* Left Sidebar - Page Thumbnails */
+        .sidebar {
+            width: 180px;
+            background: #16213e;
+            border-right: 2px solid #0f3460;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .sidebar-header {
+            padding: 12px;
+            background: #0f3460;
+            border-bottom: 1px solid #1a4a7a;
+        }
+        .sidebar-header h3 { margin: 0; font-size: 14px; color: #4fc3f7; }
+        .sidebar-header .page-count { font-size: 12px; color: #aaa; margin-top: 4px; }
+
+        .thumbnails-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .thumbnail-item {
+            margin-bottom: 10px;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 2px solid #0f3460;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .thumbnail-item:hover { border-color: #4fc3f7; }
+        .thumbnail-item.active { border-color: #00897B; }
+        .thumbnail-item img {
+            width: 100%;
+            display: block;
+            background: #0a0a15;
+        }
+        .thumbnail-item canvas {
+            width: 100%;
+            display: block;
+            background: #0a0a15;
+        }
+        .thumbnail-label {
+            background: #0f3460;
+            padding: 4px 8px;
+            font-size: 11px;
+            text-align: center;
+        }
+        .thumbnail-item .status-dot {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #666;
+        }
+        .thumbnail-item .status-dot.complete { background: #4CAF50; }
+        .thumbnail-item .status-dot.partial { background: #FF9800; }
+        .thumbnail-item .status-dot.pending { background: #666; }
+
+        /* Right Content Area */
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        /* Progress Section */
+        .progress-section {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #0f3460;
+        }
+        .progress-section h3 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            color: #4fc3f7;
+        }
+        .progress-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 12px;
+        }
+        .progress-row:last-child { margin-bottom: 0; }
+        .progress-label {
+            width: 140px;
+            font-size: 14px;
+            color: #aaa;
+        }
+        .progress-bar-container {
+            flex: 1;
+            height: 24px;
+            background: #0f3460;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+        .progress-bar {
+            height: 100%;
+            border-radius: 12px;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+        }
+        .progress-bar.ocr { background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); }
+        .progress-bar.decode { background: linear-gradient(135deg, #00897B 0%, #00695C 100%); }
+        .progress-bar-text {
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        .progress-count {
+            width: 100px;
+            text-align: right;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .progress-count.ocr { color: #2196F3; }
+        .progress-count.decode { color: #00897B; }
+
+        /* Summary Section */
+        .summary-section {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #0f3460;
+        }
+        .summary-section h3 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            color: #4fc3f7;
+        }
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .summary-table th, .summary-table td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #0f3460;
+        }
+        .summary-table th {
+            background: #0f3460;
+            font-weight: bold;
+            color: #aaa;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        .summary-table tr:hover { background: #1a2847; }
+        .summary-table .l3-title { color: #4fc3f7; }
+        .summary-table .count { text-align: center; font-weight: bold; }
+        .summary-table .total-row { background: #0f3460; font-weight: bold; }
+        .summary-table .total-row td { border-bottom: none; }
+
+        /* Diagrams Section */
+        .diagrams-section {
+            flex: 1;
+            background: #16213e;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #0f3460;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .diagrams-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .diagrams-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #4fc3f7;
+        }
+        .diagrams-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .page-size-select {
+            background: #0f3460;
+            color: white;
+            border: 1px solid #1a4a7a;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .filter-select {
+            background: #0f3460;
+            color: white;
+            border: 1px solid #1a4a7a;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .diagrams-table-container {
+            flex: 1;
+            overflow-y: auto;
+        }
+        .diagrams-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .diagrams-table th, .diagrams-table td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #0f3460;
+        }
+        .diagrams-table th {
+            background: #0f3460;
+            font-weight: bold;
+            color: #aaa;
+            font-size: 12px;
+            text-transform: uppercase;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        .diagrams-table tr:hover { background: #1a2847; }
+        .diagrams-table .thumbnail-cell {
+            width: 70px;
+            padding: 5px;
+        }
+        .diagrams-table .thumbnail-cell img {
+            width: 60px;
+            height: 45px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid #0f3460;
+            cursor: pointer;
+        }
+        .diagrams-table .class-cell {
+            width: 100px;
+        }
+        .diagrams-table .class-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .class-badge.diagram { background: #1565c0; color: white; }
+        .class-badge.table { background: #2e7d32; color: white; }
+        .class-badge.equation { background: #7b1fa2; color: white; }
+        .class-badge.list { background: #ef6c00; color: white; }
+        .class-badge.question { background: #9C27B0; color: white; }
+        .class-badge.answer { background: #E91E63; color: white; }
+
+        .diagrams-table .status-cell {
+            width: 100px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-badge.pending { background: #424242; color: #aaa; }
+        .status-badge.processing { background: #ff9800; color: #000; animation: pulse 1s infinite; }
+        .status-badge.decoded { background: #4CAF50; color: white; }
+        .status-badge.failed { background: #f44336; color: white; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .diagrams-table .actions-cell {
+            width: 180px;
+        }
+        .action-btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-right: 5px;
+        }
+        .action-btn.view { background: #1976D2; color: white; }
+        .action-btn.view:hover { background: #1565C0; }
+        .action-btn.edit { background: #7b1fa2; color: white; }
+        .action-btn.edit:hover { background: #6a1b9a; }
+        .action-btn.redecode { background: #00897B; color: white; }
+        .action-btn.redecode:hover { background: #00695C; }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            padding-top: 15px;
+            border-top: 1px solid #0f3460;
+            margin-top: 15px;
+        }
+        .pagination button {
+            padding: 8px 16px;
+            background: #0f3460;
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .pagination button:hover:not(:disabled) { background: #1a4a7a; }
+        .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .pagination .page-info { font-size: 14px; color: #aaa; }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+        .empty-state-icon { font-size: 48px; margin-bottom: 15px; }
+
+        /* Modals */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background: #16213e;
+            border-radius: 8px;
+            max-width: 900px;
+            width: 90%;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #0f3460;
+        }
+        .modal-header {
+            padding: 20px;
+            background: #0f3460;
+            border-bottom: 1px solid #1a4a7a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 { margin: 0; font-size: 18px; color: #4fc3f7; }
+        .modal-close {
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+        .modal-close:hover { color: #fff; }
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .modal-footer {
+            padding: 15px 20px;
+            background: #0f3460;
+            border-top: 1px solid #1a4a7a;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .modal-btn.secondary { background: #424242; color: white; }
+        .modal-btn.secondary:hover { background: #616161; }
+        .modal-btn.primary { background: #00897B; color: white; }
+        .modal-btn.primary:hover { background: #00695C; }
+        .modal-btn.warning { background: #ff9800; color: #000; }
+        .modal-btn.warning:hover { background: #f57c00; }
+
+        /* View Modal Specific */
+        .view-modal-content {
+            display: flex;
+            gap: 20px;
+        }
+        .view-image-container {
+            flex: 1;
+            background: #0a0a15;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+        }
+        .view-image-container img {
+            max-width: 100%;
+            max-height: 400px;
+        }
+        .view-details {
+            flex: 1;
+        }
+        .view-details .detail-row {
+            margin-bottom: 15px;
+        }
+        .view-details .detail-label {
+            font-size: 12px;
+            color: #aaa;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        .view-details .detail-value {
+            font-size: 14px;
+            color: #eee;
+            background: #0f3460;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        /* Re-decode Modal Specific */
+        .redecode-layout {
+            display: flex;
+            gap: 20px;
+        }
+        .redecode-left {
+            flex: 1;
+        }
+        .redecode-right {
+            flex: 1;
+        }
+        .redecode-image-container {
+            background: #0a0a15;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+        .redecode-image-container img {
+            max-width: 100%;
+            max-height: 250px;
+            display: block;
+            margin: 0 auto;
+        }
+        .parent-paragraph {
+            background: #0f3460;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #aaa;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        .prompt-section { margin-bottom: 15px; }
+        .prompt-section label {
+            font-size: 12px;
+            color: #aaa;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .prompt-textarea {
+            width: 100%;
+            height: 150px;
+            background: #0a0a15;
+            border: 1px solid #0f3460;
+            border-radius: 4px;
+            color: #eee;
+            padding: 12px;
+            font-size: 13px;
+            resize: vertical;
+        }
+        .prompt-textarea:focus {
+            outline: none;
+            border-color: #4fc3f7;
+        }
+        .result-section {
+            margin-top: 15px;
+        }
+        .result-section label {
+            font-size: 12px;
+            color: #aaa;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .result-container {
+            background: #0a0a15;
+            border: 1px solid #0f3460;
+            border-radius: 4px;
+            padding: 12px;
+            min-height: 150px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 13px;
+        }
+        .result-container.loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #aaa;
+        }
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #0f3460;
+            border-top-color: #4fc3f7;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Edit Modal */
+        .edit-textarea {
+            width: 100%;
+            height: 300px;
+            background: #0a0a15;
+            border: 1px solid #0f3460;
+            border-radius: 4px;
+            color: #eee;
+            padding: 12px;
+            font-size: 14px;
+            resize: vertical;
+        }
+        .edit-textarea:focus {
+            outline: none;
+            border-color: #4fc3f7;
+        }
+
+        /* Loading overlay */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .loading-overlay.active { display: flex; }
+        .loading-overlay .spinner {
+            width: 48px;
+            height: 48px;
+        }
+        .loading-overlay .loading-text {
+            font-size: 18px;
+            color: #4fc3f7;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0a0a15; }
+        ::-webkit-scrollbar-thumb { background: #1a4a7a; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #2a5a8a; }
+    </style>
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="top-nav-brand">Extraction Dashboard</div>
+        <div class="top-nav-info">
+            <span>Book: <span class="book-name" id="book-name">Loading...</span></span>
+        </div>
+        <div class="top-nav-controls">
+            <div class="api-mode-toggle">
+                <label>API Mode:</label>
+                <select id="api-mode">
+                    <option value="batch">Batch (50% cost)</option>
+                    <option value="direct">Direct (immediate)</option>
+                </select>
+            </div>
+            <div class="top-nav-links">
+                <button onclick="startExtraction()" class="btn-primary" id="start-btn">Start Extraction</button>
+                <a href="/layout-review" id="layout-review-link">Layout Review</a>
+                <a href="/auto-slicer" id="auto-slicer-link">Auto-Slicer</a>
+                <a href="/library">Library</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <!-- Left Sidebar - Page Thumbnails -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h3>Ready Pages</h3>
+                <div class="page-count" id="page-count">0 pages</div>
+            </div>
+            <div class="thumbnails-container" id="thumbnails-container">
+                <!-- Thumbnails populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Right Content Area -->
+        <div class="content-area">
+            <!-- Progress Section -->
+            <div class="progress-section">
+                <h3>Extraction Progress</h3>
+                <div class="progress-row">
+                    <div class="progress-label">Paragraphs OCR:</div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar ocr" id="ocr-progress-bar" style="width: 0%">
+                            <span class="progress-bar-text" id="ocr-progress-text">0%</span>
+                        </div>
+                    </div>
+                    <div class="progress-count ocr" id="ocr-count">0/0</div>
+                </div>
+                <div class="progress-row">
+                    <div class="progress-label">Diagrams Decode:</div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar decode" id="decode-progress-bar" style="width: 0%">
+                            <span class="progress-bar-text" id="decode-progress-text">0%</span>
+                        </div>
+                    </div>
+                    <div class="progress-count decode" id="decode-count">0/0</div>
+                </div>
+            </div>
+
+            <!-- Summary Section -->
+            <div class="summary-section">
+                <h3>Summary by L3 Title</h3>
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>L3 Title</th>
+                            <th class="count">Paragraphs</th>
+                            <th class="count">Diagrams</th>
+                            <th class="count">Tables</th>
+                            <th class="count">Equations</th>
+                            <th class="count">Lists</th>
+                            <th class="count">Questions</th>
+                            <th class="count">Answers</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summary-table-body">
+                        <!-- Rows populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Diagrams Section -->
+            <div class="diagrams-section">
+                <div class="diagrams-header">
+                    <h3>Diagrams & Visual Elements</h3>
+                    <div class="diagrams-controls">
+                        <select class="filter-select" id="class-filter" onchange="filterDiagrams()">
+                            <option value="all">All Classes</option>
+                            <option value="diagram">Diagrams</option>
+                            <option value="table">Tables</option>
+                            <option value="equation">Equations</option>
+                            <option value="list">Lists</option>
+                            <option value="question">Questions</option>
+                            <option value="answer">Answers</option>
+                        </select>
+                        <select class="filter-select" id="status-filter" onchange="filterDiagrams()">
+                            <option value="all">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="decoded">Decoded</option>
+                            <option value="failed">Failed</option>
+                        </select>
+                        <select class="page-size-select" id="page-size" onchange="changePageSize()">
+                            <option value="10">10 per page</option>
+                            <option value="25" selected>25 per page</option>
+                            <option value="50">50 per page</option>
+                            <option value="100">100 per page</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="diagrams-table-container">
+                    <table class="diagrams-table">
+                        <thead>
+                            <tr>
+                                <th class="thumbnail-cell">Thumbnail</th>
+                                <th>Page</th>
+                                <th class="class-cell">Class</th>
+                                <th class="status-cell">Status</th>
+                                <th class="actions-cell">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="diagrams-table-body">
+                            <!-- Rows populated by JavaScript -->
+                        </tbody>
+                    </table>
+                    <div class="empty-state" id="no-diagrams-message" style="display: none;">
+                        <div class="empty-state-icon">🖼</div>
+                        <p>No diagrams found.</p>
+                    </div>
+                </div>
+                <div class="pagination">
+                    <button onclick="prevPage()" id="prev-btn" disabled>Previous</button>
+                    <span class="page-info" id="page-info">Page 1 of 1</span>
+                    <button onclick="nextPage()" id="next-btn" disabled>Next</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Modal -->
+    <div class="modal-overlay" id="view-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>View Diagram</h3>
+                <button class="modal-close" onclick="closeViewModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="view-modal-content">
+                    <div class="view-image-container">
+                        <img id="view-image" src="" alt="Diagram">
+                    </div>
+                    <div class="view-details">
+                        <div class="detail-row">
+                            <div class="detail-label">Page</div>
+                            <div class="detail-value" id="view-page">-</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Class</div>
+                            <div class="detail-value" id="view-class">-</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Parent Paragraph</div>
+                            <div class="detail-value" id="view-parent">-</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Extracted Text</div>
+                            <div class="detail-value" id="view-text" style="white-space: pre-wrap;">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn secondary" onclick="closeViewModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal-overlay" id="edit-modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3>Edit Extracted Text</h3>
+                <button class="modal-close" onclick="closeEditModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <textarea class="edit-textarea" id="edit-textarea"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn secondary" onclick="closeEditModal()">Cancel</button>
+                <button class="modal-btn primary" onclick="saveEdit()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Re-decode Modal -->
+    <div class="modal-overlay" id="redecode-modal">
+        <div class="modal-content" style="max-width: 1000px;">
+            <div class="modal-header">
+                <h3>Re-decode Diagram</h3>
+                <button class="modal-close" onclick="closeRedecodeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="redecode-layout">
+                    <div class="redecode-left">
+                        <div class="redecode-image-container">
+                            <img id="redecode-image" src="" alt="Diagram">
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Parent Paragraph</div>
+                            <div class="parent-paragraph" id="redecode-parent">-</div>
+                        </div>
+                    </div>
+                    <div class="redecode-right">
+                        <div class="prompt-section">
+                            <label>Prompt</label>
+                            <textarea class="prompt-textarea" id="redecode-prompt"></textarea>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                            <button class="modal-btn secondary" onclick="resetPrompt()">Reset to Default</button>
+                            <button class="modal-btn warning" onclick="executeRedecode()">Re-decode</button>
+                        </div>
+                        <div class="result-section">
+                            <label>Result</label>
+                            <div class="result-container" id="redecode-result">
+                                <span style="color: #666;">Click "Re-decode" to generate result</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn secondary" onclick="closeRedecodeModal()">Discard</button>
+                <button class="modal-btn primary" onclick="saveRedecodeResult()" id="save-redecode-btn" disabled>Save Result</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loading-text">Processing...</div>
+    </div>
+
+    <script src="/static/js/extraction-dashboard.js"></script>
+</body>
+</html>
