@@ -54,6 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadBooks();
     setupCanvasEvents();
     setupModalEvents();
+    setupYoloClassCheckboxListeners();  // Setup listeners for YOLO class checkboxes
 
     // Check for book_id in URL params, then localStorage
     const urlParams = new URLSearchParams(window.location.search);
@@ -210,9 +211,92 @@ async function loadConfig() {
         // Load boundaries
         loadBoundaries();
 
+        // Load layout detection config (enabled classes)
+        await loadLayoutDetectionConfig();
+
     } catch (error) {
         console.error('Failed to load config:', error);
     }
+}
+
+/**
+ * Load layout detection config and apply enabled classes to checkboxes.
+ * This restores the checkbox state from the last detection run.
+ */
+async function loadLayoutDetectionConfig() {
+    if (!currentBookId) return;
+
+    try {
+        const response = await fetch(`/api/auto-slicer/${currentBookId}/layout-config`);
+        if (!response.ok) {
+            console.log('No layout config found, using defaults');
+            return;
+        }
+
+        const config = await response.json();
+        console.log('Layout detection config loaded:', config);
+
+        if (config.enabled_classes && config.enabled_classes.length > 0) {
+            applyEnabledClassesToCheckboxes(config.enabled_classes);
+        }
+    } catch (error) {
+        console.error('Failed to load layout detection config:', error);
+    }
+}
+
+/**
+ * Apply enabled classes to YOLO detection checkboxes.
+ * Maps class names back to checkbox IDs and sets their checked state.
+ */
+function applyEnabledClassesToCheckboxes(enabledClasses) {
+    // Reverse mapping from class names to checkbox IDs
+    const classToCheckbox = {
+        'paragraph': 'yolo-class-paragraph',
+        'diagram': 'yolo-class-diagram',
+        'equation': 'yolo-class-equation',
+        'list_bulleted': 'yolo-class-list',
+        'list_numbered': 'yolo-class-list',
+        'list_lettered': 'yolo-class-list',
+        'list_item': 'yolo-class-list',
+        'header': 'yolo-class-header',
+        'footer': 'yolo-class-footer',
+        'title_level_1': 'yolo-class-title-l1',
+        'title_level_2': 'yolo-class-title-l2',
+        'title_level_3': 'yolo-class-title-l3',
+        'caption': 'yolo-class-caption',
+        'reference': 'yolo-class-reference',
+        'question': 'yolo-class-question',
+        'answer': 'yolo-class-answer'
+    };
+
+    // First, uncheck all checkboxes
+    const allCheckboxIds = [
+        'yolo-class-paragraph', 'yolo-class-diagram', 'yolo-class-equation',
+        'yolo-class-list', 'yolo-class-header', 'yolo-class-footer',
+        'yolo-class-title-l1', 'yolo-class-title-l2', 'yolo-class-title-l3',
+        'yolo-class-caption', 'yolo-class-reference',
+        'yolo-class-question', 'yolo-class-answer'
+    ];
+
+    allCheckboxIds.forEach(id => {
+        const checkbox = document.getElementById(id);
+        if (checkbox) checkbox.checked = false;
+    });
+
+    // Then check the ones that are enabled
+    const checkedIds = new Set();
+    enabledClasses.forEach(className => {
+        const checkboxId = classToCheckbox[className];
+        if (checkboxId && !checkedIds.has(checkboxId)) {
+            const checkbox = document.getElementById(checkboxId);
+            if (checkbox) {
+                checkbox.checked = true;
+                checkedIds.add(checkboxId);
+            }
+        }
+    });
+
+    console.log('Applied enabled classes to checkboxes:', enabledClasses);
 }
 
 function loadTitles() {
@@ -1659,6 +1743,56 @@ function toggleAllYoloClasses(enable) {
     checkboxIds.forEach(id => {
         const checkbox = document.getElementById(id);
         if (checkbox) checkbox.checked = enable;
+    });
+    
+    // Save the updated enabled classes
+    saveEnabledClasses();
+}
+
+/**
+ * Save enabled classes to the server when checkboxes change.
+ * This allows the layout-review page to show the correct classes in the context menu.
+ */
+async function saveEnabledClasses() {
+    if (!currentBookId) return;
+
+    const enabledClasses = getSelectedYoloClasses();
+    
+    try {
+        const response = await fetch(`/api/auto-slicer/${currentBookId}/layout-config/enabled-classes`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled_classes: enabledClasses })
+        });
+
+        if (!response.ok) {
+            console.error('Failed to save enabled classes:', response.status);
+            return;
+        }
+
+        console.log('Enabled classes saved:', enabledClasses);
+    } catch (error) {
+        console.error('Error saving enabled classes:', error);
+    }
+}
+
+/**
+ * Setup event listeners for YOLO class checkboxes to save on change.
+ */
+function setupYoloClassCheckboxListeners() {
+    const checkboxIds = [
+        'yolo-class-paragraph', 'yolo-class-diagram', 'yolo-class-equation',
+        'yolo-class-list', 'yolo-class-header', 'yolo-class-footer',
+        'yolo-class-title-l1', 'yolo-class-title-l2', 'yolo-class-title-l3',
+        'yolo-class-caption', 'yolo-class-reference',
+        'yolo-class-question', 'yolo-class-answer'
+    ];
+    
+    checkboxIds.forEach(id => {
+        const checkbox = document.getElementById(id);
+        if (checkbox) {
+            checkbox.addEventListener('change', saveEnabledClasses);
+        }
     });
 }
 

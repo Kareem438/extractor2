@@ -2142,7 +2142,8 @@ async function loadEnabledClasses() {
     const DEFAULT_ENABLED_CLASSES = [
         'paragraph', 'diagram', 'equation',
         'list_bulleted', 'list_numbered', 'list_lettered', 'list_item',
-        'header', 'footer', 'title_level_3'
+        'header', 'footer', 'title_level_3',
+        'question', 'answer'  // Added for Q&A support
     ];
 
     try {

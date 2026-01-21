@@ -560,6 +560,32 @@ async def get_layout_config(book_id: int):
     }
 
 
+class UpdateEnabledClassesRequest(BaseModel):
+    """Request model for updating enabled classes."""
+    enabled_classes: List[str]
+
+
+@router.put("/api/auto-slicer/{book_id}/layout-config/enabled-classes")
+async def update_enabled_classes(book_id: int, request: UpdateEnabledClassesRequest):
+    """Update the enabled classes for layout detection without running detection."""
+    book = get_book_by_id(book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    # Get current config and update enabled classes
+    config = get_layout_detection_config(book_id)
+    config["enabled_classes"] = request.enabled_classes
+    save_layout_detection_config(book_id, config)
+
+    logger.info(f"Updated enabled classes for book {book_id}: {request.enabled_classes}")
+
+    return {
+        "success": True,
+        "book_id": book_id,
+        "enabled_classes": request.enabled_classes
+    }
+
+
 @router.get("/api/auto-slicer/{book_id}/detection-status")
 async def get_detection_status(book_id: int):
     """Get the current detection status for a book."""
