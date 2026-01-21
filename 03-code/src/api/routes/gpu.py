@@ -82,8 +82,8 @@ async def get_gpu_status():
 
     # Also check layout detection service for YOLO
     try:
-        from src.services.layout_detection_service import layout_service
-        if layout_service and layout_service.model is not None:
+        from src.services.layout_detection_service import layout_detection_service
+        if layout_detection_service and layout_detection_service.model is not None:
             if 'yolo' not in loaded_models and 'DocLayout-YOLO' not in loaded_models:
                 loaded_models.append('DocLayout-YOLO')
     except Exception:
@@ -138,10 +138,10 @@ async def load_model(model: str):
 
     elif model == "yolo":
         try:
-            from src.services.layout_detection_service import layout_service
+            from src.services.layout_detection_service import layout_detection_service
 
             logger.info("Loading DocLayout-YOLO to GPU...")
-            success = layout_service.load_model()
+            success = layout_detection_service.load_model()
 
             if success:
                 _loaded_models.add('yolo')
@@ -197,10 +197,10 @@ async def unload_model(model: str):
 
     elif model == "yolo":
         try:
-            from src.services.layout_detection_service import layout_service
+            from src.services.layout_detection_service import layout_detection_service
 
             logger.info("Unloading DocLayout-YOLO from GPU...")
-            layout_service.unload_model()
+            layout_detection_service.unload_model()
 
             _loaded_models.discard('yolo')
             return {"status": "ok", "message": "DocLayout-YOLO unloaded"}
