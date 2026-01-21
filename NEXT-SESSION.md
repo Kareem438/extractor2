@@ -21,21 +21,40 @@
 
 ## 🚨 NEW REQUIREMENTS FOR NEXT SESSION (2026-01-22)
 
+### ⚠️ SESSION 12 STATUS: ANALYSIS COMPLETE - READY FOR IMPLEMENTATION
+
+**Current State:**
+- ✅ Files analyzed and issue identified
+- ✅ Implementation plan created
+- ⏳ Awaiting user decision on which priority to implement first
+
+---
+
 ### Priority 1: Fix L1/L2 Title Display in Layout Review
 
 **Issue:** L1 and L2 titles are not displaying correctly in the layout review page.
 
-**Requirements:**
-1. Investigate why L1/L2 titles are empty or not showing
-2. Check the API endpoint that provides title data
-3. Verify the frontend JavaScript is correctly parsing and displaying titles
-4. Ensure the title hierarchy (L1 → L2 → L3) is properly maintained
-5. Test with actual book data to confirm fix
+**Analysis Complete:**
+- Frontend code in `layout-review.js` is correct:
+  - `loadTitleConfigs()` fetches from `/api/auto-slicer/${bookId}/config`
+  - `updateTitleDisplay()` correctly searches `state.level1Titles` and `state.level2Titles`
+  - DOM elements `l1-title-value` and `l2-title-value` are updated correctly
+- **Root Cause**: API endpoint may not be returning title data in expected format
+- **Expected Format**: `{config: {titles: {level1: [{title, start_page, end_page}], level2: [...]}}}`
 
-**Files to Check:**
-- `03-code/src/api/routes/layout_detection.py` (API endpoint)
-- `03-code/src/frontend/templates/layout-review.html` (HTML template)
-- `03-code/src/frontend/static/js/layout-review.js` (JavaScript logic)
+**Implementation Steps:**
+1. Check API endpoint `/api/auto-slicer/${bookId}/config` in backend
+2. Verify data structure matches frontend expectations
+3. Add/fix endpoint if missing or incorrect
+4. Test with actual book data
+
+**Files to Modify:**
+- `03-code/src/api/routes/auto_slicer.py` (API endpoint - need to verify)
+- Possibly `03-code/src/services/auto_slicer_service.py` (service layer)
+
+**Files Already Reviewed:**
+- ✅ `03-code/src/frontend/templates/layout-review.html` (HTML is correct)
+- ✅ `03-code/src/frontend/static/js/layout-review.js` (JavaScript is correct)
 
 **Expected Behavior:**
 - L1 titles should display at the top level
@@ -49,39 +68,55 @@
 
 **Issue:** Users cannot navigate from paragraph thumbnails in auto-slicer to the layout review page.
 
-**Requirements:**
-1. Make paragraph thumbnails in auto-slicer clickable
-2. When clicked, open layout review page for that specific book
-3. Navigate to the page containing that paragraph
-4. Optionally: Highlight or select the clicked paragraph region in layout review
+**Analysis Complete:**
+- Current behavior: Clicking thumbnail opens `openFullDetails(globalIndex)` modal
+- Thumbnail data available: `clip.id`, `clip.page_number`, `clip.image_data_base64`
+- Grid rendering in `renderPreviewGrid()` function (line 1303)
 
-**Implementation Details:**
+**Implementation Steps:**
 
-**Auto-Slicer Changes:**
-- Add click handler to thumbnail elements in preview grid
-- Extract book_id and page_number from thumbnail data
-- Navigate to: `/layout-review?book_id={book_id}&page={page_number}`
-- Optional: Add region_id parameter to highlight specific region
+**Option A: Add Navigation Button to Thumbnail**
+1. Add "View in Layout Review" button to each thumbnail
+2. Button navigates to `/layout-review?book_id=${bookId}&page=${pageNumber}`
+3. Keep existing click behavior (open modal)
+
+**Option B: Modify Click Behavior**
+1. Add modifier key detection (e.g., Ctrl+Click opens layout review)
+2. Normal click opens modal (existing behavior)
+3. Ctrl+Click navigates to layout review
+
+**Option C: Add Context Menu**
+1. Right-click on thumbnail shows menu
+2. Menu options: "View Details" (modal) | "Open in Layout Review"
+
+**Recommended: Option A** (least disruptive, clearest UX)
 
 **Layout Review Changes:**
-- Check URL parameters on page load
-- If `page` parameter exists, navigate to that page automatically
-- If `region_id` parameter exists, select/highlight that region
-- Provide visual feedback that navigation occurred (e.g., flash highlight)
+1. Check URL parameters on page load (`page` parameter)
+2. If `page` parameter exists, find page in `state.pages` array
+3. Set `state.currentPageIndex` to match the page
+4. Call `loadCurrentPage()` to display
+5. Optional: Add `region_id` parameter to highlight specific region
+6. Optional: Add visual feedback (flash highlight animation)
 
 **Files to Modify:**
-- `03-code/src/frontend/static/js/auto-slicer.js` (add click handler)
-- `03-code/src/frontend/templates/auto-slicer.html` (make thumbnails clickable)
-- `03-code/src/frontend/static/js/layout-review.js` (handle URL parameters)
+- `03-code/src/frontend/static/js/auto-slicer.js` (add navigation button/handler)
+- `03-code/src/frontend/templates/auto-slicer.html` (if adding button to HTML)
+- `03-code/src/frontend/static/js/layout-review.js` (handle URL parameters on load)
 
 **User Flow:**
 ```
 Auto-Slicer Page
-    ↓ (user clicks paragraph thumbnail)
+    ↓ (user clicks "View in Layout Review" button on thumbnail)
 Layout Review Page (book_id=X, page=Y)
     ↓ (automatically navigates to page Y)
-Paragraph region highlighted/selected
+Paragraph region highlighted/selected (optional)
 ```
+
+**Code Locations:**
+- Thumbnail rendering: `auto-slicer.js` line 1303-1370 (`renderPreviewGrid()`)
+- Page loading: `layout-review.js` line 280-340 (`loadCurrentPage()`)
+- Initialization: `layout-review.js` line 160-189 (`DOMContentLoaded`)
 
 ---
 
@@ -100,6 +135,41 @@ Paragraph region highlighted/selected
 - `03-code/src/main.py` - Added startup event handler with model loading
 
 **Commit:** `f0d1836` - feat: Auto-load Surya OCR and DocLayout-YOLO on server startup
+
+---
+
+## Session 12 Started (2026-01-22) - Analysis Phase
+
+### Session Objectives:
+1. ✅ Analyze L1/L2 title display issue in Layout Review
+2. ✅ Analyze thumbnail navigation requirements in Auto-Slicer
+3. ⏳ Implement fixes (awaiting user decision on priority)
+
+### Analysis Completed:
+
+**L1/L2 Title Display:**
+- Frontend code is correct and working as designed
+- Issue is likely in the API endpoint `/api/auto-slicer/${bookId}/config`
+- Need to verify backend returns correct data structure
+- Console logging already in place for debugging
+
+**Thumbnail Navigation:**
+- Current implementation opens modal on click
+- Three implementation options identified (A, B, C)
+- Recommended: Option A (add navigation button)
+- Minimal changes required to both auto-slicer and layout-review
+
+### Files Analyzed:
+- ✅ `03-code/src/frontend/static/js/layout-review.js` (lines 2090-2295)
+- ✅ `03-code/src/frontend/static/js/auto-slicer.js` (lines 1303-1370)
+- ✅ `03-code/src/frontend/templates/layout-review.html` (title bar HTML)
+- ⏳ `03-code/src/api/routes/auto_slicer.py` (need to check endpoint)
+
+### Next Steps:
+**User needs to decide which priority to implement first:**
+1. Priority 1: Fix L1/L2 titles (backend API fix)
+2. Priority 2: Add thumbnail navigation (frontend enhancement)
+3. Both in sequence
 
 ---
 

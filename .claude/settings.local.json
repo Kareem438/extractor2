@@ -157,7 +157,10 @@
       "Bash(H:/13-extractor2/venv/Scripts/python.exe:*)",
       "Bash(cmd /c \"set PGPASSWORD=postgres && \"\"C:\\\\Program Files\\\\PostgreSQL\\\\16\\\\bin\\\\psql.exe\"\" -h localhost -p 5432 -U postgres -d knowledge_extraction_2 -f \"\"H:\\\\13-extractor2\\\\06-PostgreSQL BACKUP\\\\knowledge_extraction_2026-01-21_08-26-07.sql\"\" 2>&1\")",
       "Bash(git config:*)",
-      "Bash(git init:*)"
+      "Bash(git init:*)",
+      "Bash(git branch:*)",
+      "Bash(git remote add:*)",
+      "Bash(gh auth:*)"
     ]
   }
 }

@@ -180,11 +180,13 @@ document.addEventListener('DOMContentLoaded', function() {
     rtlCheckbox.checked = state.arabicMode;
     applyArabicModeOrder();
 
-    // Load data
-    loadBookInfo();
-    loadTitleConfigs();  // Load L1/L2 title configurations
-    loadEnabledClasses();  // Load enabled classes for context menu filtering
-    loadRegions();
+    // Load data - use async IIFE to ensure proper order
+    (async function() {
+        await loadBookInfo();
+        await loadTitleConfigs();  // Load L1/L2 title configurations FIRST
+        await loadEnabledClasses();  // Load enabled classes for context menu filtering
+        await loadRegions();  // This calls loadCurrentPage() which needs titles
+    })();
 });
 
 // =============================================================================
