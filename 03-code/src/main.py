@@ -51,6 +51,45 @@ async def startup_event():
     logger.info("Starting Knowledge Extraction System API")
     logger.info(f"API Documentation: http://localhost:7777/docs")
     logger.info(f"Database: {settings.DATABASE_URL.split('@')[1] if '@' in settings.DATABASE_URL else 'configured'}")
+    
+    # Auto-load Surya OCR and DocLayout-YOLO on startup
+    logger.info("=" * 80)
+    logger.info("AUTO-LOADING MODELS ON STARTUP")
+    logger.info("=" * 80)
+    
+    # Load Surya OCR
+    try:
+        from src.services.ocr_sequential import load_surya_models
+        logger.info("[1/2] Loading Surya OCR models...")
+        result = load_surya_models()
+        if result['success']:
+            logger.info(f"✅ Surya OCR: {result['message']}")
+        else:
+            logger.warning(f"⚠️ Surya OCR: {result['message']}")
+    except Exception as e:
+        logger.error(f"❌ Failed to load Surya OCR: {e}")
+    
+    # Load DocLayout-YOLO
+    try:
+        from src.services.layout_detection_service import layout_detection_service, check_model_exists
+        logger.info("[2/2] Loading DocLayout-YOLO model...")
+        
+        # Check if model file exists
+        model_exists, model_msg = check_model_exists()
+        if model_exists:
+            success = layout_detection_service.load_model()
+            if success:
+                logger.info(f"✅ DocLayout-YOLO: Model loaded successfully")
+            else:
+                logger.warning(f"⚠️ DocLayout-YOLO: Failed to load model")
+        else:
+            logger.warning(f"⚠️ DocLayout-YOLO: {model_msg}")
+    except Exception as e:
+        logger.error(f"❌ Failed to load DocLayout-YOLO: {e}")
+    
+    logger.info("=" * 80)
+    logger.info("STARTUP MODEL LOADING COMPLETE")
+    logger.info("=" * 80)
 
 
 @app.on_event("shutdown")
