@@ -435,6 +435,31 @@
             background: #c62828;
             transform: scale(1.1);
         }
+        .preview-layout-btn {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(33, 150, 243, 0.9);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            line-height: 24px;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 10;
+        }
+        .preview-item:hover .preview-layout-btn {
+            opacity: 1;
+        }
+        .preview-layout-btn:hover {
+            background: #1976D2;
+            transform: scale(1.1);
+        }
         .preview-item.new {
             animation: preview-pulse 0.5s ease-out;
         }

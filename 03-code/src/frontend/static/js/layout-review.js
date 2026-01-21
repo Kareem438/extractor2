@@ -145,6 +145,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Get book_id from URL
     const urlParams = new URLSearchParams(window.location.search);
     state.bookId = urlParams.get('book_id');
+    
+    // Get optional page parameter for direct navigation
+    const targetPage = urlParams.get('page') ? parseInt(urlParams.get('page')) : null;
 
     if (!state.bookId) {
         hideLoading();
@@ -186,6 +189,11 @@ document.addEventListener('DOMContentLoaded', function() {
         await loadTitleConfigs();  // Load L1/L2 title configurations FIRST
         await loadEnabledClasses();  // Load enabled classes for context menu filtering
         await loadRegions();  // This calls loadCurrentPage() which needs titles
+        
+        // Navigate to target page if specified in URL
+        if (targetPage && state.pages.length > 0) {
+            navigateToPage(targetPage);
+        }
     })();
 });
 
@@ -2505,6 +2513,44 @@ function updatePageLabels() {
 // =============================================================================
 // Page Navigation
 // =============================================================================
+
+/**
+ * Navigate to a specific page number.
+ * Used when opening layout review from auto-slicer with a page parameter.
+ */
+function navigateToPage(pageNumber) {
+    // Find the index of this page in our pages array
+    const pageIndex = state.pages.indexOf(pageNumber);
+    
+    if (pageIndex >= 0) {
+        // Page has regions, navigate directly
+        state.currentPageIndex = pageIndex;
+        loadCurrentPage();
+        console.log(`Navigated to page ${pageNumber} (index ${pageIndex})`);
+    } else {
+        // Page doesn't have regions, find the closest page
+        // First, check if the page exists in allBookPages
+        if (pageNumber >= 1 && pageNumber <= state.allBookPages.length) {
+            // Find the closest page with regions
+            let closestIndex = 0;
+            let closestDiff = Math.abs(state.pages[0] - pageNumber);
+            
+            for (let i = 1; i < state.pages.length; i++) {
+                const diff = Math.abs(state.pages[i] - pageNumber);
+                if (diff < closestDiff) {
+                    closestDiff = diff;
+                    closestIndex = i;
+                }
+            }
+            
+            state.currentPageIndex = closestIndex;
+            loadCurrentPage();
+            console.log(`Page ${pageNumber} has no regions, navigated to closest page ${state.pages[closestIndex]}`);
+        } else {
+            console.warn(`Page ${pageNumber} is out of range`);
+        }
+    }
+}
 
 function prevPage() {
     if (state.currentPageIndex > 0) {

@@ -1339,6 +1339,7 @@ function renderPreviewGrid() {
 
         div.innerHTML = `
             <button class="preview-delete-btn" onclick="event.stopPropagation(); deleteParagraphPreview(${clip.id})" title="Delete paragraph">&times;</button>
+            <button class="preview-layout-btn" onclick="event.stopPropagation(); openInLayoutReview(${clip.page_number})" title="View in Layout Review">&#128269;</button>
             ${imageSrc ? `<img src="${imageSrc}" class="preview-thumb" alt="Paragraph ${clip.id}" />` : '<div class="preview-thumb" style="display: flex; align-items: center; justify-content: center; color: #999;">No image</div>'}
             <div class="preview-info">
                 <strong>#${clip.id}</strong> | Page ${clip.page_number}<br>
@@ -1346,9 +1347,9 @@ function renderPreviewGrid() {
             </div>
         `;
 
-        // Add click handler for opening details (not on delete button)
+        // Add click handler for opening details (not on delete or layout buttons)
         div.onclick = (e) => {
-            if (!e.target.classList.contains('preview-delete-btn')) {
+            if (!e.target.classList.contains('preview-delete-btn') && !e.target.classList.contains('preview-layout-btn')) {
                 openFullDetails(globalIndex);
             }
         };
@@ -1410,6 +1411,19 @@ function isSectionExpanded(sectionId, defaultExpanded = false) {
         return collapsibleSectionStates[sectionId];
     }
     return defaultExpanded;
+}
+
+/**
+ * Open the Layout Review page for a specific page number.
+ * Navigates to the layout review with the book_id and page parameters.
+ */
+function openInLayoutReview(pageNumber) {
+    if (!currentBookId) {
+        alert('No book selected');
+        return;
+    }
+    // Navigate to layout review with page parameter
+    window.location.href = `/layout-review?book_id=${currentBookId}&page=${pageNumber}`;
 }
 
 function openFullDetails(index) {
