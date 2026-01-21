@@ -1745,8 +1745,12 @@ function toggleAllYoloClasses(enable) {
         if (checkbox) checkbox.checked = enable;
     });
     
-    // Save the updated enabled classes
-    saveEnabledClasses();
+    // Show unsaved warning
+    const statusEl = document.getElementById('save-classes-status');
+    if (statusEl) {
+        statusEl.textContent = '⚠️ Unsaved changes - click "Save Classes" to apply';
+        statusEl.style.color = '#ff9800';
+    }
 }
 
 /**
@@ -1771,8 +1775,53 @@ async function saveEnabledClasses() {
         }
 
         console.log('Enabled classes saved:', enabledClasses);
+        return true;  // Return success
     } catch (error) {
         console.error('Error saving enabled classes:', error);
+        return false;  // Return failure
+    }
+}
+
+/**
+ * Save enabled classes with user feedback (for the Save button).
+ */
+async function saveEnabledClassesWithFeedback() {
+    if (!currentBookId) {
+        alert('Please select a book first');
+        return;
+    }
+
+    const statusEl = document.getElementById('save-classes-status');
+    const btnEl = document.getElementById('save-classes-btn');
+    
+    // Show saving state
+    btnEl.disabled = true;
+    btnEl.textContent = '⏳ Saving...';
+    statusEl.textContent = '';
+    statusEl.style.color = '#666';
+
+    const success = await saveEnabledClasses();
+
+    if (success) {
+        btnEl.textContent = '✅ Saved!';
+        statusEl.textContent = 'Classes saved. Layout Review will now show these classes in the context menu.';
+        statusEl.style.color = '#4CAF50';
+        
+        // Reset button after 2 seconds
+        setTimeout(() => {
+            btnEl.textContent = '💾 Save Classes';
+            btnEl.disabled = false;
+        }, 2000);
+    } else {
+        btnEl.textContent = '❌ Failed';
+        statusEl.textContent = 'Failed to save classes. Please try again.';
+        statusEl.style.color = '#f44336';
+        
+        // Reset button after 2 seconds
+        setTimeout(() => {
+            btnEl.textContent = '💾 Save Classes';
+            btnEl.disabled = false;
+        }, 2000);
     }
 }
 
@@ -1791,7 +1840,14 @@ function setupYoloClassCheckboxListeners() {
     checkboxIds.forEach(id => {
         const checkbox = document.getElementById(id);
         if (checkbox) {
-            checkbox.addEventListener('change', saveEnabledClasses);
+            // Mark as unsaved when checkbox changes
+            checkbox.addEventListener('change', () => {
+                const statusEl = document.getElementById('save-classes-status');
+                if (statusEl) {
+                    statusEl.textContent = '⚠️ Unsaved changes - click "Save Classes" to apply';
+                    statusEl.style.color = '#ff9800';
+                }
+            });
         }
     });
 }

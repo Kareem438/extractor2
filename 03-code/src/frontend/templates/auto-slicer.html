@@ -918,6 +918,13 @@
                         <button type="button" class="btn" style="padding: 4px 8px; font-size: 12px; background: #9E9E9E;" onclick="toggleAllYoloClasses(false)">None</button>
                     </label>
                 </div>
+                <!-- Save Classes Button -->
+                <div style="margin-top: 15px; display: flex; align-items: center; gap: 15px;">
+                    <button type="button" class="btn" id="save-classes-btn" style="background: #4CAF50; padding: 8px 20px;" onclick="saveEnabledClassesWithFeedback()">
+                        💾 Save Classes
+                    </button>
+                    <span id="save-classes-status" style="color: #666; font-size: 14px;"></span>
+                </div>
             </div>
 
             <!-- Layout Detection Thumbnails Section -->
