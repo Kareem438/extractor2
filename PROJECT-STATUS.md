@@ -1,30 +1,65 @@
 # Knowledge Extraction System - Project Status
 
-**Project:** Knowledge Extraction System (12-extractor)
-**Last Updated:** 2026-01-01
-**Current Phase:** Production Ready + Backend Worker System (In Progress)
-**Overall Progress:** 95% (Core system complete, worker system 60% complete)
+**Project:** Knowledge Extraction System (13-extractor2)
+**Last Updated:** 2026-01-22
+**Current Phase:** Production Ready + Knowledge Unit Creation (Complete)
+**Overall Progress:** 97% (Core system complete, KU creation complete, worker system 60%)
 
 ---
 
 ## 🖥️ Environment Configuration
 
-### Runtime Environment (Updated 2025-12-31)
+### Runtime Environment (Updated 2026-01-22)
 
 | Component | Environment | Notes |
 |-----------|-------------|-------|
-| **Python venv** | Windows (native) | `H:\12-extractor\venv\` |
-| **FastAPI Server** | Windows (native) | Port 7777 ✅ Running |
-| **PostgreSQL** | Windows (native) | Version 16, migrated from WSL |
+| **Python venv** | Windows (native) | `H:\13-extractor2\venv\` |
+| **FastAPI Server** | Windows (native) | Port 8888 ✅ Running |
+| **PostgreSQL** | Windows (native) | Version 16, database: knowledge_extraction_2 |
 | **ChromaDB** | Windows (native) | Local persistent storage |
-| **OCR Engines** | Windows (native) | PaddleOCR (GPU), Surya (GPU), Tesseract |
+| **OCR Engines** | Windows (native) | Surya (GPU), EasyOCR (GPU), DocLayout-YOLO (GPU) |
 | **Claude API** | Cloud | Anthropic API |
 
-**Important Migration (Dec 31):** PostgreSQL was migrated from WSL to Windows native installation. All components now run natively on Windows for better performance and easier management.
+**Project Location:** `H:\13-extractor2`
 
 ---
 
-## 🚀 Backend Worker System Progress
+## 🎯 Knowledge Unit Creation Feature (Session 15 - COMPLETE)
+
+### Overview
+Extended the Layout Review/Extraction workflow to create Knowledge Units from extracted content, enabling Claude analysis for diagrams, tables, equations, lists, and Q&A pairs.
+
+**Spec Location:** `.kiro/specs/knowledge-unit-creation/`
+**Requirements:** `02-architecture/KNOWLEDGE-UNIT-CREATION-REQUIREMENTS.md`
+**Progress:** `02-architecture/KU-CREATION-PROGRESS.md`
+
+### Implementation Status: ✅ COMPLETE
+
+| Phase | Description | Status | LOC |
+|-------|-------------|--------|-----|
+| 1 | Backend Service | ✅ Complete | 530 |
+| 2 | Layout Review Validation | ✅ Complete | 50 |
+| 3 | Pipeline Page UI | ✅ Complete | 200 |
+| 4 | Header & Descriptions | ✅ Complete | 200 |
+| 5 | Claude Integration | ✅ Complete | 200 |
+| **Total** | | **✅ Complete** | **1180** |
+
+### New Files Created:
+- `03-code/src/services/ku_creation_service.py` - Main KU creation service
+- `03-code/migrate_add_ku_attribute_names.py` - Migration script for attr9-12
+
+### New API Endpoints:
+- `POST /api/books/{book_id}/pipeline/create-knowledge-units`
+- `GET /api/books/{book_id}/pipeline/page-status`
+- `GET /api/books/{book_id}/pipeline/pages-ready-for-ku`
+
+### Git Commits:
+| Hash | Message |
+|------|---------|
+| `6f1608c` | feat: Implement Knowledge Unit Creation from Layout Review |
+| `c220721` | fix: Correct book_id column name and update QUICK-COMMANDS.md |
+
+---
 
 ### Overview
 A standalone backend worker system that runs independently of the FastAPI server to execute Claude API pipelines on confirmed paragraphs and diagrams.
@@ -163,87 +198,78 @@ A comprehensive system for extracting, processing, and managing knowledge from P
 ## 📊 System Status
 
 ### Server
-- ✅ FastAPI server running on http://localhost:7777
+- ✅ FastAPI server running on http://localhost:8888
 - ✅ PostgreSQL 16 service running (Windows native)
 - ✅ Database connections verified
-- ✅ Health endpoint: http://localhost:7777/health
+- ✅ Health endpoint: http://localhost:8888/health
 
 ### Available Pages
-- ✅ **Library:** http://localhost:7777/library
-- ✅ **Upload:** http://localhost:7777/upload
-- ✅ **Settings:** http://localhost:7777/book-settings
-- ✅ **Review Raw:** http://localhost:7777/review-raw
-- ✅ **Edit Paragraphs:** http://localhost:7777/edit-paragraphs
-- ✅ **Edit Diagrams:** http://localhost:7777/edit-diagrams
-- ✅ **Verify Pages:** http://localhost:7777/verify-pages (save text fixed)
-- ✅ **Pipeline Config:** http://localhost:7777/pipeline-config (fully functional)
-- ✅ **Pipeline Dashboard:** http://localhost:7777/pipeline-dashboard (fixed)
+- ✅ **Library:** http://localhost:8888/library
+- ✅ **Upload:** http://localhost:8888/upload
+- ✅ **Auto-Slicer:** http://localhost:8888/auto-slicer
+- ✅ **Layout Review:** http://localhost:8888/layout-review
+- ✅ **Extraction Dashboard:** http://localhost:8888/extraction-dashboard
+- ✅ **Pipeline Dashboard:** http://localhost:8888/pipeline-dashboard (KU creation)
+- ✅ **Book Settings:** http://localhost:8888/book-settings
+- ✅ **Verify Pages:** http://localhost:8888/verify-pages
+- ✅ **Verification:** http://localhost:8888/verification
 
 ### API Documentation
-- ✅ **Swagger UI:** http://localhost:7777/docs
-- ✅ **ReDoc:** http://localhost:7777/redoc
+- ✅ **Swagger UI:** http://localhost:8888/docs
+- ✅ **ReDoc:** http://localhost:8888/redoc
 
 ---
 
 ## 📁 Project Structure
 
 ```
-12-extractor/
+13-extractor2/
+├── .kiro/specs/              # ✅ Kiro spec files
+│   └── knowledge-unit-creation/  # KU creation spec (complete)
+│
 ├── 01-requirements/          # ✅ Phase 1 deliverables
 │   ├── requirements-specification.md
-│   ├── user-stories.md
-│   ├── acceptance-criteria.md
-│   ├── stakeholder-analysis.md
 │   ├── database-naming-convention.md
-│   └── ui-mockups/          # 5 SVG HTML mockups
+│   └── ui-mockups/          # HTML mockups
 │
 ├── 02-architecture/         # ✅ Phase 2 deliverables
 │   ├── system-design.md
 │   ├── database-schema.md
 │   ├── data-model.md
 │   ├── api-design.md
-│   ├── technology-stack.md
-│   ├── record-merging-splitting.md
-│   ├── sequential-ocr-svg-processing.md
-│   ├── code-chunks/        # 45 chunk breakdown
-│   ├── diagrams/           # ER diagram + visualizations
-│   └── dependencies/       # Setup scripts
+│   ├── KNOWLEDGE-UNIT-CREATION-REQUIREMENTS.md
+│   ├── KU-CREATION-PROGRESS.md
+│   ├── code-chunks/        # Code breakdown
+│   └── diagrams/           # ER diagrams
 │
 ├── 03-code/               # ✅ Implementation complete
 │   ├── src/
 │   │   ├── api/routes/    # All routes implemented
-│   │   ├── agents/        # OCR agents implemented
+│   │   ├── agents/        # OCR agents
 │   │   ├── database/      # Models + services
 │   │   ├── frontend/      # Templates + static files
-│   │   ├── services/      # Business logic
+│   │   ├── services/      # Business logic (incl. ku_creation_service.py)
 │   │   ├── utils/         # Helper functions
-│   │   └── worker/        # Worker system (60% complete)
-│   │       ├── template_engine.py  ✅
-│   │       ├── loop.py             ⏳
-│   │       ├── executor.py         ⏳
-│   │       └── handlers/           ⏳
+│   │   └── worker/        # Worker system
 │   └── main.py           # FastAPI entry point
 │
 ├── 04-tests/              # ✅ Phase 3 deliverables
 │   ├── test-plan.md
-│   ├── unit/             # 45 unit test files
-│   ├── integration/      # 5 integration test files
-│   └── e2e/              # 5 E2E test files
+│   ├── unit/             # Unit test files
+│   ├── integration/      # Integration test files
+│   └── e2e/              # E2E test files
 │
 ├── 06-PostgreSQL BACKUP/  # ✅ Database backups
-│   └── knowledge_extraction_*.{sql,dump}  # Timestamped backups
-│
 ├── 07-Chroma BACKUP/      # ✅ Vector DB backups
-│   └── chroma_backup_*.zip  # Timestamped backups
+├── docs/                  # ✅ Documentation
+│   └── QUICK-COMMANDS.md  # Server startup commands
 │
-├── 06-PostgreSQL Backup.py  # ✅ Backup script for PostgreSQL
-├── 07-Chroma Backup.py      # ✅ Backup script for ChromaDB
-├── backend-option-a.md      # Worker system requirements
-├── SESSION-SUMMARY-2026-01-01.md  # Latest session
+├── 06-PostgreSQL Backup.py  # ✅ Backup script
+├── 07-Chroma Backup.py      # ✅ Backup script
 ├── PROJECT-STATUS.md        # This file
-├── CLAUDE.md                # Claude Code instructions
-├── README.md                # Project overview
-└── QUICK-START.md           # Quick start guide
+├── PROJECT-SUMMARY.md       # Comprehensive summary
+├── SESSION-SUMMARY-2026-01-22.md  # Latest session
+└── CLAUDE.md                # Claude Code instructions
 ```
 
 ---
@@ -254,9 +280,10 @@ A comprehensive system for extracting, processing, and managing knowledge from P
 - **Requirements:** 100% ✅
 - **Architecture:** 100% ✅
 - **Core Implementation:** 100% ✅
+- **Knowledge Unit Creation:** 100% ✅ (NEW)
 - **Worker System:** 60% ⏳ (Database + Frontend + API done)
 - **Testing:** 100% ✅
-- **TOTAL:** 95% (4.75/5 phases)
+- **TOTAL:** 97% (Core + KU complete, worker pending)
 
 ### Code Metrics
 - **Total LOC:** ~15,000+ lines
@@ -273,6 +300,28 @@ A comprehensive system for extracting, processing, and managing knowledge from P
 
 ## 🔑 Recent Sessions
 
+### Session 2026-01-22 (Session 15)
+**Focus:** Knowledge Unit Creation Feature - COMPLETE
+
+**Achievements:**
+- ✅ Implemented KU creation service (ku_creation_service.py)
+- ✅ Added 3 new API endpoints for KU creation
+- ✅ Created migration script for attr9-12 names
+- ✅ Added orphan validation for Q&A pairs
+- ✅ Updated Pipeline Dashboard with page status table
+- ✅ Reordered header navigation across 8 templates
+- ✅ Added Claude integration for Q&A processing
+- ✅ Fixed book_id bug in pipeline.py
+- ✅ Updated QUICK-COMMANDS.md with correct paths
+
+**Commits:**
+- `6f1608c` - feat: Implement Knowledge Unit Creation from Layout Review
+- `c220721` - fix: Correct book_id column name and update QUICK-COMMANDS.md
+
+**Total LOC:** ~1180 lines across 15+ files
+
+**See:** `SESSION-SUMMARY-2026-01-22.md` for detailed session notes
+
 ### Session 2026-01-01
 **Focus:** Bug fixes and pipeline system completion
 
@@ -281,17 +330,9 @@ A comprehensive system for extracting, processing, and managing knowledge from P
 - ✅ Implemented full pipeline configuration page
 - ✅ Fixed database schema mismatch (ocr_method)
 - ✅ Fixed file path format issue (WSL → Windows)
-- ✅ Created pipeline tables for book1
-- ✅ Verified all API endpoints
-- ✅ Updated documentation
 
 **Commits:**
 - `97ce8d3` - fix: Fix pipeline pages and database schema mismatch
-
-**Files Modified:**
-- `ocr.py` (3 lines)
-- `pipeline-config.html` (177 insertions, 30 deletions)
-- `pipeline-dashboard.html` (4 lines)
 
 **See:** `SESSION-SUMMARY-2026-01-01.md` for detailed session notes
 
@@ -300,10 +341,10 @@ A comprehensive system for extracting, processing, and managing knowledge from P
 ## 🚀 Next Steps
 
 ### Immediate Priorities
-1. ✅ Verify page scanning continues beyond page 4
-2. ✅ Test pipeline configuration with real prompts
+1. ✅ Knowledge Unit Creation feature complete
+2. ⏳ Test KU creation workflow end-to-end
 3. ⏳ Implement worker process main loop
-4. ⏳ Implement Claude API integration
+4. ⏳ Implement Claude API integration for worker
 5. ⏳ Add ChromaDB handlers
 
 ### Short-term Goals
@@ -367,30 +408,32 @@ A comprehensive system for extracting, processing, and managing knowledge from P
 
 ## ✅ Current Status
 
-The project is **95% complete** with core functionality fully implemented and operational.
+The project is **97% complete** with core functionality and KU creation fully implemented and operational.
 
 **What Works:**
 - ✅ PDF upload and processing
-- ✅ Multi-engine OCR (PaddleOCR, Surya, Tesseract)
+- ✅ Multi-engine OCR (Surya, EasyOCR, DocLayout-YOLO)
 - ✅ Page scanning and text extraction
-- ✅ Paragraph/diagram selection
-- ✅ Text editing and verification
+- ✅ Auto-Slicer with YOLO detection
+- ✅ Layout Review with region editing
+- ✅ Extraction Dashboard
+- ✅ Knowledge Unit Creation from Layout Review (NEW)
 - ✅ Pipeline configuration (full CRUD)
 - ✅ Database operations (PostgreSQL)
 - ✅ Web interface (all pages functional)
 
 **What's Pending:**
 - ⏳ Worker process execution
-- ⏳ Claude API integration
+- ⏳ Claude API integration for worker
 - ⏳ ChromaDB integration
 - ⏳ Pipeline execution and monitoring
 
-**Current Status:** OPERATIONAL (core features) + IN PROGRESS (worker system)
-**Quality:** HIGH (100% test coverage, all core features tested)
-**Ready for:** Pipeline testing once worker is complete
+**Current Status:** OPERATIONAL (core + KU creation) + IN PROGRESS (worker system)
+**Quality:** HIGH (all core features tested)
+**Ready for:** KU creation testing, worker implementation
 
 ---
 
-**Last Updated:** 2026-01-01
+**Last Updated:** 2026-01-22
 **Project Status:** ON TRACK
-**Next Session:** Continue worker process implementation
+**Next Session:** Test KU creation workflow, continue worker implementation

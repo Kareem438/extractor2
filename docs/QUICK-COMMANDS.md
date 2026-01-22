@@ -76,25 +76,7 @@ cd H:\13-extractor2\03-code
 Invoke-WebRequest -Uri "http://localhost:8888/api/ocr/check-all-status" -UseBasicParsing
 ```
 
-## System Health Check
 
-```
-Bash(curl -s http://localhost:7777/health)
-
-Bash(cd H:/12-extractor/03-code && H:/12-extractor/venv/Scripts/python.exe -c "from src.database.connection import engine; conn = engine.connect(); print('Database OK'); conn.close()")
-
-Bash(curl -s http://localhost:7777/api/ocr/check-all-status)
-```
-
-## Start/Restart Server
-
-```
-# Start server
-Bash(cd H:/12-extractor/03-code && H:/12-extractor/venv/Scripts/python.exe -m uvicorn src.main:app --host 0.0.0.0 --port 7777)
-
-# Start server with auto-reload (for development)
-Bash(cd H:/12-extractor/03-code && H:/12-extractor/venv/Scripts/python.exe -m uvicorn src.main:app --host 0.0.0.0 --port 7777 --reload)
-```
 
 ## OCR Operations
 
