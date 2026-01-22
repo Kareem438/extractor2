@@ -13,6 +13,7 @@ const state = {
     pageSize: 25,
     totalPages: 1,
     selectedDiagramId: null,
+    selectedPageNumber: null,  // Currently selected page in thumbnails
     defaultPrompts: {},
     ws: null,
     isExtracting: false
@@ -171,7 +172,19 @@ function renderThumbnails() {
     state.readyPages.forEach(page => {
         const item = document.createElement('div');
         item.className = 'thumbnail-item';
-        item.onclick = () => openLayoutReview(page.page_number);
+        item.dataset.pageNumber = page.page_number;
+        
+        // Left-click: select page and show regions in right panel
+        item.onclick = (e) => {
+            e.preventDefault();
+            selectPage(page.page_number);
+        };
+        
+        // Right-click: show context menu
+        item.oncontextmenu = (e) => {
+            e.preventDefault();
+            showThumbnailContextMenu(e, page.page_number);
+        };
 
         // Status dot
         let statusClass = 'pending';
@@ -189,39 +202,62 @@ function renderThumbnails() {
 
         container.appendChild(item);
 
-        // Load and render thumbnail with region boxes
-        loadThumbnailWithRegions(page.page_number, page.regions);
+        // Render thumbnail with region boxes (no image, just colored boxes on dark background)
+        renderThumbnailRegions(page.page_number, page.regions);
     });
+    
+    // Select first page by default if none selected
+    if (state.readyPages.length > 0 && !state.selectedPageNumber) {
+        selectPage(state.readyPages[0].page_number);
+    }
 }
 
-// Load thumbnail image and draw region boxes
-async function loadThumbnailWithRegions(pageNumber, regions) {
+// Render thumbnail with page image and colored region boxes
+async function renderThumbnailRegions(pageNumber, regions) {
     const canvas = document.getElementById(`thumb-canvas-${pageNumber}`);
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
+    
+    // Dark background initially
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     try {
-        // Load page thumbnail
+        // Load page image using the review-raw endpoint (same as auto-slicer)
+        const response = await fetch(`/api/review-raw/${state.bookId}/page/${pageNumber}`);
+        if (!response.ok) {
+            throw new Error('Failed to load page image');
+        }
+
+        const data = await response.json();
+        if (!data.image_base64) {
+            throw new Error('No image data');
+        }
+
         const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.src = `/api/auto-slicer/${state.bookId}/page-thumbnail/${pageNumber}`;
-
         img.onload = () => {
-            // Draw image scaled to canvas
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            // Calculate scale to fit canvas
+            const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+            const drawWidth = img.width * scale;
+            const drawHeight = img.height * scale;
+            const offsetX = (canvas.width - drawWidth) / 2;
+            const offsetY = (canvas.height - drawHeight) / 2;
 
-            // Draw region boxes
+            // Clear and draw image
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+
+            // Draw region boxes if available
             if (regions && regions.length > 0) {
-                const scaleX = canvas.width / img.naturalWidth;
-                const scaleY = canvas.height / img.naturalHeight;
-
                 regions.forEach(region => {
-                    const x = region.x * scaleX;
-                    const y = region.y * scaleY;
-                    const w = region.width * scaleX;
-                    const h = region.height * scaleY;
+                    const x = offsetX + region.x * scale;
+                    const y = offsetY + region.y * scale;
+                    const w = region.width * scale;
+                    const h = region.height * scale;
 
+                    // Border
                     ctx.strokeStyle = getClassColor(region.class_name);
                     ctx.lineWidth = 2;
                     ctx.strokeRect(x, y, w, h);
@@ -230,15 +266,144 @@ async function loadThumbnailWithRegions(pageNumber, regions) {
         };
 
         img.onerror = () => {
-            ctx.fillStyle = '#1a1a2e';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#666';
-            ctx.font = '12px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('No preview', canvas.width / 2, canvas.height / 2);
+            drawNoPreview(ctx, canvas);
         };
+
+        img.src = `data:image/png;base64,${data.image_base64}`;
+
     } catch (error) {
         console.error('Error loading thumbnail:', error);
+        drawNoPreview(ctx, canvas);
+    }
+}
+
+// Draw "No preview" message on canvas
+function drawNoPreview(ctx, canvas) {
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#666';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('No preview', canvas.width / 2, canvas.height / 2);
+}
+
+// Select a page and update the right panel
+function selectPage(pageNumber) {
+    state.selectedPageNumber = pageNumber;
+    
+    // Update thumbnail selection visual
+    document.querySelectorAll('.thumbnail-item').forEach(item => {
+        item.classList.remove('selected');
+        if (parseInt(item.dataset.pageNumber) === pageNumber) {
+            item.classList.add('selected');
+        }
+    });
+    
+    // Update right panel with page regions
+    renderPageRegions(pageNumber);
+}
+
+// Render regions for selected page in right panel
+function renderPageRegions(pageNumber) {
+    const page = state.readyPages.find(p => p.page_number === pageNumber);
+    if (!page) return;
+    
+    // Update header
+    const header = document.querySelector('.diagrams-section h3') || document.querySelector('.content-section h3');
+    if (header) {
+        header.textContent = `Page ${pageNumber} Regions`;
+    }
+    
+    // Filter diagrams to show only this page's regions
+    state.filteredDiagrams = state.diagrams.filter(d => d.page_number === pageNumber);
+    
+    // Re-render the diagrams table
+    renderDiagramsTable();
+}
+
+// Show context menu for thumbnail
+function showThumbnailContextMenu(event, pageNumber) {
+    // Remove existing context menu if any
+    const existingMenu = document.getElementById('thumbnail-context-menu');
+    if (existingMenu) existingMenu.remove();
+    
+    const menu = document.createElement('div');
+    menu.id = 'thumbnail-context-menu';
+    menu.className = 'context-menu';
+    menu.style.cssText = `
+        position: fixed;
+        left: ${event.clientX}px;
+        top: ${event.clientY}px;
+        background: #2d2d44;
+        border: 1px solid #444;
+        border-radius: 4px;
+        padding: 4px 0;
+        z-index: 1000;
+        min-width: 180px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    `;
+    
+    menu.innerHTML = `
+        <div class="context-menu-item" onclick="openLayoutReview(${pageNumber}); hideThumbnailContextMenu();" 
+             style="padding: 8px 16px; cursor: pointer; color: #fff;">
+            🔍 Go to Layout Review
+        </div>
+        <div class="context-menu-item" onclick="extractSinglePage(${pageNumber}); hideThumbnailContextMenu();"
+             style="padding: 8px 16px; cursor: pointer; color: #fff;">
+            ⚡ Extract This Page
+        </div>
+    `;
+    
+    // Add hover effect
+    menu.querySelectorAll('.context-menu-item').forEach(item => {
+        item.onmouseenter = () => item.style.background = '#3d3d5c';
+        item.onmouseleave = () => item.style.background = 'transparent';
+    });
+    
+    document.body.appendChild(menu);
+    
+    // Close menu on click outside
+    setTimeout(() => {
+        document.addEventListener('click', hideThumbnailContextMenu, { once: true });
+    }, 0);
+}
+
+function hideThumbnailContextMenu() {
+    const menu = document.getElementById('thumbnail-context-menu');
+    if (menu) menu.remove();
+}
+
+// Extract a single page
+async function extractSinglePage(pageNumber) {
+    if (state.isExtracting) {
+        alert('Extraction already in progress');
+        return;
+    }
+    
+    const confirmed = confirm(`Start extraction for page ${pageNumber}?`);
+    if (!confirmed) return;
+    
+    try {
+        state.isExtracting = true;
+        
+        const response = await fetch(`/api/extraction/${state.bookId}/extract`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ page_numbers: [pageNumber] })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Extraction failed');
+        }
+        
+        alert(`Extraction started for page ${pageNumber}`);
+        
+    } catch (error) {
+        console.error('Error starting extraction:', error);
+        alert('Failed to start extraction: ' + error.message);
+    } finally {
+        state.isExtracting = false;
     }
 }
 
