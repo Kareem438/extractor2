@@ -117,7 +117,7 @@ function handleWebSocketMessage(message) {
         case 'completed':
             state.isExtracting = false;
             document.getElementById('start-btn').disabled = false;
-            document.getElementById('start-btn').textContent = 'Start Extraction';
+            document.getElementById('start-btn').textContent = 'Start OCR Extraction';
             hideLoading();
             loadDashboardData(); // Refresh all data
             break;
@@ -640,8 +640,7 @@ async function startExtraction() {
         return;
     }
 
-    const apiMode = document.getElementById('api-mode').value;
-    const confirmed = confirm(`Start extraction for ${state.readyPages.length} pages using ${apiMode === 'batch' ? 'Batch API (50% cost)' : 'Direct API (immediate)'}?`);
+    const confirmed = confirm(`Start OCR extraction for ${state.readyPages.length} pages using Surya OCR?`);
 
     if (!confirmed) return;
 
@@ -649,7 +648,7 @@ async function startExtraction() {
         state.isExtracting = true;
         document.getElementById('start-btn').disabled = true;
         document.getElementById('start-btn').textContent = 'Extracting...';
-        showLoading('Starting extraction...');
+        showLoading('Starting OCR extraction...');
 
         const response = await fetch(`/api/extraction/${state.bookId}/extract`, {
             method: 'POST',
@@ -668,7 +667,7 @@ async function startExtraction() {
         console.error('Error starting extraction:', error);
         state.isExtracting = false;
         document.getElementById('start-btn').disabled = false;
-        document.getElementById('start-btn').textContent = 'Start Extraction';
+        document.getElementById('start-btn').textContent = 'Start OCR Extraction';
         hideLoading();
         alert('Error starting extraction: ' + error.message);
     }
