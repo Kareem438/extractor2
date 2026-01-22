@@ -891,7 +891,7 @@ async def get_dashboard_data(book_id: int):
                 })
 
         # Get prompts
-        prompts = config.get('extraction_prompts', {})
+        prompts = auto_config.get('extraction_prompts', {})
         merged_prompts = {**DEFAULT_PROMPTS}
         merged_prompts.update(prompts)
 
