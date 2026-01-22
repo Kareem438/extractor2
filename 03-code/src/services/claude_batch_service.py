@@ -770,3 +770,263 @@ def save_decode_result(book_id: int, diagram_id: int, content: str) -> Dict[str,
         return {"error": str(e)}
     finally:
         db.close()
+
+
+# =============================================================================
+# Q&A Knowledge Unit Processing Functions
+# =============================================================================
+
+def process_qa_knowledge_units(book_id: int, ku_ids: Optional[List[int]] = None,
+                               websocket_callback=None) -> Dict[str, Any]:
+    """
+    Process Q&A Knowledge Units by sending both question and answer images to Claude.
+    
+    For each Q&A KU:
+    1. Parse attr12_value JSON to get question and answer image references
+    2. Retrieve both images from raw_diagram_images
+    3. Send question image to Claude -> store response in text_content
+    4. Send answer image to Claude -> store response in attr11_value
+    
+    Args:
+        book_id: Book ID
+        ku_ids: Optional list of specific KU IDs. If None, process all Q&A KUs.
+        websocket_callback: Optional callback for progress updates
+        
+    Returns:
+        Dictionary with processing results
+    """
+    db = SessionLocal()
+    try:
+        prefix = get_book_table_prefix(db, book_id)
+        ku_table = f"{prefix}_knowledge_units"
+        diagrams_table = f"raw_{prefix}_diagram_images"
+        prompts = get_extraction_prompts(db, book_id)
+        
+        # Get Q&A KUs that need processing
+        query = f"""
+            SELECT unit_id, attr12_value, chapter, topic, sub_topic
+            FROM {ku_table}
+            WHERE attr9_value = 'question_answer'
+            AND (text_content IS NULL OR text_content = '')
+        """
+        
+        if ku_ids:
+            query += f" AND unit_id IN ({','.join(map(str, ku_ids))})"
+        
+        qa_kus = db.execute(text(query)).fetchall()
+        
+        if not qa_kus:
+            return {"error": "No Q&A Knowledge Units to process", "processed": 0}
+        
+        total = len(qa_kus)
+        processed = 0
+        errored = 0
+        
+        client = get_anthropic_client()
+        question_prompt = prompts.get('question', DEFAULT_PROMPTS['question'])
+        answer_prompt = prompts.get('answer', DEFAULT_PROMPTS['answer'])
+        
+        for ku in qa_kus:
+            ku_id = ku[0]
+            attr12_value = ku[1]
+            
+            try:
+                # Parse JSON reference
+                if isinstance(attr12_value, str):
+                    refs = json.loads(attr12_value)
+                else:
+                    refs = attr12_value
+                
+                question_ref = refs.get('question', '')
+                answer_ref = refs.get('answer', '')
+                
+                # Extract IDs from references (format: "diagram:123")
+                question_id = int(question_ref.split(':')[1]) if question_ref else None
+                answer_id = int(answer_ref.split(':')[1]) if answer_ref else None
+                
+                if not question_id or not answer_id:
+                    logger.warning(f"KU {ku_id} missing question or answer reference")
+                    errored += 1
+                    continue
+                
+                # Get question image
+                q_result = db.execute(
+                    text(f"SELECT image_data FROM {diagrams_table} WHERE id = :id"),
+                    {"id": question_id}
+                ).fetchone()
+                
+                # Get answer image
+                a_result = db.execute(
+                    text(f"SELECT image_data FROM {diagrams_table} WHERE id = :id"),
+                    {"id": answer_id}
+                ).fetchone()
+                
+                if not q_result or not a_result:
+                    logger.warning(f"KU {ku_id} missing image data")
+                    errored += 1
+                    continue
+                
+                q_image_data = q_result[0]
+                a_image_data = a_result[0]
+                
+                # Encode images
+                if isinstance(q_image_data, memoryview):
+                    q_image_data = bytes(q_image_data)
+                if isinstance(a_image_data, memoryview):
+                    a_image_data = bytes(a_image_data)
+                
+                q_image_b64 = base64.b64encode(q_image_data).decode('utf-8')
+                a_image_b64 = base64.b64encode(a_image_data).decode('utf-8')
+                
+                # Process question image
+                q_message = client.messages.create(
+                    model="claude-sonnet-4-20250514",
+                    max_tokens=4096,
+                    messages=[{
+                        "role": "user",
+                        "content": [
+                            {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": q_image_b64}},
+                            {"type": "text", "text": question_prompt}
+                        ]
+                    }]
+                )
+                
+                question_text = ""
+                for block in q_message.content:
+                    if block.type == "text":
+                        question_text += block.text
+                
+                # Process answer image
+                a_message = client.messages.create(
+                    model="claude-sonnet-4-20250514",
+                    max_tokens=4096,
+                    messages=[{
+                        "role": "user",
+                        "content": [
+                            {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": a_image_b64}},
+                            {"type": "text", "text": answer_prompt}
+                        ]
+                    }]
+                )
+                
+                answer_text = ""
+                for block in a_message.content:
+                    if block.type == "text":
+                        answer_text += block.text
+                
+                # Update KU with both responses
+                db.execute(
+                    text(f"""
+                        UPDATE {ku_table}
+                        SET text_content = :question_text,
+                            attr11_value = :answer_text,
+                            updated_at = NOW()
+                        WHERE unit_id = :ku_id
+                    """),
+                    {"ku_id": ku_id, "question_text": question_text, "answer_text": answer_text}
+                )
+                
+                # Also update raw_diagram_images with analyzed_at
+                db.execute(
+                    text(f"""
+                        UPDATE {diagrams_table}
+                        SET extracted_text = :text, ai_model = 'claude-sonnet-4', analyzed_at = NOW()
+                        WHERE id = :id
+                    """),
+                    {"id": question_id, "text": question_text}
+                )
+                db.execute(
+                    text(f"""
+                        UPDATE {diagrams_table}
+                        SET extracted_text = :text, ai_model = 'claude-sonnet-4', analyzed_at = NOW()
+                        WHERE id = :id
+                    """),
+                    {"id": answer_id, "text": answer_text}
+                )
+                
+                db.commit()
+                processed += 1
+                
+                if websocket_callback:
+                    websocket_callback({
+                        "type": "qa_progress",
+                        "current": processed,
+                        "total": total,
+                        "ku_id": ku_id
+                    })
+                
+                logger.info(f"Processed Q&A KU {ku_id} ({processed}/{total})")
+                
+            except anthropic.APIError as e:
+                logger.error(f"API error processing Q&A KU {ku_id}: {e}")
+                errored += 1
+            except Exception as e:
+                logger.error(f"Error processing Q&A KU {ku_id}: {e}")
+                errored += 1
+        
+        return {
+            "status": "completed",
+            "processed": processed,
+            "errored": errored,
+            "total": total,
+            "message": f"Processed {processed}/{total} Q&A KUs, {errored} errors"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in process_qa_knowledge_units: {e}")
+        return {"error": str(e), "processed": 0}
+    finally:
+        db.close()
+
+
+def update_ku_from_diagram_analysis(book_id: int) -> Dict[str, Any]:
+    """
+    Update Knowledge Units with text from Claude diagram analysis.
+    
+    After Claude processes raw_diagram_images, this function copies the
+    extracted_text to the corresponding knowledge_units.text_content.
+    
+    For Q&A pairs, this is handled separately by process_qa_knowledge_units().
+    
+    Args:
+        book_id: Book ID
+        
+    Returns:
+        Dictionary with update results
+    """
+    db = SessionLocal()
+    try:
+        prefix = get_book_table_prefix(db, book_id)
+        ku_table = f"{prefix}_knowledge_units"
+        diagrams_table = f"raw_{prefix}_diagram_images"
+        
+        # Update non-Q&A KUs from diagram analysis
+        result = db.execute(
+            text(f"""
+                UPDATE {ku_table} ku
+                SET text_content = d.extracted_text,
+                    updated_at = NOW()
+                FROM {diagrams_table} d
+                WHERE ku.attr12_value = CONCAT('diagram:', d.id::text)
+                AND ku.attr9_value != 'question_answer'
+                AND d.analyzed_at IS NOT NULL
+                AND (ku.text_content IS NULL OR ku.text_content = '')
+                RETURNING ku.unit_id
+            """)
+        )
+        
+        updated_ids = [row[0] for row in result.fetchall()]
+        db.commit()
+        
+        return {
+            "status": "completed",
+            "updated_count": len(updated_ids),
+            "message": f"Updated {len(updated_ids)} Knowledge Units from diagram analysis"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error updating KUs from diagram analysis: {e}")
+        db.rollback()
+        return {"error": str(e), "updated_count": 0}
+    finally:
+        db.close()

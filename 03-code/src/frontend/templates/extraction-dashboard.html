@@ -663,7 +663,7 @@
 </head>
 <body>
     <nav class="top-nav">
-        <div class="top-nav-brand">Extraction Dashboard</div>
+        <div class="top-nav-brand">📝 Extraction Dashboard</div>
         <div class="top-nav-info">
             <span>Book: <span class="book-name" id="book-name">Loading...</span></span>
         </div>
@@ -677,12 +677,19 @@
             </div>
             <div class="top-nav-links">
                 <button onclick="startExtraction()" class="btn-primary" id="start-btn">Start Extraction</button>
-                <a href="/layout-review" id="layout-review-link">Layout Review</a>
-                <a href="/auto-slicer" id="auto-slicer-link">Auto-Slicer</a>
-                <a href="/library">Library</a>
+                <a href="/upload">📤 Upload</a>
+                <a href="/auto-slicer" id="auto-slicer-link">🔪 Auto-Slicer</a>
+                <a href="/pipeline-dashboard">⚙️ Pipeline</a>
+                <a href="/library">📚 Library</a>
+                <a href="/layout-review" id="layout-review-link">🔲 Layout Review</a>
             </div>
         </div>
     </nav>
+
+    <!-- Page Description -->
+    <div style="background: #16213e; padding: 10px 20px; border-bottom: 1px solid #0f3460;">
+        <p style="color: #aaa; margin: 0; font-size: 13px;">Run OCR extraction on pages marked as "Ready for Extraction" to populate raw paragraph and diagram tables.</p>
+    </div>
 
     <div class="main-container">
         <!-- Left Sidebar - Page Thumbnails -->

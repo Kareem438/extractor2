@@ -505,18 +505,25 @@
 <body>
     <!-- Top Navigation -->
     <nav class="top-nav">
-        <div class="top-nav-brand">Layout Review</div>
+        <div class="top-nav-brand">🔲 Layout Review</div>
         <div class="top-nav-info">
             <span>Book: <span id="book-name" class="book-name">Loading...</span></span>
             <span id="page-count-info">0 pages with regions</span>
         </div>
         <div class="top-nav-links">
             <button onclick="toggleShortcuts()" title="Keyboard Shortcuts">? Shortcuts</button>
-            <a href="#" id="back-link">Back to Auto-Slicer</a>
-            <a href="#" id="back-to-extraction-link" style="background: #00897B;">Back to Extraction</a>
+            <a href="/upload">📤 Upload</a>
+            <a href="#" id="back-link">🔪 Auto-Slicer</a>
+            <a href="#" id="back-to-extraction-link" style="background: #00897B;">📝 Extraction</a>
+            <a href="/pipeline-dashboard">⚙️ Pipeline</a>
             <button class="btn-success" onclick="confirmAllAndFinish()">Confirm All & Finish</button>
         </div>
     </nav>
+
+    <!-- Page Description -->
+    <div style="background: #16213e; padding: 8px 20px; border-bottom: 1px solid #0f3460;">
+        <p style="color: #aaa; margin: 0; font-size: 12px;">Review and correct detected layout regions. Link diagrams to paragraphs, questions to answers, then mark pages as "Ready for Extraction".</p>
+    </div>
 
     <!-- L1/L2 Title Bar -->
     <div class="title-bar" id="title-bar">

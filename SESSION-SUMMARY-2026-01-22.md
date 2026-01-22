@@ -284,5 +284,58 @@ from src.services.layout_detection_service import layout_detection_service
 
 ---
 
-**Session Status:** ✅ COMPLETE  
+**Session Status:** 🔄 IN PROGRESS  
 **Project Status:** 95% Complete - Production Ready
+
+---
+
+## 🔄 Session 15: Knowledge Unit Creation Enhancement (IN PROGRESS)
+
+### Current Task: Requirements Gathering for KU Creation from Layout Review
+
+**Requirements Document:** `02-architecture/KNOWLEDGE-UNIT-CREATION-REQUIREMENTS.md`
+
+### Summary of Requirements Gathered:
+
+1. **Workflow Extension**: Add "Create Knowledge Units" step after Extraction
+2. **Class Mapping**:
+   - Paragraphs (`raw_paragraph_images`): paragraph only
+   - Diagrams (`raw_diagram_images`): diagram, table, equation, lists, question, answer
+3. **Attribute Assignments**:
+   - `attr9_value` = layout_class_type
+   - `attr10_value` = parent_paragraph_text
+   - `attr11_value` = answer_text (for Q&A)
+   - `attr12_value` = raw_entity_reference ("paragraph:123" or "diagram:456")
+4. **Bidirectional Linking**: Raw tables ↔ Knowledge Units
+5. **Pipeline Page UI**: Table with page thumbnails, status columns, checkboxes for selection
+6. **OCR**: Surya at 600 DPI for all types, stored in `attr2_value`
+7. **Claude Processing**: Expanded to ALL `raw_diagram_images` types
+
+### Questions Answered: Q1-Q28 (ALL COMPLETE - see requirements document)
+
+### Key Decisions Made:
+1. **Class Mapping**: paragraph only → raw_paragraph_images; everything else → raw_diagram_images
+2. **Attributes**: attr9=class_type, attr10=parent_text, attr11=answer_text, attr12=raw_reference (JSON)
+3. **Q&A Handling**: Merged into single KU, both images stored as JSON in attr12
+4. **Validation**: All non-paragraphs need parent; Q&A must be paired
+5. **Pipeline Page**: Add KU creation to existing page with table UI
+6. **Header Reorder**: Upload → Auto-Slicer → Extraction → Pipeline → Library → rest
+7. **Page Descriptions**: Add one-line description to each page
+
+### Next Steps:
+- ✅ Requirements gathering COMPLETE
+- ⏳ Create detailed design document (spec)
+- ⏳ Create implementation tasks
+- ⏳ Implement changes
+
+### If Context Ends:
+**Resume from:** `02-architecture/KU-CREATION-PROGRESS.md`
+- Progress tracking file with current task and LOC count
+- Links to all spec files
+- Detailed log of what was completed
+
+**Related Files:**
+- `02-architecture/KNOWLEDGE-UNIT-CREATION-REQUIREMENTS.md` - Full requirements (Q1-Q28)
+- `.kiro/specs/knowledge-unit-creation/requirements.md` - Formal requirements
+- `.kiro/specs/knowledge-unit-creation/design.md` - Technical design
+- `.kiro/specs/knowledge-unit-creation/tasks.md` - Implementation tasks

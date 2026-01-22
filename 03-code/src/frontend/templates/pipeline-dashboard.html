@@ -36,6 +36,16 @@
             margin-bottom: 10px;
         }
 
+        .page-description {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-top: 5px;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 3px solid #3498db;
+        }
+
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -147,6 +157,15 @@
 
         .btn-primary:hover {
             background: #2980b9;
+        }
+
+        .btn-purple {
+            background: #9b59b6;
+            color: white;
+        }
+
+        .btn-purple:hover {
+            background: #8e44ad;
         }
 
         .btn:disabled {
@@ -291,13 +310,80 @@
             font-size: 12px;
             color: #7f8c8d;
         }
+
+        /* Page Status Table Styles */
+        .page-status-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .page-status-table th,
+        .page-status-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .page-status-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #7f8c8d;
+        }
+
+        .page-status-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .page-thumbnail {
+            width: 60px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .status-icon {
+            font-size: 16px;
+        }
+
+        .status-icon.done {
+            color: #27ae60;
+        }
+
+        .status-icon.pending {
+            color: #95a5a6;
+        }
+
+        .status-icon.error {
+            color: #e74c3c;
+        }
+
+        .ku-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+
+        .ku-actions .selected-count {
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+
+        .page-status-container {
+            max-height: 500px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>Pipeline Dashboard</h1>
-            <p style="color: #7f8c8d; margin-top: 5px;">Monitor worker status and task progress</p>
+            <p class="page-description">Monitor worker status, create Knowledge Units from extracted data, and execute Claude analysis for diagrams and Q&A pairs.</p>
             <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
                 <div class="book-selector">
                     <label for="bookSelect" style="font-weight: 600; display: inline-block; margin-right: 10px;">Select Book:</label>
@@ -399,6 +485,42 @@
                 </div>
             </div>
         </div>
+
+        <!-- Page Status & Knowledge Unit Creation Card -->
+        <div class="card" id="pageStatusCard" style="display: none;">
+            <h2>
+                Page Status & Knowledge Unit Creation
+                <button class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;" onclick="loadPageStatus()">Refresh</button>
+            </h2>
+            <div class="ku-actions">
+                <button class="btn btn-purple" id="btnCreateKU" onclick="createKnowledgeUnits()" disabled>
+                    Create Knowledge Units
+                </button>
+                <span class="selected-count" id="selectedCount">0 pages selected</span>
+            </div>
+            <div class="page-status-container">
+                <table class="page-status-table">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAllPages" onchange="toggleSelectAll()"></th>
+                            <th>Page</th>
+                            <th>Thumbnail</th>
+                            <th>Layout</th>
+                            <th>Extraction</th>
+                            <th>KU Created</th>
+                            <th>Claude</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pageStatusBody">
+                        <tr>
+                            <td colspan="7" class="empty-state">
+                                <p>Select a book to view page status</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -439,13 +561,23 @@
         function onBookSelect(event) {
             currentBookId = event.target.value || null;
             loadData();
+            
+            // Show/hide page status card based on book selection
+            const pageStatusCard = document.getElementById('pageStatusCard');
+            if (currentBookId) {
+                pageStatusCard.style.display = 'block';
+                loadPageStatus();
+            } else {
+                pageStatusCard.style.display = 'none';
+            }
         }
 
         // Load all dashboard data
         async function loadData() {
             await Promise.all([
                 loadWorkerStatus(),
-                currentBookId ? loadQueueStatus() : Promise.resolve()
+                currentBookId ? loadQueueStatus() : Promise.resolve(),
+                currentBookId ? loadPageStatus() : Promise.resolve()
             ]);
         }
 
@@ -632,6 +764,187 @@
                 if (countdown < 0) countdown = 5;
                 document.getElementById('refreshCountdown').textContent = countdown;
             }, 1000);
+        }
+
+        // =====================================================
+        // Page Status & Knowledge Unit Creation Functions
+        // =====================================================
+
+        let pageStatusData = [];
+        let selectedPages = new Set();
+
+        // Load page status for the selected book
+        async function loadPageStatus() {
+            if (!currentBookId) return;
+
+            try {
+                const response = await fetch(`/api/books/${currentBookId}/pipeline/page-status`);
+                if (!response.ok) {
+                    throw new Error('Failed to load page status');
+                }
+
+                const data = await response.json();
+                pageStatusData = data.pages || [];
+                renderPageStatusTable();
+                updateCreateKUButton();
+
+            } catch (error) {
+                console.error('Error loading page status:', error);
+                const tbody = document.getElementById('pageStatusBody');
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="empty-state">
+                            <p>Error loading page status</p>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Render the page status table
+        function renderPageStatusTable() {
+            const tbody = document.getElementById('pageStatusBody');
+
+            if (pageStatusData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="empty-state">
+                            <p>No pages with extracted data found</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = pageStatusData.map(page => `
+                <tr>
+                    <td>
+                        <input type="checkbox" 
+                               class="page-checkbox" 
+                               data-page="${page.page_number}"
+                               ${selectedPages.has(page.page_number) ? 'checked' : ''}
+                               ${!page.extraction_done ? 'disabled' : ''}
+                               onchange="togglePageSelection(${page.page_number})">
+                    </td>
+                    <td>${page.page_number}</td>
+                    <td>
+                        <img src="/api/auto-slicer/${currentBookId}/page/${page.page_number}/image?size=thumb" 
+                             class="page-thumbnail" 
+                             alt="Page ${page.page_number}"
+                             onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2280%22><rect fill=%22%23eee%22 width=%2260%22 height=%2280%22/><text x=%2230%22 y=%2245%22 text-anchor=%22middle%22 fill=%22%23999%22 font-size=%2212%22>${page.page_number}</text></svg>'">
+                    </td>
+                    <td>
+                        <span class="status-icon ${page.layout_done ? 'done' : 'pending'}">
+                            ${page.layout_done ? '✓' : '○'}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="status-icon ${page.extraction_done ? 'done' : 'pending'}">
+                            ${page.extraction_done ? '✓' : '○'}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="status-icon ${page.ku_created ? 'done' : 'pending'}">
+                            ${page.ku_created ? '✓' : '○'}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="status-icon ${page.claude_done ? 'done' : (page.claude_pending ? 'pending' : 'pending')}">
+                            ${page.claude_done ? '✓' : '○'}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Toggle page selection
+        function togglePageSelection(pageNumber) {
+            if (selectedPages.has(pageNumber)) {
+                selectedPages.delete(pageNumber);
+            } else {
+                selectedPages.add(pageNumber);
+            }
+            updateSelectedCount();
+            updateCreateKUButton();
+        }
+
+        // Toggle select all pages
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAllPages');
+            const checkboxes = document.querySelectorAll('.page-checkbox:not(:disabled)');
+
+            if (selectAll.checked) {
+                checkboxes.forEach(cb => {
+                    cb.checked = true;
+                    selectedPages.add(parseInt(cb.dataset.page));
+                });
+            } else {
+                checkboxes.forEach(cb => {
+                    cb.checked = false;
+                    selectedPages.delete(parseInt(cb.dataset.page));
+                });
+            }
+            updateSelectedCount();
+            updateCreateKUButton();
+        }
+
+        // Update selected count display
+        function updateSelectedCount() {
+            document.getElementById('selectedCount').textContent = 
+                `${selectedPages.size} page${selectedPages.size !== 1 ? 's' : ''} selected`;
+        }
+
+        // Update Create KU button state
+        function updateCreateKUButton() {
+            const btn = document.getElementById('btnCreateKU');
+            // Enable if at least one page is selected and has extraction done
+            const hasValidSelection = selectedPages.size > 0 && 
+                Array.from(selectedPages).some(pageNum => {
+                    const page = pageStatusData.find(p => p.page_number === pageNum);
+                    return page && page.extraction_done && !page.ku_created;
+                });
+            btn.disabled = !hasValidSelection;
+        }
+
+        // Create Knowledge Units for selected pages
+        async function createKnowledgeUnits() {
+            if (selectedPages.size === 0) {
+                showAlert('Please select at least one page', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('btnCreateKU');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Creating...';
+
+            try {
+                const response = await fetch(`/api/books/${currentBookId}/pipeline/create-knowledge-units`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        page_numbers: Array.from(selectedPages)
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert(`Created ${data.created_count || 0} Knowledge Units successfully`, 'success');
+                    selectedPages.clear();
+                    document.getElementById('selectAllPages').checked = false;
+                    await loadPageStatus();
+                } else {
+                    showAlert(data.detail || 'Failed to create Knowledge Units', 'error');
+                }
+
+            } catch (error) {
+                console.error('Error creating Knowledge Units:', error);
+                showAlert('Error creating Knowledge Units', 'error');
+            } finally {
+                btn.textContent = originalText;
+                updateCreateKUButton();
+            }
         }
 
         // Initialize on page load

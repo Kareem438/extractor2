@@ -400,3 +400,147 @@ async def _count_active_steps(table_prefix: str, entity_type: str) -> int:
     with engine.connect() as conn:
         result = conn.execute(sql, {"applies_to": applies_to_value})
         return result.scalar()
+
+
+# =============================================================================
+# Knowledge Unit Creation Endpoints (Phase 3B Enhancement)
+# =============================================================================
+
+from src.services.ku_creation_service import (
+    create_knowledge_units_for_pages,
+    get_page_ku_status
+)
+
+
+class CreateKURequest(BaseModel):
+    """Request model for creating knowledge units"""
+    page_numbers: List[int] = Field(..., description="List of page numbers to process")
+
+
+class PageStatusResponse(BaseModel):
+    """Response model for page status"""
+    page_number: int
+    layout_status: str  # pending, detected, ready
+    extraction_status: str  # pending, completed
+    ku_status: str  # pending, completed
+    claude_status: str  # pending, completed
+    ready_for_extraction: bool
+
+
+@router.post("/books/{book_id}/pipeline/create-knowledge-units")
+async def create_knowledge_units(book_id: int, request: CreateKURequest):
+    """
+    Create knowledge units from extracted raw records.
+    
+    This endpoint:
+    1. Gets all paragraphs and diagrams from raw tables for specified pages
+    2. Creates KU for each paragraph (direct OCR text copy)
+    3. Creates KU for each diagram/table/equation/list (skeleton with image reference)
+    4. Merges Q&A pairs into single KU (both image references in JSON)
+    5. Updates bidirectional links
+    
+    Prerequisites:
+    - Pages must have been extracted (records exist in raw_paragraph_images or raw_diagram_images)
+    """
+    try:
+        # Validate book exists
+        table_prefix = await _get_table_prefix(book_id)
+        
+        if not request.page_numbers:
+            raise HTTPException(status_code=400, detail="No page numbers provided")
+        
+        # Call the service function
+        result = create_knowledge_units_for_pages(book_id, request.page_numbers)
+        
+        if not result["success"] and not result["paragraphs_created"] and not result["diagrams_created"]:
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Failed to create knowledge units: {', '.join(result['errors'])}"
+            )
+        
+        return {
+            "success": result["success"],
+            "message": f"Created {result['paragraphs_created']} paragraph KUs, {result['diagrams_created']} diagram KUs, {result['qa_pairs_created']} Q&A pair KUs",
+            "paragraphs_created": result["paragraphs_created"],
+            "diagrams_created": result["diagrams_created"],
+            "qa_pairs_created": result["qa_pairs_created"],
+            "errors": result["errors"] if result["errors"] else None
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating knowledge units: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/books/{book_id}/pipeline/page-status", response_model=List[PageStatusResponse])
+async def get_pipeline_page_status(book_id: int):
+    """
+    Get the pipeline status for all pages in a book.
+    
+    Returns status for each page:
+    - layout_status: pending, detected, ready
+    - extraction_status: pending, completed
+    - ku_status: pending, completed
+    - claude_status: pending, completed
+    """
+    try:
+        # Validate book exists
+        await _get_table_prefix(book_id)
+        
+        # Get page status from service
+        page_status = get_page_ku_status(book_id)
+        
+        return [PageStatusResponse(**status) for status in page_status]
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting page status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/books/{book_id}/pipeline/pages-ready-for-ku")
+async def get_pages_ready_for_ku(book_id: int):
+    """
+    Get list of pages that are ready for KU creation.
+    
+    A page is ready if:
+    - It has records in raw_paragraph_images or raw_diagram_images
+    - Those records don't have linked_knowledge_unit_id set yet
+    """
+    try:
+        table_prefix = await _get_table_prefix(book_id)
+        
+        # Get pages with unlinked paragraphs
+        para_sql = text(f"""
+            SELECT DISTINCT page_number 
+            FROM raw_{table_prefix}_paragraph_images
+            WHERE is_enabled = TRUE AND linked_knowledge_unit_id IS NULL
+        """)
+        
+        # Get pages with unlinked diagrams
+        diag_sql = text(f"""
+            SELECT DISTINCT page_number 
+            FROM raw_{table_prefix}_diagram_images
+            WHERE is_enabled = TRUE AND linked_knowledge_unit_id IS NULL
+        """)
+        
+        with engine.connect() as conn:
+            para_pages = {row[0] for row in conn.execute(para_sql).fetchall()}
+            diag_pages = {row[0] for row in conn.execute(diag_sql).fetchall()}
+        
+        ready_pages = sorted(para_pages | diag_pages)
+        
+        return {
+            "success": True,
+            "ready_pages": ready_pages,
+            "count": len(ready_pages)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting pages ready for KU: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

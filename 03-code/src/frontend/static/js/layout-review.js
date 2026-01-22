@@ -1957,6 +1957,7 @@ async function toggleReadyForExtraction(canvasId) {
  * Check for orphan regions:
  * - diagrams/tables/equations/lists without parent paragraph links
  * - answers without parent question links
+ * - questions without linked answers
  * Returns { hasOrphans: boolean, orphans: Array }
  */
 function checkForOrphanRegions(canvasId) {
@@ -1968,8 +1969,10 @@ function checkForOrphanRegions(canvasId) {
 
     // Classes that require a parent paragraph link
     const linkableToParagraph = ['diagram', 'table', 'equation', 'list_bulleted', 'list_numbered', 'list_lettered'];
-    // Classes that require a parent question link
+    // Classes that require a parent question link (answer needs question)
     const linkableToQuestion = ['answer'];
+    // Classes that require a child link (question needs answer)
+    const requiresChildAnswer = ['question'];
 
     const orphans = [];
 
@@ -1977,7 +1980,7 @@ function checkForOrphanRegions(canvasId) {
         // Skip ignored regions
         if (region.class_name === 'ignore') continue;
 
-        // Check if this region type requires a parent link
+        // Check if this region type requires a parent link (diagrams, lists, equations, answers)
         if (linkableToParagraph.includes(region.class_name) || linkableToQuestion.includes(region.class_name)) {
             // Check if it has a parent link (paragraph or question)
             const hasParentLink = state.links.some(link => link.diagram_region_id === region.id);
@@ -1992,6 +1995,34 @@ function checkForOrphanRegions(canvasId) {
                     width: region.width,
                     height: region.height,
                     needsLink: region.class_name === 'answer' ? 'question' : 'paragraph'
+                });
+            }
+        }
+
+        // Check if this is a question that needs a linked answer
+        if (requiresChildAnswer.includes(region.class_name)) {
+            // Question must have an answer linked TO it (question is the paragraph_region_id in the link)
+            const hasLinkedAnswer = state.links.some(link => 
+                link.paragraph_region_id === region.id && 
+                regions.some(r => r.id === link.diagram_region_id && r.class_name === 'answer')
+            );
+
+            // Also check cross-page links (answer might be on different page)
+            const hasLinkedAnswerCrossPage = state.links.some(link => 
+                link.paragraph_region_id === region.id &&
+                state.allRegions.some(r => r.id === link.diagram_region_id && r.class_name === 'answer')
+            );
+
+            if (!hasLinkedAnswer && !hasLinkedAnswerCrossPage) {
+                console.log(`Orphan question found: region ${region.id} has no linked answer`);
+                orphans.push({
+                    id: region.id,
+                    class_name: region.class_name,
+                    x: region.x,
+                    y: region.y,
+                    width: region.width,
+                    height: region.height,
+                    needsLink: 'answer'
                 });
             }
         }
@@ -2012,6 +2043,7 @@ function showOrphanError(orphans) {
     // Group by link type needed
     const needsParagraph = orphans.filter(o => o.needsLink === 'paragraph');
     const needsQuestion = orphans.filter(o => o.needsLink === 'question');
+    const needsAnswer = orphans.filter(o => o.needsLink === 'answer');
 
     let message = 'Cannot mark as ready. The following regions need links:\n\n';
 
@@ -2032,7 +2064,19 @@ function showOrphanError(orphans) {
             classCounts[o.class_name] = (classCounts[o.class_name] || 0) + 1;
         });
         if (needsParagraph.length > 0) message += '\n';
-        message += '❓ Need QUESTION links:\n';
+        message += '❓ Need QUESTION links (answers without questions):\n';
+        for (const [className, count] of Object.entries(classCounts)) {
+            message += `  • ${count} ${className}${count > 1 ? 's' : ''}\n`;
+        }
+    }
+
+    if (needsAnswer.length > 0) {
+        const classCounts = {};
+        needsAnswer.forEach(o => {
+            classCounts[o.class_name] = (classCounts[o.class_name] || 0) + 1;
+        });
+        if (needsParagraph.length > 0 || needsQuestion.length > 0) message += '\n';
+        message += '💬 Need ANSWER links (questions without answers):\n';
         for (const [className, count] of Object.entries(classCounts)) {
             message += `  • ${count} ${className}${count > 1 ? 's' : ''}\n`;
         }
