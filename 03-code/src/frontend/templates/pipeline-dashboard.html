@@ -15,6 +15,60 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background: #f5f7fa;
             color: #2c3e50;
+            padding: 0;
+        }
+
+        /* Top Navigation */
+        .top-nav {
+            background: #16213e;
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #0f3460;
+        }
+        .top-nav-brand { font-size: 18px; font-weight: bold; }
+        .top-nav-info { display: flex; gap: 20px; align-items: center; }
+        .top-nav-info span { font-size: 14px; color: #aaa; }
+        .top-nav-info .book-name { color: #4fc3f7; font-weight: bold; }
+        .top-nav-controls { display: flex; gap: 15px; align-items: center; }
+        .top-nav-links { display: flex; gap: 10px; }
+        .top-nav-links a, .top-nav-links button {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            background: #0f3460;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .top-nav-links a:hover, .top-nav-links button:hover { background: #1a4a7a; }
+        .top-nav-links .active { background: #1a4a7a; border-bottom: 2px solid #4fc3f7; }
+
+        /* API Mode Toggle */
+        .api-mode-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #0f3460;
+            padding: 6px 12px;
+            border-radius: 4px;
+        }
+        .api-mode-toggle label { font-size: 13px; color: #aaa; }
+        .api-mode-toggle select {
+            background: #1a4a7a;
+            color: white;
+            border: 1px solid #2a5a8a;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .main-content {
             padding: 20px;
         }
 
@@ -380,6 +434,32 @@
     </style>
 </head>
 <body>
+    <!-- Top Navigation Header -->
+    <nav class="top-nav">
+        <div class="top-nav-brand">⚙️ Pipeline Dashboard</div>
+        <div class="top-nav-info">
+            <span>Book: <span class="book-name" id="nav-book-name">Select a book</span></span>
+        </div>
+        <div class="top-nav-controls">
+            <div class="api-mode-toggle">
+                <label>Claude API:</label>
+                <select id="api-mode">
+                    <option value="batch">Batch (50% cost)</option>
+                    <option value="direct">Direct (immediate)</option>
+                </select>
+            </div>
+            <div class="top-nav-links">
+                <a href="/upload">📤 Upload</a>
+                <a href="/auto-slicer" id="auto-slicer-link">🔪 Auto-Slicer</a>
+                <a href="/extraction-dashboard" id="extraction-link">📝 Extraction</a>
+                <a href="/pipeline-dashboard" class="active">⚙️ Pipeline</a>
+                <a href="/library">📚 Library</a>
+                <a href="/layout-review" id="layout-review-link">🔲 Layout Review</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-content">
     <div class="container">
         <header>
             <h1>Pipeline Dashboard</h1>
@@ -408,6 +488,9 @@
             <div class="ku-actions">
                 <button class="btn btn-purple" id="btnCreateKU" onclick="createKnowledgeUnits()" disabled>
                     Create Knowledge Units
+                </button>
+                <button class="btn btn-success" id="btnExecuteAnalysis" onclick="executeDiagramAnalysis()" disabled>
+                    Execute Diagram Analysis
                 </button>
                 <span class="selected-count" id="selectedCount">0 pages selected</span>
             </div>
@@ -530,7 +613,8 @@
         </div>
             </div><!-- End workerSectionContent -->
         </div><!-- End Worker Section Card -->
-    </div>
+    </div><!-- End container -->
+    </div><!-- End main-content -->
 
     <script>
         let currentBookId = null;
@@ -553,8 +637,39 @@
         // Initialize page
         async function init() {
             await loadBooks();
+            
+            // Check URL for book_id parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const bookIdFromUrl = urlParams.get('book_id');
+            
+            if (bookIdFromUrl) {
+                const select = document.getElementById('bookSelect');
+                select.value = bookIdFromUrl;
+                currentBookId = bookIdFromUrl;
+                
+                // Show page status card and load data
+                document.getElementById('pageStatusCard').style.display = 'block';
+                updateNavLinks(bookIdFromUrl);
+            }
+            
             await loadData();
             startAutoRefresh();
+        }
+
+        // Update navigation links with book_id
+        function updateNavLinks(bookId) {
+            if (bookId) {
+                document.getElementById('auto-slicer-link').href = `/auto-slicer?book_id=${bookId}`;
+                document.getElementById('extraction-link').href = `/extraction-dashboard?book_id=${bookId}`;
+                document.getElementById('layout-review-link').href = `/layout-review?book_id=${bookId}`;
+                
+                // Update nav book name
+                const select = document.getElementById('bookSelect');
+                const selectedOption = select.options[select.selectedIndex];
+                if (selectedOption && selectedOption.value) {
+                    document.getElementById('nav-book-name').textContent = selectedOption.textContent;
+                }
+            }
         }
 
         // Load books
@@ -582,6 +697,19 @@
         // Handle book selection
         function onBookSelect(event) {
             currentBookId = event.target.value || null;
+            
+            // Update URL with book_id
+            if (currentBookId) {
+                const url = new URL(window.location);
+                url.searchParams.set('book_id', currentBookId);
+                window.history.replaceState({}, '', url);
+            } else {
+                const url = new URL(window.location);
+                url.searchParams.delete('book_id');
+                window.history.replaceState({}, '', url);
+            }
+            
+            updateNavLinks(currentBookId);
             loadData();
             
             // Show/hide page status card based on book selection
@@ -591,6 +719,7 @@
                 loadPageStatus();
             } else {
                 pageStatusCard.style.display = 'none';
+                document.getElementById('nav-book-name').textContent = 'Select a book';
             }
         }
 
@@ -926,6 +1055,10 @@
                     return page && page.extraction_done && !page.ku_created;
                 });
             btn.disabled = !hasValidSelection;
+            
+            // Enable Execute Diagram Analysis button if book is selected
+            const btnAnalysis = document.getElementById('btnExecuteAnalysis');
+            btnAnalysis.disabled = !currentBookId;
         }
 
         // Create Knowledge Units for selected pages
@@ -966,6 +1099,56 @@
             } finally {
                 btn.textContent = originalText;
                 updateCreateKUButton();
+            }
+        }
+
+        // Execute Diagram Analysis - sends diagrams to Claude
+        async function executeDiagramAnalysis() {
+            if (!currentBookId) {
+                showAlert('Please select a book first', 'error');
+                return;
+            }
+
+            const apiMode = document.getElementById('api-mode').value;
+            const confirmed = confirm(`Start Claude analysis using ${apiMode === 'batch' ? 'Batch API (50% cost, ~24 hour delay)' : 'Direct API (immediate, full cost)'}?\n\nThis will process all unprocessed diagrams, tables, equations, lists, questions, and answers.`);
+
+            if (!confirmed) return;
+
+            const btn = document.getElementById('btnExecuteAnalysis');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+
+            try {
+                const endpoint = apiMode === 'batch' 
+                    ? `/api/extraction/${currentBookId}/decode-batch`
+                    : `/api/extraction/${currentBookId}/decode-direct`;
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})  // Process all unprocessed diagrams
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (apiMode === 'batch') {
+                        showAlert(`Batch submitted! Batch ID: ${data.batch_id}. Results will be available in ~24 hours.`, 'success');
+                    } else {
+                        showAlert(`Direct analysis complete! Processed ${data.processed_count || 0} items.`, 'success');
+                    }
+                    await loadPageStatus();
+                } else {
+                    showAlert(data.detail || 'Failed to execute diagram analysis', 'error');
+                }
+
+            } catch (error) {
+                console.error('Error executing diagram analysis:', error);
+                showAlert('Error executing diagram analysis', 'error');
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
             }
         }
 

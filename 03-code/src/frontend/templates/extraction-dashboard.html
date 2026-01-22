@@ -75,7 +75,7 @@
             border-right: 2px solid #0f3460;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            overflow-y: auto;
         }
         .sidebar-header {
             padding: 12px;
@@ -659,6 +659,155 @@
         ::-webkit-scrollbar-track { background: #0a0a15; }
         ::-webkit-scrollbar-thumb { background: #1a4a7a; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #2a5a8a; }
+
+        /* Page Preview Section */
+        .page-preview-section {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #0f3460;
+            margin-bottom: 20px;
+        }
+        .page-preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .page-preview-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #4fc3f7;
+        }
+        .page-preview-content {
+            display: flex;
+            gap: 20px;
+        }
+        .page-image-container {
+            flex: 0 0 300px;
+            background: #0a0a15;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+        }
+        .page-image-container img {
+            max-width: 100%;
+            max-height: 380px;
+            border-radius: 4px;
+        }
+        .extraction-results {
+            flex: 1;
+            display: flex;
+            gap: 15px;
+        }
+        .results-column {
+            flex: 1;
+            background: #0a0a15;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .results-column h4 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #4fc3f7;
+            border-bottom: 1px solid #0f3460;
+            padding-bottom: 8px;
+        }
+        .result-item {
+            background: #16213e;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #0f3460;
+        }
+        .result-item:last-child {
+            margin-bottom: 0;
+        }
+        .result-item img {
+            width: 100%;
+            max-height: 100px;
+            object-fit: contain;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        .result-item .result-text {
+            font-size: 12px;
+            color: #aaa;
+            max-height: 60px;
+            overflow-y: auto;
+            line-height: 1.4;
+        }
+        .result-item .result-class {
+            font-size: 11px;
+            color: #4fc3f7;
+            margin-bottom: 4px;
+        }
+        .no-results {
+            text-align: center;
+            color: #666;
+            padding: 40px 20px;
+            font-size: 13px;
+        }
+
+        /* Collapsible Section */
+        .collapsible-section {
+            background: #16213e;
+            border-radius: 8px;
+            border: 1px solid #0f3460;
+            margin-top: 20px;
+        }
+        .collapsible-header {
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #0f3460;
+            border-radius: 8px 8px 0 0;
+        }
+        .collapsible-header h3 {
+            margin: 0;
+            font-size: 14px;
+            color: #4fc3f7;
+        }
+        .collapsible-header .toggle-icon {
+            font-size: 12px;
+            color: #aaa;
+        }
+        .collapsible-content {
+            padding: 20px;
+            display: none;
+        }
+        .collapsible-content.expanded {
+            display: block;
+        }
+        .collapsible-section.collapsed .collapsible-header {
+            border-radius: 8px;
+        }
+
+        /* Extract Page Button */
+        .btn-extract-page {
+            background: #00897B;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+        .btn-extract-page:hover {
+            background: #00695C;
+        }
+        .btn-extract-page:disabled {
+            background: #424242;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -698,6 +847,35 @@
 
         <!-- Right Content Area -->
         <div class="content-area">
+            <!-- Page Preview Section (NEW) -->
+            <div class="page-preview-section" id="page-preview-section" style="display: none;">
+                <div class="page-preview-header">
+                    <h3 id="preview-page-title">Page Preview</h3>
+                    <button class="btn-extract-page" id="btn-extract-page" onclick="extractSelectedPage()">
+                        ⚡ Extract This Page
+                    </button>
+                </div>
+                <div class="page-preview-content">
+                    <div class="page-image-container">
+                        <img id="preview-page-image" src="" alt="Page Preview">
+                    </div>
+                    <div class="extraction-results">
+                        <div class="results-column">
+                            <h4>📝 Paragraphs</h4>
+                            <div id="paragraphs-results">
+                                <div class="no-results">Select a page to view extraction results</div>
+                            </div>
+                        </div>
+                        <div class="results-column">
+                            <h4>🖼️ Other Classes</h4>
+                            <div id="diagrams-results">
+                                <div class="no-results">Select a page to view extraction results</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Progress Section -->
             <div class="progress-section">
                 <h3>Extraction Progress</h3>
@@ -721,110 +899,119 @@
                 </div>
             </div>
 
-            <!-- Class Statistics Section -->
-            <div class="summary-section">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3 style="margin: 0;">Class Statistics</h3>
-                    <div style="display: flex; gap: 15px; align-items: center;">
-                        <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 13px; color: #aaa;">
-                            <input type="radio" name="stats-scope" value="current" checked onchange="updateClassStats()">
-                            Current Page
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 13px; color: #aaa;">
-                            <input type="radio" name="stats-scope" value="all" onchange="updateClassStats()">
-                            All Ready Pages
-                        </label>
-                    </div>
+            <!-- Collapsible Statistics Section -->
+            <div class="collapsible-section collapsed" id="stats-section">
+                <div class="collapsible-header" onclick="toggleStatsSection()">
+                    <h3>📊 Statistics & Details</h3>
+                    <span class="toggle-icon" id="stats-toggle-icon">▼</span>
                 </div>
-                <table class="summary-table">
-                    <thead>
-                        <tr>
-                            <th>Class</th>
-                            <th class="count">Count</th>
-                            <th class="count">Extracted</th>
-                            <th class="count">Pending</th>
-                        </tr>
-                    </thead>
-                    <tbody id="class-stats-body">
-                        <!-- Rows populated by JavaScript -->
-                    </tbody>
-                </table>
-            </div>
+                <div class="collapsible-content" id="stats-content">
+                    <!-- Class Statistics Section -->
+                    <div class="summary-section" style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3 style="margin: 0;">Class Statistics</h3>
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 13px; color: #aaa;">
+                                    <input type="radio" name="stats-scope" value="current" checked onchange="updateClassStats()">
+                                    Current Page
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 13px; color: #aaa;">
+                                    <input type="radio" name="stats-scope" value="all" onchange="updateClassStats()">
+                                    All Ready Pages
+                                </label>
+                            </div>
+                        </div>
+                        <table class="summary-table">
+                            <thead>
+                                <tr>
+                                    <th>Class</th>
+                                    <th class="count">Count</th>
+                                    <th class="count">Extracted</th>
+                                    <th class="count">Pending</th>
+                                </tr>
+                            </thead>
+                            <tbody id="class-stats-body">
+                                <!-- Rows populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
 
-            <!-- Summary Section -->
-            <div class="summary-section">
-                <h3>Summary by L3 Title</h3>
-                <table class="summary-table">
-                    <thead>
-                        <tr>
-                            <th>L3 Title</th>
-                            <th class="count">Paragraphs</th>
-                            <th class="count">Diagrams</th>
-                            <th class="count">Tables</th>
-                            <th class="count">Equations</th>
-                            <th class="count">Lists</th>
-                            <th class="count">Questions</th>
-                            <th class="count">Answers</th>
-                        </tr>
-                    </thead>
-                    <tbody id="summary-table-body">
-                        <!-- Rows populated by JavaScript -->
-                    </tbody>
-                </table>
-            </div>
+                    <!-- Summary Section -->
+                    <div class="summary-section">
+                        <h3>Summary by L3 Title</h3>
+                        <table class="summary-table">
+                            <thead>
+                                <tr>
+                                    <th>L3 Title</th>
+                                    <th class="count">Paragraphs</th>
+                                    <th class="count">Diagrams</th>
+                                    <th class="count">Tables</th>
+                                    <th class="count">Equations</th>
+                                    <th class="count">Lists</th>
+                                    <th class="count">Questions</th>
+                                    <th class="count">Answers</th>
+                                </tr>
+                            </thead>
+                            <tbody id="summary-table-body">
+                                <!-- Rows populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
 
-            <!-- Diagrams Section -->
-            <div class="diagrams-section">
-                <div class="diagrams-header">
-                    <h3>Diagrams & Visual Elements</h3>
-                    <div class="diagrams-controls">
-                        <select class="filter-select" id="class-filter" onchange="filterDiagrams()">
-                            <option value="all">All Classes</option>
-                            <option value="diagram">Diagrams</option>
-                            <option value="table">Tables</option>
-                            <option value="equation">Equations</option>
-                            <option value="list">Lists</option>
-                            <option value="question">Questions</option>
-                            <option value="answer">Answers</option>
-                        </select>
-                        <select class="filter-select" id="status-filter" onchange="filterDiagrams()">
-                            <option value="all">All Status</option>
-                            <option value="pending">Pending</option>
-                            <option value="decoded">Decoded</option>
-                            <option value="failed">Failed</option>
-                        </select>
-                        <select class="page-size-select" id="page-size" onchange="changePageSize()">
-                            <option value="10">10 per page</option>
-                            <option value="25" selected>25 per page</option>
-                            <option value="50">50 per page</option>
-                            <option value="100">100 per page</option>
-                        </select>
+                    <!-- Diagrams Section -->
+                    <div class="diagrams-section" style="margin-top: 20px;">
+                        <div class="diagrams-header">
+                            <h3>Diagrams & Visual Elements</h3>
+                            <div class="diagrams-controls">
+                                <select class="filter-select" id="class-filter" onchange="filterDiagrams()">
+                                    <option value="all">All Classes</option>
+                                    <option value="diagram">Diagrams</option>
+                                    <option value="table">Tables</option>
+                                    <option value="equation">Equations</option>
+                                    <option value="list">Lists</option>
+                                    <option value="question">Questions</option>
+                                    <option value="answer">Answers</option>
+                                </select>
+                                <select class="filter-select" id="status-filter" onchange="filterDiagrams()">
+                                    <option value="all">All Status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="decoded">Decoded</option>
+                                    <option value="failed">Failed</option>
+                                </select>
+                                <select class="page-size-select" id="page-size" onchange="changePageSize()">
+                                    <option value="10">10 per page</option>
+                                    <option value="25" selected>25 per page</option>
+                                    <option value="50">50 per page</option>
+                                    <option value="100">100 per page</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="diagrams-table-container">
+                            <table class="diagrams-table">
+                                <thead>
+                                    <tr>
+                                        <th class="thumbnail-cell">Thumbnail</th>
+                                        <th>Page</th>
+                                        <th class="class-cell">Class</th>
+                                        <th class="status-cell">Status</th>
+                                        <th class="actions-cell">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="diagrams-table-body">
+                                    <!-- Rows populated by JavaScript -->
+                                </tbody>
+                            </table>
+                            <div class="empty-state" id="no-diagrams-message" style="display: none;">
+                                <div class="empty-state-icon">🖼</div>
+                                <p>No diagrams found.</p>
+                            </div>
+                        </div>
+                        <div class="pagination">
+                            <button onclick="prevPage()" id="prev-btn" disabled>Previous</button>
+                            <span class="page-info" id="page-info">Page 1 of 1</span>
+                            <button onclick="nextPage()" id="next-btn" disabled>Next</button>
+                        </div>
                     </div>
-                </div>
-                <div class="diagrams-table-container">
-                    <table class="diagrams-table">
-                        <thead>
-                            <tr>
-                                <th class="thumbnail-cell">Thumbnail</th>
-                                <th>Page</th>
-                                <th class="class-cell">Class</th>
-                                <th class="status-cell">Status</th>
-                                <th class="actions-cell">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="diagrams-table-body">
-                            <!-- Rows populated by JavaScript -->
-                        </tbody>
-                    </table>
-                    <div class="empty-state" id="no-diagrams-message" style="display: none;">
-                        <div class="empty-state-icon">🖼</div>
-                        <p>No diagrams found.</p>
-                    </div>
-                </div>
-                <div class="pagination">
-                    <button onclick="prevPage()" id="prev-btn" disabled>Previous</button>
-                    <span class="page-info" id="page-info">Page 1 of 1</span>
-                    <button onclick="nextPage()" id="next-btn" disabled>Next</button>
                 </div>
             </div>
         </div>

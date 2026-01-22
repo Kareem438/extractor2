@@ -81,6 +81,11 @@ async function loadDashboardData() {
 
 // Connect WebSocket for live updates
 function connectWebSocket() {
+    // Don't reconnect if we already have an active connection
+    if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+        return;
+    }
+    
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws/extraction/${state.bookId}`;
 
@@ -96,8 +101,12 @@ function connectWebSocket() {
     };
 
     state.ws.onclose = () => {
-        console.log('WebSocket closed, reconnecting in 3s...');
-        setTimeout(connectWebSocket, 3000);
+        console.log('WebSocket closed');
+        // Only reconnect if extraction is in progress
+        if (state.isExtracting) {
+            console.log('Reconnecting in 3s...');
+            setTimeout(connectWebSocket, 3000);
+        }
     };
 
     state.ws.onerror = (error) => {
@@ -1005,4 +1014,100 @@ const originalSelectPage = selectPage;
 selectPage = function(pageNumber) {
     originalSelectPage(pageNumber);
     updateClassStats();
+    showPagePreview(pageNumber);
+    loadPageExtractionResults(pageNumber);
 };
+
+// Toggle statistics section
+function toggleStatsSection() {
+    const section = document.getElementById('stats-section');
+    const content = document.getElementById('stats-content');
+    const icon = document.getElementById('stats-toggle-icon');
+    
+    if (section.classList.contains('collapsed')) {
+        section.classList.remove('collapsed');
+        content.classList.add('expanded');
+        icon.textContent = '▲';
+    } else {
+        section.classList.add('collapsed');
+        content.classList.remove('expanded');
+        icon.textContent = '▼';
+    }
+}
+
+// Show page preview
+function showPagePreview(pageNumber) {
+    const previewSection = document.getElementById('page-preview-section');
+    const previewTitle = document.getElementById('preview-page-title');
+    const previewImage = document.getElementById('preview-page-image');
+    
+    previewSection.style.display = 'block';
+    previewTitle.textContent = `Page ${pageNumber} Preview`;
+    
+    // Load page image
+    previewImage.src = `/api/review-raw/${state.bookId}/page/${pageNumber}/image`;
+    previewImage.onerror = () => {
+        previewImage.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><rect fill="%230a0a15" width="300" height="400"/><text x="150" y="200" fill="%23666" text-anchor="middle" font-size="14">No preview available</text></svg>';
+    };
+}
+
+// Load extraction results for a page from raw tables
+async function loadPageExtractionResults(pageNumber) {
+    const paragraphsContainer = document.getElementById('paragraphs-results');
+    const diagramsContainer = document.getElementById('diagrams-results');
+    
+    // Show loading state
+    paragraphsContainer.innerHTML = '<div class="no-results">Loading...</div>';
+    diagramsContainer.innerHTML = '<div class="no-results">Loading...</div>';
+    
+    try {
+        // Fetch extraction results for this page
+        const response = await fetch(`/api/extraction/${state.bookId}/page/${pageNumber}/results`);
+        
+        if (!response.ok) {
+            throw new Error('Failed to load results');
+        }
+        
+        const data = await response.json();
+        
+        // Render paragraphs
+        if (data.paragraphs && data.paragraphs.length > 0) {
+            paragraphsContainer.innerHTML = data.paragraphs.map(p => `
+                <div class="result-item">
+                    ${p.image_url ? `<img src="${p.image_url}" alt="Paragraph" onerror="this.style.display='none'">` : ''}
+                    <div class="result-text">${p.extracted_text || '(No text extracted)'}</div>
+                </div>
+            `).join('');
+        } else {
+            paragraphsContainer.innerHTML = '<div class="no-results">No paragraphs extracted yet</div>';
+        }
+        
+        // Render other classes (diagrams, tables, equations, etc.)
+        if (data.diagrams && data.diagrams.length > 0) {
+            diagramsContainer.innerHTML = data.diagrams.map(d => `
+                <div class="result-item">
+                    <div class="result-class">${formatClassName(d.class_name)}</div>
+                    ${d.image_url ? `<img src="${d.image_url}" alt="${d.class_name}" onerror="this.style.display='none'">` : ''}
+                    <div class="result-text">${d.extracted_text || '(Pending Claude analysis)'}</div>
+                </div>
+            `).join('');
+        } else {
+            diagramsContainer.innerHTML = '<div class="no-results">No diagrams/tables/equations extracted yet</div>';
+        }
+        
+    } catch (error) {
+        console.error('Error loading extraction results:', error);
+        paragraphsContainer.innerHTML = '<div class="no-results">Error loading results</div>';
+        diagramsContainer.innerHTML = '<div class="no-results">Error loading results</div>';
+    }
+}
+
+// Extract selected page
+async function extractSelectedPage() {
+    if (!state.selectedPageNumber) {
+        alert('Please select a page first');
+        return;
+    }
+    
+    await extractSinglePage(state.selectedPageNumber);
+}

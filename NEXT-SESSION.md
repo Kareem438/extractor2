@@ -1,106 +1,72 @@
-# Next Session - Bug Fixes Required
+# Next Session - Bug Fixes
 
 **Last Updated:** 2026-01-23
 **Session:** Continuation of Session 15 (KU Creation Feature)
 
 ---
 
-## Outstanding Bugs to Fix
+## Previous Bugs - ALL FIXED ✓
 
-### Bug 1: Extraction Page - "Start Extraction" Button Shows Claude Warning
+### Bug 1-4: All Fixed (Previous Session)
+- Bug 1: Extraction page Claude warning - FIXED
+- Bug 2: Pipeline page missing Execute Diagram Analysis button - FIXED
+- Bug 3: Pipeline page missing header navigation - FIXED
+- Bug 4: Pipeline page should remember last selected book - FIXED
+
+---
+
+## New Bugs - ALL FIXED ✓ (This Session)
+
+### Bug 5: Extraction Page - Left Sidebar Needs Scroll ✓ FIXED
 **Location:** Extraction Dashboard (`/extraction-dashboard`)
-**Issue:** When clicking "Start Extraction", user sees a warning about "Batch mode 50% discount of Claude"
-**Expected:** The Extraction page should ONLY run Surya OCR to extract text from paragraphs and store images in raw tables. Claude analysis should NOT be triggered here.
-**Root Cause:** The extraction-dashboard.js still has the API mode selector and references to Claude batch/direct modes
-**Fix Required:** 
-- Remove the API mode selector from extraction page
-- Extraction should ONLY call `/api/extraction/{book_id}/extract` which runs Surya OCR
-- Claude analysis ("Execute Diagram Analysis") should be a separate button on the Pipeline page
-
-**Reference:** Per requirements Q17-Q18:
-- Q17: Keep extraction service unchanged (Surya OCR only)
-- Q18: "Execute Diagram Analysis" processes all types in raw_diagram_images (this is Claude)
+**Issue:** The left sidebar with page thumbnails doesn't have a scroll bar when there are many pages
+**Fix:** Changed `.sidebar` from `overflow: hidden` to `overflow-y: auto`
 
 ---
 
-### Bug 2: Pipeline Page - Missing "Execute Diagram Analysis" Button
-**Location:** Pipeline Dashboard (`/pipeline-dashboard`)
-**Issue:** Cannot find the button to execute Claude analysis on diagrams
-**Expected:** Per requirements Q18 and Q19, Pipeline page should have:
-1. "Create Knowledge Units" button (exists) - creates KU records from raw tables
-2. "Execute Diagram Analysis" button (MISSING) - sends diagrams to Claude for text extraction
-**Fix Required:** Add "Execute Diagram Analysis" button to Pipeline page that:
-- Processes ALL types in raw_diagram_images (diagram, table, equation, list_*, question, answer)
-- Retrieves images from raw tables using attr12_value references
-- Sends to Claude for analysis
-- Stores results in knowledge_units table
+### Bug 6: Extraction Page - Page-Level Extraction Button ✓ FIXED
+**Location:** Extraction Dashboard (`/extraction-dashboard`)
+**Issue:** The "Start OCR Extraction" button only works for all pages, not individual pages
+**Fix:** Added "Extract This Page" button in the page preview section (right panel)
 
 ---
 
-### Bug 3: Pipeline Page - Missing Header Navigation
-**Location:** Pipeline Dashboard (`/pipeline-dashboard`)
-**Issue:** The Pipeline page has no top navigation header like other pages
-**Expected:** All pages should have consistent header with navigation links:
-- Upload → Auto-Slicer → Extraction → Pipeline → Library → etc.
-**Fix Required:** Add the standard top-nav header to pipeline-dashboard.html
+### Bug 7: Extraction Page - Infinite Loop & Results Display ✓ FIXED
+**Location:** Extraction Dashboard (`/extraction-dashboard`)
+**Issues Fixed:**
+1. **Infinite Loop:** WebSocket was reconnecting indefinitely. Fixed by only reconnecting when extraction is in progress.
+2. **Results Display:** Added new page preview section with:
+   - Page image preview on the left
+   - Two columns on the right: Paragraphs and Other Classes (diagrams, tables, etc.)
+   - Data loaded from raw tables (raw_paragraph_images, raw_diagram_images)
+3. **Statistics Moved:** All statistics sections moved to collapsible section at bottom
 
 ---
 
-### Bug 4: Pipeline Page - Should Remember Last Selected Book
-**Location:** Pipeline Dashboard (`/pipeline-dashboard`)
-**Issue:** When navigating to Pipeline page, no book is selected by default
-**Expected:** Pipeline page should remember the last selected book (from URL parameter or localStorage)
-**Fix Required:**
-- Check URL for `?book_id=X` parameter
-- If present, auto-select that book and load its data
-- Optionally store last selected book in localStorage
+## Files Modified
 
----
+### HTML Changes (extraction-dashboard.html):
+1. Fixed sidebar scroll: `overflow-y: auto`
+2. Added new CSS styles for:
+   - Page preview section
+   - Extraction results columns
+   - Collapsible statistics section
+   - Extract page button
+3. Added new HTML structure:
+   - Page preview section with image and results columns
+   - Wrapped statistics in collapsible section
 
-## Files to Modify
+### JavaScript Changes (extraction-dashboard.js):
+1. Fixed WebSocket reconnection logic (only reconnect during extraction)
+2. Added new functions:
+   - `toggleStatsSection()` - toggle collapsible statistics
+   - `showPagePreview(pageNumber)` - show page image preview
+   - `loadPageExtractionResults(pageNumber)` - load results from raw tables
+   - `extractSelectedPage()` - extract single page from button
 
-1. **03-code/src/frontend/templates/extraction-dashboard.html**
-   - Remove API mode selector (batch/direct dropdown)
-   - Update button text to clarify it's OCR extraction only
-
-2. **03-code/src/frontend/static/js/extraction-dashboard.js**
-   - Remove Claude-related code from startExtraction()
-   - Remove API mode references
-
-3. **03-code/src/frontend/templates/pipeline-dashboard.html**
-   - Add top navigation header
-   - Add "Execute Diagram Analysis" button
-
-4. **03-code/src/frontend/static/js/pipeline-dashboard.js** (or inline script)
-   - Add function for Execute Diagram Analysis
-   - Add URL parameter handling for book_id
-   - Auto-select book from URL
-
----
-
-## Requirements Reference
-
-From `02-architecture/KNOWLEDGE-UNIT-CREATION-REQUIREMENTS.md`:
-
-**Q17:** Keep extraction service unchanged, add NEW separate service for "Create Knowledge Units"
-- Extraction = Surya OCR only
-- KU Creation = separate step
-
-**Q18:** "Execute Diagram Analysis" should process ALL types in raw_diagram_images:
-- diagram, table, equation, list_bulleted, list_numbered, list_lettered, question, answer
-
-**Q19:** Pipeline page should show table with:
-- Checkbox, Page Number, Thumbnails with layout overlay, Status columns
-- Action buttons: "Create Knowledge Units" and "Execute Diagram Analysis"
-
----
-
-## Current State
-
-- Server running at http://localhost:8888
-- KU Creation feature 100% complete (backend)
-- UI issues need fixing (bugs above)
-- Git commits up to: `6e6c264`
+### API Changes (extraction.py):
+1. Added `GET /extraction/{book_id}/page/{page_number}/results` - fetch extraction results
+2. Added `GET /extraction/{book_id}/paragraph-image/{paragraph_id}` - get paragraph image
 
 ---
 
@@ -115,3 +81,14 @@ Start-Process -FilePath ".\venv\Scripts\python.exe" -ArgumentList "-m uvicorn sr
 # Extraction: http://localhost:8888/extraction-dashboard?book_id=1
 # Pipeline: http://localhost:8888/pipeline-dashboard?book_id=1
 ```
+
+---
+
+## Testing Checklist
+
+- [ ] Left sidebar scrolls when many pages
+- [ ] "Extract This Page" button appears when page selected
+- [ ] Page preview shows page image
+- [ ] Extraction results show paragraphs and diagrams from raw tables
+- [ ] Statistics section is collapsible
+- [ ] No infinite loop when extraction completes

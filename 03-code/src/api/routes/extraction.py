@@ -235,6 +235,118 @@ async def save_page_selection(book_id: int, selection: PageSelection):
         db.close()
 
 
+@router.get("/extraction/{book_id}/page/{page_number}/results")
+async def get_page_extraction_results(book_id: int, page_number: int):
+    """Get extraction results for a specific page from raw tables."""
+    db = SessionLocal()
+    try:
+        prefix = get_book_table_prefix(db, book_id)
+        paragraphs_table = f"raw_{prefix}_paragraph_images"
+        diagrams_table = f"raw_{prefix}_diagram_images"
+        
+        paragraphs = []
+        diagrams = []
+        
+        # Check if paragraphs table exists and fetch data
+        para_exists = db.execute(
+            text("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables
+                    WHERE table_name = :table_name
+                )
+            """),
+            {"table_name": paragraphs_table}
+        ).scalar()
+        
+        if para_exists:
+            para_results = db.execute(
+                text(f"""
+                    SELECT id, extracted_text, class_name
+                    FROM {paragraphs_table}
+                    WHERE page_number = :page_number
+                    ORDER BY id
+                """),
+                {"page_number": page_number}
+            ).fetchall()
+            
+            for row in para_results:
+                paragraphs.append({
+                    "id": row[0],
+                    "extracted_text": row[1] or "",
+                    "class_name": row[2] or "paragraph",
+                    "image_url": f"/api/extraction/{book_id}/paragraph-image/{row[0]}"
+                })
+        
+        # Check if diagrams table exists and fetch data
+        diag_exists = db.execute(
+            text("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables
+                    WHERE table_name = :table_name
+                )
+            """),
+            {"table_name": diagrams_table}
+        ).scalar()
+        
+        if diag_exists:
+            diag_results = db.execute(
+                text(f"""
+                    SELECT id, extracted_text, class_name
+                    FROM {diagrams_table}
+                    WHERE page_number = :page_number
+                    ORDER BY id
+                """),
+                {"page_number": page_number}
+            ).fetchall()
+            
+            for row in diag_results:
+                diagrams.append({
+                    "id": row[0],
+                    "extracted_text": row[1] or "",
+                    "class_name": row[2] or "diagram",
+                    "image_url": f"/api/extraction/{book_id}/diagram-image/{row[0]}"
+                })
+        
+        return {
+            "page_number": page_number,
+            "paragraphs": paragraphs,
+            "diagrams": diagrams
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting page extraction results: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db.close()
+
+
+@router.get("/extraction/{book_id}/paragraph-image/{paragraph_id}")
+async def get_paragraph_image(book_id: int, paragraph_id: int):
+    """Get paragraph image from raw_paragraph_images table."""
+    db = SessionLocal()
+    try:
+        prefix = get_book_table_prefix(db, book_id)
+        table_name = f"raw_{prefix}_paragraph_images"
+        
+        result = db.execute(
+            text(f"SELECT image_data FROM {table_name} WHERE id = :id"),
+            {"id": paragraph_id}
+        ).fetchone()
+        
+        if not result or not result[0]:
+            raise HTTPException(status_code=404, detail="Image not found")
+        
+        return Response(content=result[0], media_type="image/png")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting paragraph image: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db.close()
+
+
 # =============================================================================
 # Extraction Endpoints
 # =============================================================================
