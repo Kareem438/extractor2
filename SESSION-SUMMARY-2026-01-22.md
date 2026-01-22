@@ -10,14 +10,30 @@
 
 ### 1. ✅ Fix "Ready for Extraction" Status Not Persisting
 - **Issue**: Clicking "Ready for Extraction" in Layout Review didn't show pages in Extraction Dashboard
-- **Root Cause**: Config storage mismatch - button saves to `layout_detection_config` but extraction page reads from `auto_slicer_config`
-- **Fix**: Updated `extraction.py` to read `ready_for_extraction` from `layout_detection_config`
-- **Files Modified**: `03-code/src/api/routes/extraction.py`
-- **Changes**:
-  - Added `get_layout_detection_config()` helper function
-  - Updated `get_ready_pages()` to use `layout_detection_config` for ready status
-  - Updated `get_dashboard_data()` to use `layout_detection_config` for ready status
-  - Kept `extracted_pages` reading from `auto_slicer_config` (correct location)
+- **Root Cause**: Multiple issues:
+  1. Config storage mismatch - button saves to `layout_detection_config` but extraction page reads from `auto_slicer_config`
+  2. Wrong table name: `layout_regions_{prefix}` → should be `raw_{prefix}_layout_detections`
+  3. Wrong column name: `region_class` → should be `class_name`
+  4. Undefined variable `config` → should be `auto_config`
+  5. `updateReadyForExtractionState()` was never called when loading pages
+- **Files Modified**: 
+  - `03-code/src/api/routes/extraction.py`
+  - `03-code/src/frontend/static/js/layout-review.js`
+
+### 2. ✅ Fix Extraction Dashboard Thumbnails
+- **Issue**: Thumbnails showed "No preview" and clicking navigated away
+- **Fix**: 
+  - Use `/api/review-raw/{book_id}/page/{page_number}` endpoint (same as auto-slicer)
+  - Left-click now selects page and updates right panel (no navigation)
+  - Added right-click context menu with "Go to Layout Review" and "Extract This Page"
+  - Added selected state visual feedback
+- **Files Modified**:
+  - `03-code/src/frontend/static/js/extraction-dashboard.js`
+  - `03-code/src/frontend/templates/extraction-dashboard.html`
+
+### 3. 🔄 Extraction Feature (Deferred to Next Session)
+- "Extract This Page" button added but extraction service needs investigation
+- Full extraction workflow to be explored in next session
 
 ---
 
