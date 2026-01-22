@@ -1,7 +1,7 @@
 # Knowledge Extraction System - Project Status
 
 **Project:** Knowledge Extraction System (13-extractor2)
-**Last Updated:** 2026-01-22
+**Last Updated:** 2026-01-23
 **Current Phase:** Production Ready + Knowledge Unit Creation (Complete)
 **Overall Progress:** 97% (Core system complete, KU creation complete, worker system 60%)
 
@@ -9,7 +9,7 @@
 
 ## 🖥️ Environment Configuration
 
-### Runtime Environment (Updated 2026-01-22)
+### Runtime Environment (Updated 2026-01-23)
 
 | Component | Environment | Notes |
 |-----------|-------------|-------|
@@ -21,6 +21,24 @@
 | **Claude API** | Cloud | Anthropic API |
 
 **Project Location:** `H:\13-extractor2`
+
+---
+
+## 🐛 Recent Bug Fixes (2026-01-23)
+
+### Session 16 - UI Improvements
+
+| Bug | Description | Status |
+|-----|-------------|--------|
+| 1 | Extraction page showed Claude warning (should be OCR only) | ✓ Fixed |
+| 2 | Pipeline page missing "Execute Diagram Analysis" button | ✓ Fixed |
+| 3 | Pipeline page missing header navigation | ✓ Fixed |
+| 4 | Pipeline page should remember last selected book | ✓ Fixed |
+| 5 | Left sidebar needs scroll for thumbnails | ✓ Fixed |
+| 6 | Page-level extraction button needed | ✓ Fixed |
+| 7 | Infinite loop on extraction + no results display | ✓ Fixed |
+
+**Commit:** `d61ac54` - fix: Extraction dashboard UI improvements and Pipeline page enhancements
 
 ---
 
@@ -300,6 +318,25 @@ A comprehensive system for extracting, processing, and managing knowledge from P
 
 ## 🔑 Recent Sessions
 
+### Session 2026-01-23 (Session 16)
+**Focus:** UI Bug Fixes for Extraction and Pipeline Dashboards
+
+**Achievements:**
+- ✅ Fixed 7 bugs across Extraction and Pipeline dashboards
+- ✅ Added page preview section with extraction results display
+- ✅ Added "Extract This Page" button for page-level extraction
+- ✅ Fixed WebSocket infinite loop issue
+- ✅ Added header navigation to Pipeline page
+- ✅ Added "Execute Diagram Analysis" button with Claude API mode selector
+- ✅ Added URL parameter handling for book_id
+- ✅ Made statistics section collapsible
+- ✅ Added 2 new API endpoints for extraction results
+
+**Commits:**
+- `d61ac54` - fix: Extraction dashboard UI improvements and Pipeline page enhancements
+
+**See:** `SESSION-SUMMARY-2026-01-23.md` for detailed session notes
+
 ### Session 2026-01-22 (Session 15)
 **Focus:** Knowledge Unit Creation Feature - COMPLETE
 
@@ -434,6 +471,6 @@ The project is **97% complete** with core functionality and KU creation fully im
 
 ---
 
-**Last Updated:** 2026-01-22
+**Last Updated:** 2026-01-23
 **Project Status:** ON TRACK
-**Next Session:** Test KU creation workflow, continue worker implementation
+**Next Session:** Test extraction workflow, continue worker implementation
