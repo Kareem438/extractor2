@@ -1,7 +1,7 @@
 # Session Summary - January 23, 2026
 
 ## Overview
-Continued from previous session. Fixed 7 bugs total across Extraction Dashboard and Pipeline Dashboard pages.
+Continued from previous session. Fixed 11 bugs total across Extraction Dashboard and Pipeline Dashboard pages.
 
 ---
 
@@ -15,12 +15,22 @@ Continued from previous session. Fixed 7 bugs total across Extraction Dashboard 
 | 3 | Pipeline page missing header navigation | ✓ Fixed |
 | 4 | Pipeline page should remember last selected book | ✓ Fixed |
 
-### This Session (Bugs 5-7)
+### Earlier This Session (Bugs 5-11)
 | Bug | Description | Status |
 |-----|-------------|--------|
 | 5 | Left sidebar needs scroll for thumbnails | ✓ Fixed |
 | 6 | Page-level extraction button needed | ✓ Fixed |
 | 7 | Infinite loop on extraction + no results display | ✓ Fixed |
+| 8 | Extract This Page causes system freeze | ✓ Fixed |
+| 9 | Preview image not available | ✓ Fixed |
+| 10 | Page preview layout - full width | ✓ Fixed |
+| 11 | Missing vertical scroll | ✓ Fixed |
+
+### Latest Fixes (Bugs 12-13)
+| Bug | Description | Status |
+|-----|-------------|--------|
+| 12 | Page preview should show regions with colored rectangles | ✓ Fixed |
+| 13 | Extraction results not displayed after extraction | ✓ Fixed |
 
 ---
 
@@ -29,11 +39,13 @@ Continued from previous session. Fixed 7 bugs total across Extraction Dashboard 
 ### Extraction Dashboard (`/extraction-dashboard`)
 1. **Sidebar Scroll:** Changed `.sidebar` CSS from `overflow: hidden` to `overflow-y: auto`
 2. **Page Preview Section:** New section showing:
-   - Page image preview on left
-   - Two columns on right: Paragraphs and Other Classes
+   - Page image preview with region overlays (canvas-based)
+   - Two columns below: Paragraphs and Other Classes
    - "Extract This Page" button
 3. **WebSocket Fix:** Only reconnect when extraction is in progress (prevents infinite loop)
 4. **Collapsible Statistics:** Moved all statistics to collapsible section at bottom
+5. **Region Drawing:** Added canvas-based region visualization with CLASS_COLORS (same as Layout Review)
+6. **API Fix:** Fixed SQL queries to use correct column names (`diagram_type` instead of `class_name`)
 
 ### Pipeline Dashboard (`/pipeline-dashboard`)
 1. **Header Navigation:** Added top-nav with links to all pages
@@ -51,11 +63,11 @@ Continued from previous session. Fixed 7 bugs total across Extraction Dashboard 
 
 | File | Changes |
 |------|---------|
-| `03-code/src/frontend/templates/extraction-dashboard.html` | Sidebar scroll, page preview section, collapsible stats |
-| `03-code/src/frontend/static/js/extraction-dashboard.js` | WebSocket fix, new functions for preview/results |
+| `03-code/src/frontend/templates/extraction-dashboard.html` | Sidebar scroll, page preview canvas, collapsible stats |
+| `03-code/src/frontend/static/js/extraction-dashboard.js` | WebSocket fix, region drawing, CLASS_COLORS, canvas functions |
 | `03-code/src/frontend/templates/pipeline-dashboard.html` | Header nav, Execute Diagram Analysis button, URL handling |
-| `03-code/src/api/routes/extraction.py` | New endpoints for page results and paragraph images |
-| `NEXT-SESSION.md` | Updated with bug fixes status |
+| `03-code/src/api/routes/extraction.py` | Fixed SQL queries, new endpoints for page results |
+| `NEXT-SESSION.md` | Updated with all bug fixes status |
 
 ---
 
@@ -64,6 +76,8 @@ Continued from previous session. Fixed 7 bugs total across Extraction Dashboard 
 | Hash | Message |
 |------|---------|
 | `d61ac54` | fix: Extraction dashboard UI improvements and Pipeline page enhancements |
+| `24fe8b5` | docs: Add SESSION-SUMMARY-2026-01-23.md and update PROJECT-STATUS.md |
+| `4879978` | fix: Extraction dashboard UI fixes (bugs 8-11) and document remaining bugs (12-13) |
 
 ---
 

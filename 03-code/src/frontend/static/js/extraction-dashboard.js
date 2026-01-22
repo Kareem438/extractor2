@@ -1051,20 +1051,131 @@ function toggleStatsSection() {
     }
 }
 
-// Show page preview
+// Class colors for region visualization (same as layout-review.js)
+const CLASS_COLORS = {
+    'title_level_1': '#FF0000',
+    'title_level_2': '#FF6600',
+    'title_level_3': '#FFCC00',
+    'paragraph': '#00FF00',
+    'diagram': '#0066FF',
+    'table': '#9900FF',
+    'equation': '#FF00FF',
+    'list_bulleted': '#00FFFF',
+    'list_numbered': '#00CCCC',
+    'list_lettered': '#009999',
+    'list_item': '#006666',
+    'header': '#999999',
+    'footer': '#666666',
+    'reference': '#CC9900',
+    'caption': '#99CC00',
+    'question': '#9C27B0',
+    'answer': '#E91E63',
+    'ignore': '#444444'
+};
+
+// Show page preview with regions overlay
 function showPagePreview(pageNumber) {
     const previewSection = document.getElementById('page-preview-section');
     const previewTitle = document.getElementById('preview-page-title');
-    const previewImage = document.getElementById('preview-page-image');
+    const canvas = document.getElementById('preview-page-canvas');
     
     previewSection.style.display = 'block';
     previewTitle.textContent = `Page ${pageNumber} Preview`;
     
-    // Load page image using the correct API endpoint
-    previewImage.src = `/api/auto-slicer/${state.bookId}/page/${pageNumber}/image`;
-    previewImage.onerror = () => {
-        previewImage.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><rect fill="%230a0a15" width="300" height="400"/><text x="150" y="200" fill="%23666" text-anchor="middle" font-size="14">No preview available</text></svg>';
+    // Get page data with regions
+    const page = state.readyPages.find(p => p.page_number === pageNumber);
+    const regions = page ? page.regions : [];
+    
+    // Load page image and draw with regions
+    const img = new Image();
+    img.onload = () => {
+        drawPageWithRegions(canvas, img, regions);
     };
+    img.onerror = () => {
+        // Draw error state on canvas
+        const ctx = canvas.getContext('2d');
+        canvas.width = 300;
+        canvas.height = 400;
+        ctx.fillStyle = '#0a0a15';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#666';
+        ctx.font = '14px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('No preview available', 150, 200);
+    };
+    img.src = `/api/auto-slicer/${state.bookId}/page/${pageNumber}/image`;
+}
+
+// Draw page image with region overlays
+function drawPageWithRegions(canvas, img, regions) {
+    const ctx = canvas.getContext('2d');
+    
+    // Calculate scale to fit container (max 480px height, responsive width)
+    const maxHeight = 480;
+    const maxWidth = canvas.parentElement.clientWidth - 20;
+    const scale = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+    
+    canvas.width = img.width * scale;
+    canvas.height = img.height * scale;
+    
+    // Draw image
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    
+    // Draw regions
+    if (regions && regions.length > 0) {
+        regions.forEach(region => {
+            drawRegion(ctx, region, scale);
+        });
+    }
+}
+
+// Draw a single region on canvas
+function drawRegion(ctx, region, scale) {
+    const x = region.x * scale;
+    const y = region.y * scale;
+    const w = region.width * scale;
+    const h = region.height * scale;
+    
+    const color = CLASS_COLORS[region.class_name] || '#FF0000';
+    const isIgnored = region.class_name === 'ignore';
+    
+    // Draw filled rectangle with transparency
+    if (isIgnored) {
+        ctx.fillStyle = 'rgba(68, 68, 68, 0.3)';
+    } else {
+        ctx.fillStyle = hexToRgba(color, 0.15);
+    }
+    ctx.fillRect(x, y, w, h);
+    
+    // Draw border
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    
+    if (isIgnored) {
+        ctx.setLineDash([4, 4]);
+    }
+    ctx.strokeRect(x, y, w, h);
+    ctx.setLineDash([]);
+    
+    // Draw label background
+    const label = region.class_name;
+    ctx.font = 'bold 10px Arial';
+    const textWidth = ctx.measureText(label).width;
+    
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y - 14, textWidth + 6, 14);
+    
+    // Draw label text
+    ctx.fillStyle = '#fff';
+    ctx.fillText(label, x + 3, y - 3);
+}
+
+// Convert hex color to rgba
+function hexToRgba(hex, alpha) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 // Load extraction results for a page from raw tables

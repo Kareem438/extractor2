@@ -261,10 +261,11 @@ async def get_page_extraction_results(book_id: int, page_number: int):
         if para_exists:
             para_results = db.execute(
                 text(f"""
-                    SELECT id, extracted_text, class_name
+                    SELECT id, extracted_text
                     FROM {paragraphs_table}
                     WHERE page_number = :page_number
-                    ORDER BY id
+                    AND is_enabled = TRUE
+                    ORDER BY display_order, id
                 """),
                 {"page_number": page_number}
             ).fetchall()
@@ -273,7 +274,7 @@ async def get_page_extraction_results(book_id: int, page_number: int):
                 paragraphs.append({
                     "id": row[0],
                     "extracted_text": row[1] or "",
-                    "class_name": row[2] or "paragraph",
+                    "class_name": "paragraph",
                     "image_url": f"/api/extraction/{book_id}/paragraph-image/{row[0]}"
                 })
         
@@ -291,10 +292,11 @@ async def get_page_extraction_results(book_id: int, page_number: int):
         if diag_exists:
             diag_results = db.execute(
                 text(f"""
-                    SELECT id, extracted_text, class_name
+                    SELECT id, extracted_text, diagram_type
                     FROM {diagrams_table}
                     WHERE page_number = :page_number
-                    ORDER BY id
+                    AND is_enabled = TRUE
+                    ORDER BY display_order, id
                 """),
                 {"page_number": page_number}
             ).fetchall()
