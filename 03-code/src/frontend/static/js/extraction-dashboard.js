@@ -390,11 +390,12 @@ async function extractSinglePage(pageNumber) {
         return;
     }
     
-    const confirmed = confirm(`Start extraction for page ${pageNumber}?`);
+    const confirmed = confirm(`Start OCR extraction for page ${pageNumber}?\n\nThis will extract text from paragraphs using Surya OCR.`);
     if (!confirmed) return;
     
     try {
         state.isExtracting = true;
+        showLoading(`Extracting page ${pageNumber}...`);
         
         const response = await fetch(`/api/extraction/${state.bookId}/extract`, {
             method: 'POST',
@@ -402,18 +403,33 @@ async function extractSinglePage(pageNumber) {
             body: JSON.stringify({ page_numbers: [pageNumber] })
         });
         
+        const data = await response.json();
+        
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'Extraction failed');
+            throw new Error(data.detail || 'Extraction failed');
         }
         
-        alert(`Extraction started for page ${pageNumber}`);
+        // Wait a moment for extraction to complete, then refresh
+        setTimeout(async () => {
+            hideLoading();
+            state.isExtracting = false;
+            
+            // Reload dashboard data to show updated results
+            await loadDashboardData();
+            
+            // Re-select the page to show results
+            if (state.selectedPageNumber === pageNumber) {
+                loadPageExtractionResults(pageNumber);
+            }
+            
+            alert(`Extraction completed for page ${pageNumber}`);
+        }, 2000);
         
     } catch (error) {
         console.error('Error starting extraction:', error);
-        alert('Failed to start extraction: ' + error.message);
-    } finally {
+        hideLoading();
         state.isExtracting = false;
+        alert('Failed to start extraction: ' + error.message);
     }
 }
 
@@ -1044,8 +1060,8 @@ function showPagePreview(pageNumber) {
     previewSection.style.display = 'block';
     previewTitle.textContent = `Page ${pageNumber} Preview`;
     
-    // Load page image
-    previewImage.src = `/api/review-raw/${state.bookId}/page/${pageNumber}/image`;
+    // Load page image using the correct API endpoint
+    previewImage.src = `/api/auto-slicer/${state.bookId}/page/${pageNumber}/image`;
     previewImage.onerror = () => {
         previewImage.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="400"><rect fill="%230a0a15" width="300" height="400"/><text x="150" y="200" fill="%23666" text-anchor="middle" font-size="14">No preview available</text></svg>';
     };

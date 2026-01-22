@@ -1,72 +1,71 @@
 # Next Session - Bug Fixes
 
 **Last Updated:** 2026-01-23
-**Session:** Continuation of Session 15 (KU Creation Feature)
+**Session:** Session 17 - Extraction Dashboard Fixes
 
 ---
 
-## Previous Bugs - ALL FIXED ✓
+## Bugs Fixed This Session (8-11)
 
-### Bug 1-4: All Fixed (Previous Session)
-- Bug 1: Extraction page Claude warning - FIXED
-- Bug 2: Pipeline page missing Execute Diagram Analysis button - FIXED
-- Bug 3: Pipeline page missing header navigation - FIXED
-- Bug 4: Pipeline page should remember last selected book - FIXED
+| Bug | Description | Status |
+|-----|-------------|--------|
+| 8 | Extract This Page causes system freeze | ✓ Fixed |
+| 9 | Preview image not available | ✓ Fixed |
+| 10 | Page preview layout - full width | ✓ Fixed |
+| 11 | Missing vertical scroll | ✓ Fixed |
 
 ---
 
-## New Bugs - ALL FIXED ✓ (This Session)
+## Outstanding Bugs for Next Session (12-13)
 
-### Bug 5: Extraction Page - Left Sidebar Needs Scroll ✓ FIXED
+### Bug 12: Page Preview Should Show Regions
 **Location:** Extraction Dashboard (`/extraction-dashboard`)
-**Issue:** The left sidebar with page thumbnails doesn't have a scroll bar when there are many pages
-**Fix:** Changed `.sidebar` from `overflow: hidden` to `overflow-y: auto`
+**Issue:** The page preview shows only the raw page image without the detected regions (colored rectangles)
+**Expected:** Page preview should display the page WITH region overlays (like Layout Review page)
+**Fix Required:** 
+- Reuse the existing code from Layout Review page (`layout-review.js`)
+- Use canvas to draw the page image with region boxes overlaid
+- Reference: `03-code/src/frontend/static/js/layout-review.js` has the region drawing code
 
 ---
 
-### Bug 6: Extraction Page - Page-Level Extraction Button ✓ FIXED
+### Bug 13: Extraction Results Not Displayed
 **Location:** Extraction Dashboard (`/extraction-dashboard`)
-**Issue:** The "Start OCR Extraction" button only works for all pages, not individual pages
-**Fix:** Added "Extract This Page" button in the page preview section (right panel)
+**Issue:** After extraction completes, no paragraphs or classes are shown in the results columns
+**Root Cause:** The API endpoint `/api/extraction/{book_id}/page/{page_number}/results` may not be returning data correctly, or the raw tables don't have data
+**Fix Required:**
+1. Debug the API endpoint to verify it returns data
+2. Check if raw_paragraph_images and raw_diagram_images tables have data after extraction
+3. Verify the loadPageExtractionResults() function is parsing the response correctly
+
+**API Endpoint:** `GET /api/extraction/{book_id}/page/{page_number}/results`
+**Tables to Check:**
+- `raw_{prefix}_paragraph_images`
+- `raw_{prefix}_diagram_images`
 
 ---
 
-### Bug 7: Extraction Page - Infinite Loop & Results Display ✓ FIXED
-**Location:** Extraction Dashboard (`/extraction-dashboard`)
-**Issues Fixed:**
-1. **Infinite Loop:** WebSocket was reconnecting indefinitely. Fixed by only reconnecting when extraction is in progress.
-2. **Results Display:** Added new page preview section with:
-   - Page image preview on the left
-   - Two columns on the right: Paragraphs and Other Classes (diagrams, tables, etc.)
-   - Data loaded from raw tables (raw_paragraph_images, raw_diagram_images)
-3. **Statistics Moved:** All statistics sections moved to collapsible section at bottom
+## Files to Modify for Next Session
+
+1. **03-code/src/frontend/static/js/extraction-dashboard.js**
+   - Add canvas-based region drawing (copy from layout-review.js)
+   - Debug loadPageExtractionResults() function
+
+2. **03-code/src/frontend/templates/extraction-dashboard.html**
+   - Change page preview from `<img>` to `<canvas>` for region overlay support
+
+3. **03-code/src/api/routes/extraction.py**
+   - Debug get_page_extraction_results() endpoint
+   - Verify SQL queries return correct data
 
 ---
 
-## Files Modified
+## Reference Code from Layout Review
 
-### HTML Changes (extraction-dashboard.html):
-1. Fixed sidebar scroll: `overflow-y: auto`
-2. Added new CSS styles for:
-   - Page preview section
-   - Extraction results columns
-   - Collapsible statistics section
-   - Extract page button
-3. Added new HTML structure:
-   - Page preview section with image and results columns
-   - Wrapped statistics in collapsible section
-
-### JavaScript Changes (extraction-dashboard.js):
-1. Fixed WebSocket reconnection logic (only reconnect during extraction)
-2. Added new functions:
-   - `toggleStatsSection()` - toggle collapsible statistics
-   - `showPagePreview(pageNumber)` - show page image preview
-   - `loadPageExtractionResults(pageNumber)` - load results from raw tables
-   - `extractSelectedPage()` - extract single page from button
-
-### API Changes (extraction.py):
-1. Added `GET /extraction/{book_id}/page/{page_number}/results` - fetch extraction results
-2. Added `GET /extraction/{book_id}/paragraph-image/{paragraph_id}` - get paragraph image
+The Layout Review page (`layout-review.js`) has working code for drawing regions on a canvas. Key functions to reuse:
+- Region drawing with colored rectangles
+- Class-based color coding
+- Canvas scaling and positioning
 
 ---
 
@@ -77,18 +76,21 @@
 cd H:\13-extractor2
 Start-Process -FilePath ".\venv\Scripts\python.exe" -ArgumentList "-m uvicorn src.main:app --host 0.0.0.0 --port 8888" -WorkingDirectory "03-code" -WindowStyle Hidden
 
-# Test pages
-# Extraction: http://localhost:8888/extraction-dashboard?book_id=1
-# Pipeline: http://localhost:8888/pipeline-dashboard?book_id=1
+# Test page
+http://localhost:8888/extraction-dashboard?book_id=1
+
+# Check raw tables (PostgreSQL)
+SELECT COUNT(*) FROM raw_book1_paragraph_images;
+SELECT COUNT(*) FROM raw_book1_diagram_images;
 ```
 
 ---
 
-## Testing Checklist
+## Session Summary
 
-- [ ] Left sidebar scrolls when many pages
-- [ ] "Extract This Page" button appears when page selected
-- [ ] Page preview shows page image
-- [ ] Extraction results show paragraphs and diagrams from raw tables
-- [ ] Statistics section is collapsible
-- [ ] No infinite loop when extraction completes
+**Bugs Fixed:** 4 (Bugs 8-11)
+**Bugs Remaining:** 2 (Bugs 12-13)
+**Files Modified:** 
+- extraction-dashboard.html (layout, scroll)
+- extraction-dashboard.js (image URL, extract function)
+- NEXT-SESSION.md (documentation)
