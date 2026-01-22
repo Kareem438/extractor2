@@ -95,6 +95,19 @@ def get_auto_slicer_config(db, book_id: int) -> dict:
     return result[0] if isinstance(result[0], dict) else json.loads(result[0])
 
 
+def get_layout_detection_config(db, book_id: int) -> dict:
+    """Get layout detection config for a book (contains ready_for_extraction status)."""
+    result = db.execute(
+        text("SELECT layout_detection_config FROM books_metadata WHERE book_id = :book_id"),
+        {"book_id": book_id}
+    ).fetchone()
+
+    if not result or not result[0]:
+        return {}
+
+    return result[0] if isinstance(result[0], dict) else json.loads(result[0])
+
+
 def save_auto_slicer_config(db, book_id: int, config: dict):
     """Save auto-slicer config for a book."""
     db.execute(
@@ -114,10 +127,13 @@ async def get_ready_pages(book_id: int):
     db = SessionLocal()
     try:
         prefix = get_book_table_prefix(db, book_id)
-        config = get_auto_slicer_config(db, book_id)
+        # Use layout_detection_config which is where ready_for_extraction is saved
+        layout_config = get_layout_detection_config(db, book_id)
 
-        # Get pages marked as ready for extraction
-        ready_pages = config.get('ready_for_extraction', [])
+        # Get pages marked as ready for extraction (stored as dict with string keys)
+        ready_for_extraction = layout_config.get('ready_for_extraction', {})
+        # Convert dict to list of page numbers where value is True
+        ready_pages = [int(page) for page, is_ready in ready_for_extraction.items() if is_ready]
 
         if not ready_pages:
             return {"pages": []}
@@ -141,6 +157,10 @@ async def get_ready_pages(book_id: int):
 
         # Get counts per page
         pages_data = []
+        # Get auto_slicer_config for extracted_pages status
+        auto_config = get_auto_slicer_config(db, book_id)
+        extracted_pages = auto_config.get('extracted_pages', [])
+        
         for page_num in sorted(ready_pages):
             # Get region counts by class
             counts = db.execute(
@@ -158,7 +178,6 @@ async def get_ready_pages(book_id: int):
             count_dict = {row[0]: row[1] for row in counts}
 
             # Check if already extracted
-            extracted_pages = config.get('extracted_pages', [])
             status = 'extracted' if page_num in extracted_pages else 'ready'
 
             pages_data.append({
@@ -684,11 +703,14 @@ async def get_dashboard_data(book_id: int):
     db = SessionLocal()
     try:
         prefix = get_book_table_prefix(db, book_id)
-        config = get_auto_slicer_config(db, book_id)
+        auto_config = get_auto_slicer_config(db, book_id)
+        layout_config = get_layout_detection_config(db, book_id)
 
-        # Get ready pages with region info
-        ready_page_numbers = config.get('ready_for_extraction', [])
-        extracted_pages = config.get('extracted_pages', [])
+        # Get ready pages from layout_detection_config (stored as dict with string keys)
+        ready_for_extraction = layout_config.get('ready_for_extraction', {})
+        ready_page_numbers = [int(page) for page, is_ready in ready_for_extraction.items() if is_ready]
+        # Get extracted pages from auto_slicer_config
+        extracted_pages = auto_config.get('extracted_pages', [])
 
         ready_pages = []
         regions_table = f"layout_regions_{prefix}"

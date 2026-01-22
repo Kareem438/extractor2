@@ -1,8 +1,23 @@
 # Session Summary - January 22, 2026
 
-**Session Duration:** ~4 hours (Session 11 + Session 12 + Session 13)  
+**Session Duration:** ~4 hours (Session 11 + Session 12 + Session 13 + Session 14)  
 **Project:** Knowledge Extraction System (13-extractor2)  
 **Status:** 95% Complete - Production Ready
+
+---
+
+## 🎯 Session 14 Objectives Completed
+
+### 1. ✅ Fix "Ready for Extraction" Status Not Persisting
+- **Issue**: Clicking "Ready for Extraction" in Layout Review didn't show pages in Extraction Dashboard
+- **Root Cause**: Config storage mismatch - button saves to `layout_detection_config` but extraction page reads from `auto_slicer_config`
+- **Fix**: Updated `extraction.py` to read `ready_for_extraction` from `layout_detection_config`
+- **Files Modified**: `03-code/src/api/routes/extraction.py`
+- **Changes**:
+  - Added `get_layout_detection_config()` helper function
+  - Updated `get_ready_pages()` to use `layout_detection_config` for ready status
+  - Updated `get_dashboard_data()` to use `layout_detection_config` for ready status
+  - Kept `extracted_pages` reading from `auto_slicer_config` (correct location)
 
 ---
 
@@ -74,6 +89,9 @@
 
 ## 📝 Files Created/Modified
 
+### Session 14 Files Modified:
+- `03-code/src/api/routes/extraction.py` - Fixed ready_for_extraction config source (layout_detection_config instead of auto_slicer_config)
+
 ### Session 13 Files Modified:
 - `03-code/src/frontend/static/js/layout-review.js` - Added question/answer to DEFAULT_ENABLED_CLASSES
 - `03-code/src/frontend/static/js/auto-slicer.js` - Added Save Classes functionality, checkbox listeners
@@ -99,6 +117,26 @@
 ---
 
 ## 🔧 Technical Changes
+
+### Session 14: Ready for Extraction Config Fix
+```python
+# Added new helper function in extraction.py
+def get_layout_detection_config(db, book_id: int) -> dict:
+    """Get layout detection config for a book (contains ready_for_extraction status)."""
+    result = db.execute(
+        text("SELECT layout_detection_config FROM books_metadata WHERE book_id = :book_id"),
+        {"book_id": book_id}
+    ).fetchone()
+    if not result or not result[0]:
+        return {}
+    return result[0] if isinstance(result[0], dict) else json.loads(result[0])
+
+# Updated get_ready_pages() to use correct config
+layout_config = get_layout_detection_config(db, book_id)
+ready_for_extraction = layout_config.get('ready_for_extraction', {})
+# Convert dict to list of page numbers where value is True
+ready_pages = [int(page) for page, is_ready in ready_for_extraction.items() if is_ready]
+```
 
 ### Session 13: Save Classes Button
 ```javascript
