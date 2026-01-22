@@ -158,31 +158,29 @@ def crop_region_image(page_image_bytes: bytes, region: Dict) -> bytes:
 async def run_surya_ocr(image_bytes: bytes) -> Tuple[str, float]:
     """Run Surya OCR on an image and return text with confidence.
 
-    This is a placeholder - actual implementation needs Surya OCR integration.
+    Uses the run_surya_on_single_image function from ocr_sequential.py
+    which handles model loading and caching.
     """
     try:
-        from src.services.ocr_sequential import OCRService
+        from src.services.ocr_sequential import run_surya_on_single_image
 
-        # Load image
-        img = Image.open(io.BytesIO(image_bytes))
-
-        # Create OCR service and run Surya
-        ocr_service = OCRService()
-
-        # Run OCR (Surya is typically the second engine tried)
+        # Run OCR in executor to avoid blocking
         result = await asyncio.get_event_loop().run_in_executor(
             None,
-            lambda: ocr_service.run_surya_ocr(img)
+            lambda: run_surya_on_single_image(image_bytes)
         )
 
-        if result:
+        if result and result.get('success'):
             return result.get('text', ''), result.get('confidence', 0.0)
+
+        # Log error if OCR failed
+        if result and result.get('error'):
+            logger.error(f"Surya OCR failed: {result.get('error')}")
 
         return '', 0.0
 
     except Exception as e:
         logger.error(f"Surya OCR error: {e}")
-        # Fallback: try to return empty result
         return '', 0.0
 
 
@@ -200,7 +198,9 @@ def save_paragraph(db, table_prefix: str, page_number: int, region: Dict,
                 image_data, image_format,
                 image_width, image_height, image_size_bytes,
                 extracted_text, ocr_confidence,
+                level_1_title, level_2_title, level_3_title,
                 selected_level_text,
+                is_enabled, created_by,
                 approval_status, created_at
             ) VALUES (
                 :raw_page_id, :page_number,
@@ -208,7 +208,9 @@ def save_paragraph(db, table_prefix: str, page_number: int, region: Dict,
                 :image_data, 'png',
                 :width, :height, :image_size,
                 :text, :confidence,
+                :l1, :l2, :l3,
                 :level_text,
+                TRUE, 'extraction',
                 'pending', NOW()
             )
             RETURNING id
@@ -224,6 +226,9 @@ def save_paragraph(db, table_prefix: str, page_number: int, region: Dict,
             "image_size": len(region.get('image_bytes', b'')),
             "text": ocr_text,
             "confidence": ocr_confidence,
+            "l1": l1_title,
+            "l2": l2_title,
+            "l3": l3_title,
             "level_text": f"L1: {l1_title or '-'} | L2: {l2_title or '-'} | L3: {l3_title or '-'}"
         }
     )
@@ -248,6 +253,7 @@ def save_diagram(db, table_prefix: str, page_number: int, region: Dict,
                 diagram_type,
                 level_1_title, level_2_title, level_3_title,
                 linked_knowledge_unit_id,
+                is_enabled, created_by,
                 approval_status, created_at
             ) VALUES (
                 :raw_page_id, :page_number,
@@ -257,6 +263,7 @@ def save_diagram(db, table_prefix: str, page_number: int, region: Dict,
                 :diagram_type,
                 :l1, :l2, :l3,
                 :parent_id,
+                TRUE, 'extraction',
                 'pending', NOW()
             )
             RETURNING id
