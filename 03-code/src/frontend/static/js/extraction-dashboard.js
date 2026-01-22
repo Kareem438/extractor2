@@ -69,6 +69,7 @@ async function loadDashboardData() {
         renderThumbnails();
         renderSummaryTable();
         filterDiagrams();
+        updateClassStats();
 
         hideLoading();
     } catch (error) {
@@ -650,11 +651,10 @@ async function startExtraction() {
         document.getElementById('start-btn').textContent = 'Extracting...';
         showLoading('Starting extraction...');
 
-        const response = await fetch(`/api/extraction/${state.bookId}/start`, {
+        const response = await fetch(`/api/extraction/${state.bookId}/extract`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                api_mode: apiMode,
                 page_numbers: state.readyPages.map(p => p.page_number)
             })
         });
@@ -888,3 +888,122 @@ function showLoading(text) {
 function hideLoading() {
     document.getElementById('loading-overlay').classList.remove('active');
 }
+
+// Update class statistics based on radio button selection
+function updateClassStats() {
+    const scope = document.querySelector('input[name="stats-scope"]:checked').value;
+    const tbody = document.getElementById('class-stats-body');
+    
+    if (!tbody) return;
+    
+    // Calculate stats based on scope
+    let stats = {};
+    const classTypes = ['paragraph', 'diagram', 'table', 'equation', 'list_bulleted', 'list_numbered', 'list_lettered', 'question', 'answer'];
+    
+    // Initialize stats
+    classTypes.forEach(cls => {
+        stats[cls] = { count: 0, extracted: 0, pending: 0 };
+    });
+    
+    if (scope === 'current' && state.selectedPageNumber) {
+        // Get stats for current page only
+        const page = state.readyPages.find(p => p.page_number === state.selectedPageNumber);
+        if (page && page.regions) {
+            page.regions.forEach(region => {
+                const cls = region.class_name;
+                if (stats[cls]) {
+                    stats[cls].count++;
+                    stats[cls].pending++;
+                }
+            });
+        }
+        
+        // Check extracted diagrams for this page
+        state.diagrams.filter(d => d.page_number === state.selectedPageNumber).forEach(d => {
+            const cls = d.class_name;
+            if (stats[cls]) {
+                stats[cls].extracted++;
+                stats[cls].pending = Math.max(0, stats[cls].pending - 1);
+            }
+        });
+    } else {
+        // Get stats for all ready pages
+        state.readyPages.forEach(page => {
+            if (page.regions) {
+                page.regions.forEach(region => {
+                    const cls = region.class_name;
+                    if (stats[cls]) {
+                        stats[cls].count++;
+                        stats[cls].pending++;
+                    }
+                });
+            }
+        });
+        
+        // Check extracted diagrams
+        state.diagrams.forEach(d => {
+            const cls = d.class_name;
+            if (stats[cls]) {
+                stats[cls].extracted++;
+                stats[cls].pending = Math.max(0, stats[cls].pending - 1);
+            }
+        });
+    }
+    
+    // Render table
+    tbody.innerHTML = '';
+    
+    const classLabels = {
+        'paragraph': 'Paragraph',
+        'diagram': 'Diagram',
+        'table': 'Table',
+        'equation': 'Equation',
+        'list_bulleted': 'Bulleted List',
+        'list_numbered': 'Numbered List',
+        'list_lettered': 'Lettered List',
+        'question': 'Question',
+        'answer': 'Answer'
+    };
+    
+    let totalCount = 0, totalExtracted = 0, totalPending = 0;
+    
+    classTypes.forEach(cls => {
+        const s = stats[cls];
+        if (s.count > 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${classLabels[cls]}</td>
+                <td class="count">${s.count}</td>
+                <td class="count" style="color: #4CAF50;">${s.extracted}</td>
+                <td class="count" style="color: #FF9800;">${s.pending}</td>
+            `;
+            tbody.appendChild(row);
+            
+            totalCount += s.count;
+            totalExtracted += s.extracted;
+            totalPending += s.pending;
+        }
+    });
+    
+    // Add total row
+    if (totalCount > 0) {
+        const totalRow = document.createElement('tr');
+        totalRow.className = 'total-row';
+        totalRow.innerHTML = `
+            <td><strong>Total</strong></td>
+            <td class="count"><strong>${totalCount}</strong></td>
+            <td class="count" style="color: #4CAF50;"><strong>${totalExtracted}</strong></td>
+            <td class="count" style="color: #FF9800;"><strong>${totalPending}</strong></td>
+        `;
+        tbody.appendChild(totalRow);
+    } else {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #666;">No regions detected</td></tr>';
+    }
+}
+
+// Override selectPage to also update class stats
+const originalSelectPage = selectPage;
+selectPage = function(pageNumber) {
+    originalSelectPage(pageNumber);
+    updateClassStats();
+};

@@ -728,6 +728,36 @@
                 </div>
             </div>
 
+            <!-- Class Statistics Section -->
+            <div class="summary-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0;">Class Statistics</h3>
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 13px; color: #aaa;">
+                            <input type="radio" name="stats-scope" value="current" checked onchange="updateClassStats()">
+                            Current Page
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 13px; color: #aaa;">
+                            <input type="radio" name="stats-scope" value="all" onchange="updateClassStats()">
+                            All Ready Pages
+                        </label>
+                    </div>
+                </div>
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Class</th>
+                            <th class="count">Count</th>
+                            <th class="count">Extracted</th>
+                            <th class="count">Pending</th>
+                        </tr>
+                    </thead>
+                    <tbody id="class-stats-body">
+                        <!-- Rows populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
             <!-- Summary Section -->
             <div class="summary-section">
                 <h3>Summary by L3 Title</h3>

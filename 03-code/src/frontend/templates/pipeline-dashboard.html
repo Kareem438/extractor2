@@ -399,7 +399,50 @@
 
         <div id="alertContainer"></div>
 
-        <div class="dashboard-grid">
+        <!-- Page Status & Knowledge Unit Creation Card (MOVED TO TOP) -->
+        <div class="card" id="pageStatusCard" style="display: none;">
+            <h2>
+                Page Status & Knowledge Unit Creation
+                <button class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;" onclick="loadPageStatus()">Refresh</button>
+            </h2>
+            <div class="ku-actions">
+                <button class="btn btn-purple" id="btnCreateKU" onclick="createKnowledgeUnits()" disabled>
+                    Create Knowledge Units
+                </button>
+                <span class="selected-count" id="selectedCount">0 pages selected</span>
+            </div>
+            <div class="page-status-container">
+                <table class="page-status-table">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAllPages" onchange="toggleSelectAll()"></th>
+                            <th>Page</th>
+                            <th>Thumbnail</th>
+                            <th>Layout</th>
+                            <th>Extraction</th>
+                            <th>KU Created</th>
+                            <th>Claude</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pageStatusBody">
+                        <tr>
+                            <td colspan="7" class="empty-state">
+                                <p>Select a book to view page status</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Collapsible Worker Section -->
+        <div class="card" style="margin-top: 20px;">
+            <h2 style="cursor: pointer;" onclick="toggleWorkerSection()">
+                <span id="workerSectionToggle">▼</span> Worker System
+                <span style="font-size: 12px; color: #7f8c8d; font-weight: normal; margin-left: 10px;">(Click to expand/collapse)</span>
+            </h2>
+            <div id="workerSectionContent" style="display: none;">
+                <div class="dashboard-grid" style="margin-top: 15px;">
             <!-- Worker Status Card -->
             <div class="card">
                 <h2>
@@ -471,10 +514,10 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </div><!-- End dashboard-grid -->
 
-        <!-- Recent Tasks Card -->
-        <div class="card">
+        <!-- Recent Tasks Card (inside worker section) -->
+        <div class="card" style="margin-top: 15px;">
             <h2>
                 Recent Tasks
                 <button class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;" onclick="loadData()">Refresh</button>
@@ -485,48 +528,27 @@
                 </div>
             </div>
         </div>
-
-        <!-- Page Status & Knowledge Unit Creation Card -->
-        <div class="card" id="pageStatusCard" style="display: none;">
-            <h2>
-                Page Status & Knowledge Unit Creation
-                <button class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;" onclick="loadPageStatus()">Refresh</button>
-            </h2>
-            <div class="ku-actions">
-                <button class="btn btn-purple" id="btnCreateKU" onclick="createKnowledgeUnits()" disabled>
-                    Create Knowledge Units
-                </button>
-                <span class="selected-count" id="selectedCount">0 pages selected</span>
-            </div>
-            <div class="page-status-container">
-                <table class="page-status-table">
-                    <thead>
-                        <tr>
-                            <th><input type="checkbox" id="selectAllPages" onchange="toggleSelectAll()"></th>
-                            <th>Page</th>
-                            <th>Thumbnail</th>
-                            <th>Layout</th>
-                            <th>Extraction</th>
-                            <th>KU Created</th>
-                            <th>Claude</th>
-                        </tr>
-                    </thead>
-                    <tbody id="pageStatusBody">
-                        <tr>
-                            <td colspan="7" class="empty-state">
-                                <p>Select a book to view page status</p>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+            </div><!-- End workerSectionContent -->
+        </div><!-- End Worker Section Card -->
     </div>
 
     <script>
         let currentBookId = null;
         let refreshInterval = null;
         let countdown = 5;
+
+        // Toggle worker section visibility
+        function toggleWorkerSection() {
+            const content = document.getElementById('workerSectionContent');
+            const toggle = document.getElementById('workerSectionToggle');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                toggle.textContent = '▲';
+            } else {
+                content.style.display = 'none';
+                toggle.textContent = '▼';
+            }
+        }
 
         // Initialize page
         async function init() {
