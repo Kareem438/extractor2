@@ -369,7 +369,7 @@ async def _get_table_prefix(book_id: int) -> str:
     sql = text("""
     SELECT table_prefix
     FROM books_metadata
-    WHERE id = :book_id
+    WHERE book_id = :book_id
     """)
 
     with engine.connect() as conn:

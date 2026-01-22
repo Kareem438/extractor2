@@ -1,21 +1,79 @@
 # Quick Command Reference
 
-## Full System Startup (Claude Code)
+## Project Location & Configuration
+- **Project Path:** `H:\13-extractor2`
+- **Virtual Environment:** `H:\13-extractor2\venv`
+- **Database:** `knowledge_extraction_2`
+- **Server Port:** `8888`
 
-Execute using the Bash tool in sequence:
+---
 
+## Full System Startup
+
+### From PowerShell (Recommended)
+
+```powershell
+# Step 1: Activate virtual environment
+cd H:\13-extractor2
+.\venv\Scripts\Activate.ps1
+
+# Step 2: Start PostgreSQL (if not running)
+sc query postgresql-x64-16
+
+# Step 3: Start FastAPI server
+cd 03-code
+python -m uvicorn src.main:app --host 0.0.0.0 --port 8888
+
+# OR start in background (hidden window):
+Start-Process -FilePath "..\venv\Scripts\python.exe" -ArgumentList "-m uvicorn src.main:app --host 0.0.0.0 --port 8888" -WorkingDirectory "03-code" -WindowStyle Hidden
 ```
-Step 1: Start PostgreSQL cluster (version 16, 15, or 14)
-Bash(sc query postgresql-x64-16)
 
-Step 3: Test database connection
-Bash(cd H:/12-extractor/03-code && H:/12-extractor/venv/Scripts/python.exe -c "from src.database.connection import engine; conn = engine.connect(); print('Database OK'); conn.close()")
+### Quick One-Liner (Background Start)
+```powershell
+cd H:\13-extractor2; Start-Process -FilePath ".\venv\Scripts\python.exe" -ArgumentList "-m uvicorn src.main:app --host 0.0.0.0 --port 8888" -WorkingDirectory "03-code" -WindowStyle Hidden
+```
 
-Step 4: Start FastAPI server (run_in_background=true)
-Bash(cd H:/12-extractor/03-code && H:/12-extractor/venv/Scripts/python.exe -m uvicorn src.main:app --host 0.0.0.0 --port 7777)
+### Verify Server is Running
+```powershell
+Invoke-WebRequest -Uri "http://localhost:8888/api/books" -UseBasicParsing | Select-Object StatusCode
+# Should return: StatusCode 200
+```
 
-Step 5: Verify health
-Bash(sleep 5 && curl -s http://localhost:7777/health)
+---
+
+## Stop/Restart Server
+
+### Find and Kill Server Process
+```powershell
+# Find process on port 8888
+Get-NetTCPConnection -LocalPort 8888 | Select-Object OwningProcess
+
+# Kill the process (replace PID with actual process ID)
+Stop-Process -Id <PID> -Force
+
+# Then restart using startup commands above
+```
+
+### Quick Restart (One Command)
+```powershell
+# Kill existing and start new
+$pid = (Get-NetTCPConnection -LocalPort 8888 -ErrorAction SilentlyContinue | Where-Object {$_.OwningProcess -ne 0} | Select-Object -First 1).OwningProcess; if ($pid) { Stop-Process -Id $pid -Force }; Start-Sleep 2; cd H:\13-extractor2; Start-Process -FilePath ".\venv\Scripts\python.exe" -ArgumentList "-m uvicorn src.main:app --host 0.0.0.0 --port 8888" -WorkingDirectory "03-code" -WindowStyle Hidden
+```
+
+---
+
+## System Health Check
+
+```powershell
+# Check server health
+Invoke-WebRequest -Uri "http://localhost:8888/health" -UseBasicParsing
+
+# Check database connection
+cd H:\13-extractor2\03-code
+..\venv\Scripts\python.exe -c "from src.database.connection import engine; conn = engine.connect(); print('Database OK'); conn.close()"
+
+# Check OCR status
+Invoke-WebRequest -Uri "http://localhost:8888/api/ocr/check-all-status" -UseBasicParsing
 ```
 
 ## System Health Check
@@ -42,32 +100,35 @@ Bash(cd H:/12-extractor/03-code && H:/12-extractor/venv/Scripts/python.exe -m uv
 
 ```powershell
 # Load Surya OCR to GPU
-curl http://localhost:7777/api/ocr/load-surya
+Invoke-WebRequest -Uri "http://localhost:8888/api/gpu/load/surya" -Method POST
 
 # Load EasyOCR to GPU
-curl http://localhost:7777/api/ocr/load-easyocr
+Invoke-WebRequest -Uri "http://localhost:8888/api/gpu/load/easyocr" -Method POST
 
-# Check all OCR status
-curl http://localhost:7777/api/ocr/check-all-status
+# Load DocLayout-YOLO to GPU
+Invoke-WebRequest -Uri "http://localhost:8888/api/gpu/load/doclayout" -Method POST
 
-# Unload all OCR from GPU (free VRAM)
-curl http://localhost:7777/api/ocr/unload-all
+# Check GPU status
+Invoke-WebRequest -Uri "http://localhost:8888/api/gpu/status" -UseBasicParsing
+
+# Unload model from GPU (free VRAM)
+Invoke-WebRequest -Uri "http://localhost:8888/api/gpu/unload/surya" -Method POST
 ```
 
 ## View Logs
 
 ```powershell
 # Real-time logs
-Get-Content H:\12-extractor\03-code\app.log -Wait -Tail 50
+Get-Content H:\13-extractor2\03-code\app.log -Wait -Tail 50
 
 # Recent errors only
-Get-Content H:\12-extractor\03-code\app.log -Tail 100 | Select-String "ERROR"
+Get-Content H:\13-extractor2\03-code\app.log -Tail 100 | Select-String "ERROR"
 ```
 
 ## Git Operations
 
 ```powershell
-cd H:\12-extractor
+cd H:\13-extractor2
 
 # Check status
 git status
@@ -77,18 +138,33 @@ git add .
 git commit -m "Your message"
 
 # Push to GitHub
-git push origin master
+git push origin main
 ```
 
 ## PostgreSQL (Windows)
 
-```
-# Start PostgreSQL cluster (use version installed: 16, 15, or 14)
-Bash(sc query postgresql-x64-16)
+```powershell
+# Check PostgreSQL status
+sc query postgresql-x64-16
 
-# Stop PostgreSQL cluster
-Bash(sc stop postgresql-x64-16)
+# Start PostgreSQL
+sc start postgresql-x64-16
 
-# Check cluster status
-Bash(sc query postgresql-x64-16)
+# Stop PostgreSQL
+sc stop postgresql-x64-16
 ```
+
+---
+
+## Main Application URLs
+
+| Page | URL |
+|------|-----|
+| Library | http://localhost:8888/library |
+| Upload | http://localhost:8888/upload |
+| Auto-Slicer | http://localhost:8888/auto-slicer |
+| Layout Review | http://localhost:8888/layout-review?book_id=1 |
+| Extraction Dashboard | http://localhost:8888/extraction-dashboard?book_id=1 |
+| Pipeline Dashboard | http://localhost:8888/pipeline-dashboard?book_id=1 |
+| Book Settings | http://localhost:8888/book-settings?book_id=1 |
+| API Docs | http://localhost:8888/docs |
