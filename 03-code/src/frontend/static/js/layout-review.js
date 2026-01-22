@@ -342,6 +342,14 @@ async function loadCurrentPage() {
 
     // Update regions list
     updateRegionsList();
+    
+    // Update Ready for Extraction button state for primary canvas
+    await updateReadyForExtractionState(pageNumber, 'primary');
+    
+    // Update Ready for Extraction button state for secondary canvas if in dual view
+    if (state.viewMode !== 'single' && state.secondaryPageNumber) {
+        await updateReadyForExtractionState(state.secondaryPageNumber, 'secondary');
+    }
 }
 
 async function loadSecondaryPage() {
