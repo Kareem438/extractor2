@@ -138,8 +138,8 @@ async def get_ready_pages(book_id: int):
         if not ready_pages:
             return {"pages": []}
 
-        # Get region counts per page from layout_regions table
-        regions_table = f"layout_regions_{prefix}"
+        # Get region counts per page from layout_detections table
+        regions_table = f"raw_{prefix}_layout_detections"
 
         # Check if table exists
         table_check = db.execute(
@@ -166,11 +166,11 @@ async def get_ready_pages(book_id: int):
             counts = db.execute(
                 text(f"""
                     SELECT
-                        region_class,
+                        class_name,
                         COUNT(*) as count
                     FROM {regions_table}
                     WHERE page_number = :page_num
-                    GROUP BY region_class
+                    GROUP BY class_name
                 """),
                 {"page_num": page_num}
             ).fetchall()
@@ -713,11 +713,11 @@ async def get_dashboard_data(book_id: int):
         extracted_pages = auto_config.get('extracted_pages', [])
 
         ready_pages = []
-        regions_table = f"layout_regions_{prefix}"
+        regions_table = f"raw_{prefix}_layout_detections"
         diagrams_table = f"raw_{prefix}_diagram_images"
         paragraphs_table = f"raw_{prefix}_paragraph_images"
 
-        # Check if layout_regions table exists
+        # Check if layout_detections table exists
         regions_exists = db.execute(
             text(f"""
                 SELECT EXISTS (
@@ -740,7 +740,7 @@ async def get_dashboard_data(book_id: int):
                 # Get regions for thumbnail rendering
                 regions = db.execute(
                     text(f"""
-                        SELECT id, region_class, x, y, width, height
+                        SELECT id, class_name, x, y, width, height
                         FROM {regions_table}
                         WHERE page_number = :page_num
                     """),
