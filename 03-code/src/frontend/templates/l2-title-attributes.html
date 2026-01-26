@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L2 Title Attributes - Knowledge Extraction System</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; background: #f5f5f5; }
+        .header { background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%); color: white; padding: 20px 30px; }
+        .header h1 { margin: 0; font-size: 24px; }
+        .header p { margin: 8px 0 0 0; opacity: 0.9; }
+        .breadcrumb { background: white; padding: 15px 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .breadcrumb a { color: #2196F3; text-decoration: none; }
+        .breadcrumb a:hover { text-decoration: underline; }
+        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+        
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .section h2 {
+            margin: 0 0 20px 0;
+            color: #333;
+            border-bottom: 2px solid #9C27B0;
+            padding-bottom: 10px;
+        }
+        
+        .title-info {
+            background: #f3e5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .title-info h3 { margin: 0 0 10px 0; color: #7B1FA2; }
+        .title-info p { margin: 5px 0; color: #666; }
+        
+        .attributes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 15px;
+        }
+        .attribute-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            border-left: 3px solid #9C27B0;
+        }
+        .attribute-row .attr-num {
+            font-weight: bold;
+            color: #9C27B0;
+            min-width: 40px;
+        }
+        .attribute-row input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .attribute-row input:focus {
+            border-color: #9C27B0;
+            outline: none;
+        }
+        .attribute-row .name-input { flex: 1; }
+        .attribute-row .value-input { flex: 2; }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: #9C27B0; color: white; }
+        .btn-primary:hover { background: #7B1FA2; }
+        .btn-secondary { background: #9E9E9E; color: white; }
+        .btn-secondary:hover { background: #757575; }
+        
+        .actions-bar {
+            position: sticky;
+            top: 0;
+            background: white;
+            padding: 15px 25px;
+            margin: -25px -25px 20px -25px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+        .save-status {
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .save-status.success { background: #e8f5e9; color: #2e7d32; }
+        .save-status.error { background: #ffebee; color: #c62828; }
+        .save-status.saving { background: #fff3e0; color: #e65100; }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+        .pagination button {
+            padding: 8px 16px;
+            border: 1px solid #9C27B0;
+            background: white;
+            color: #9C27B0;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .pagination button:hover:not(:disabled) {
+            background: #9C27B0;
+            color: white;
+        }
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📝 L2 Title Attribute Editor</h1>
+        <p>Configure 150 custom attributes for this Level 2 title (Section/Topic)</p>
+    </div>
+
+    <div class="breadcrumb">
+        <a href="/library">Library</a> /
+        <a href="/auto-slicer" id="back-link">Auto-Slicer</a> /
+        <span id="breadcrumb-title">L2 Title Attributes</span>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <div class="actions-bar">
+                <div>
+                    <button class="btn btn-secondary" onclick="goBack()">← Back to Auto-Slicer</button>
+                </div>
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <span id="save-status" class="save-status" style="display: none;"></span>
+                    <button class="btn btn-primary" onclick="saveAllAttributes()">💾 Save All Attributes</button>
+                </div>
+            </div>
+            
+            <div class="title-info" id="title-info">
+                <div class="loading">Loading title information...</div>
+            </div>
+            
+            <h2>Custom Attributes (150 total)</h2>
+            <p style="color: #666; margin-bottom: 20px;">
+                Define custom attribute names and values for this L2 title. 
+                Attribute names are stored per-book and can be reused across titles.
+            </p>
+            
+            <div class="pagination" id="pagination-top">
+                <button onclick="prevPage()" id="prev-btn-top">← Previous</button>
+                <span id="page-info-top">Attributes 1-50 of 150</span>
+                <button onclick="nextPage()" id="next-btn-top">Next →</button>
+            </div>
+            
+            <div class="attributes-grid" id="attributes-grid">
+                <div class="loading">Loading attributes...</div>
+            </div>
+            
+            <div class="pagination" id="pagination-bottom">
+                <button onclick="prevPage()" id="prev-btn-bottom">← Previous</button>
+                <span id="page-info-bottom">Attributes 1-50 of 150</span>
+                <button onclick="nextPage()" id="next-btn-bottom">Next →</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const TOTAL_ATTRIBUTES = 150;
+        const PER_PAGE = 50;
+        
+        let bookId = null;
+        let titleId = null;
+        let currentPage = 1;
+        let attributes = {};
+        let hasChanges = false;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            bookId = urlParams.get('book_id');
+            titleId = urlParams.get('title_id');
+            
+            if (!bookId || !titleId) {
+                alert('Missing book_id or title_id parameter');
+                return;
+            }
+            
+            document.getElementById('back-link').href = `/auto-slicer?book_id=${bookId}`;
+            loadTitleInfo();
+            loadAttributes();
+        });
+        
+        async function loadTitleInfo() {
+            try {
+                const response = await fetch(`/api/books/${bookId}/l2-titles`);
+                if (!response.ok) throw new Error('Failed to load titles');
+                
+                const data = await response.json();
+                const title = data.titles.find(t => t.id === parseInt(titleId));
+                
+                if (title) {
+                    document.getElementById('title-info').innerHTML = `
+                        <h3>${escapeHtml(title.title_text)}</h3>
+                        <p><strong>Page Range:</strong> ${title.start_page} - ${title.end_page}</p>
+                        <p><strong>Title ID:</strong> ${title.id}</p>
+                        ${title.parent_l1_id ? `<p><strong>Parent L1 ID:</strong> ${title.parent_l1_id}</p>` : ''}
+                    `;
+                    document.getElementById('breadcrumb-title').textContent = title.title_text;
+                }
+            } catch (error) {
+                console.error('Error loading title info:', error);
+            }
+        }
+        
+        async function loadAttributes() {
+            try {
+                const response = await fetch(`/api/books/${bookId}/l2-titles/${titleId}/attributes`);
+                if (!response.ok) throw new Error('Failed to load attributes');
+                
+                const data = await response.json();
+                attributes = data.attributes || {};
+                
+                renderAttributes();
+            } catch (error) {
+                console.error('Error loading attributes:', error);
+                document.getElementById('attributes-grid').innerHTML = 
+                    '<div class="loading" style="color: #c62828;">Error loading attributes</div>';
+            }
+        }
+        
+        function renderAttributes() {
+            const grid = document.getElementById('attributes-grid');
+            const startIdx = (currentPage - 1) * PER_PAGE + 1;
+            const endIdx = Math.min(startIdx + PER_PAGE - 1, TOTAL_ATTRIBUTES);
+            
+            let html = '';
+            for (let i = startIdx; i <= endIdx; i++) {
+                const attr = attributes[`attr${i}`] || { name: '', value: '' };
+                html += `
+                    <div class="attribute-row">
+                        <span class="attr-num">${i}</span>
+                        <input type="text" class="name-input" placeholder="Attribute name" 
+                               value="${escapeHtml(attr.name || '')}"
+                               data-attr="${i}" data-field="name"
+                               onchange="markChanged()">
+                        <input type="text" class="value-input" placeholder="Value" 
+                               value="${escapeHtml(attr.value || '')}"
+                               data-attr="${i}" data-field="value"
+                               onchange="markChanged()">
+                    </div>
+                `;
+            }
+            grid.innerHTML = html;
+            
+            // Update pagination
+            const totalPages = Math.ceil(TOTAL_ATTRIBUTES / PER_PAGE);
+            const pageInfo = `Attributes ${startIdx}-${endIdx} of ${TOTAL_ATTRIBUTES}`;
+            document.getElementById('page-info-top').textContent = pageInfo;
+            document.getElementById('page-info-bottom').textContent = pageInfo;
+            
+            document.getElementById('prev-btn-top').disabled = currentPage <= 1;
+            document.getElementById('prev-btn-bottom').disabled = currentPage <= 1;
+            document.getElementById('next-btn-top').disabled = currentPage >= totalPages;
+            document.getElementById('next-btn-bottom').disabled = currentPage >= totalPages;
+        }
+        
+        function prevPage() {
+            if (currentPage > 1) {
+                saveCurrentPageToState();
+                currentPage--;
+                renderAttributes();
+                window.scrollTo(0, 0);
+            }
+        }
+        
+        function nextPage() {
+            const totalPages = Math.ceil(TOTAL_ATTRIBUTES / PER_PAGE);
+            if (currentPage < totalPages) {
+                saveCurrentPageToState();
+                currentPage++;
+                renderAttributes();
+                window.scrollTo(0, 0);
+            }
+        }
+        
+        function saveCurrentPageToState() {
+            const inputs = document.querySelectorAll('.attribute-row input');
+            inputs.forEach(input => {
+                const attrNum = input.dataset.attr;
+                const field = input.dataset.field;
+                if (!attributes[`attr${attrNum}`]) {
+                    attributes[`attr${attrNum}`] = { name: null, value: null };
+                }
+                attributes[`attr${attrNum}`][field] = input.value || null;
+            });
+        }
+        
+        function markChanged() {
+            hasChanges = true;
+        }
+        
+        async function saveAllAttributes() {
+            saveCurrentPageToState();
+            
+            const statusEl = document.getElementById('save-status');
+            statusEl.style.display = 'inline-block';
+            statusEl.className = 'save-status saving';
+            statusEl.textContent = 'Saving...';
+            
+            try {
+                const response = await fetch(`/api/books/${bookId}/l2-titles/${titleId}/attributes`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ attributes: attributes })
+                });
+                
+                if (response.ok) {
+                    statusEl.className = 'save-status success';
+                    statusEl.textContent = '✓ Saved successfully';
+                    hasChanges = false;
+                    setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
+                } else {
+                    const data = await response.json();
+                    throw new Error(data.detail || 'Save failed');
+                }
+            } catch (error) {
+                statusEl.className = 'save-status error';
+                statusEl.textContent = '✗ ' + error.message;
+            }
+        }
+        
+        function goBack() {
+            if (hasChanges && !confirm('You have unsaved changes. Leave anyway?')) {
+                return;
+            }
+            window.location.href = `/auto-slicer?book_id=${bookId}`;
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Warn before leaving with unsaved changes
+        window.addEventListener('beforeunload', function(e) {
+            if (hasChanges) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+    </script>
+</body>
+</html>

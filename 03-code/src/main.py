@@ -268,10 +268,32 @@ async def extraction_dashboard_page():
         return HTMLResponse(content="<h1>Extraction dashboard page not found</h1>", status_code=404)
 
 
+@app.get("/l1-title-attributes", response_class=HTMLResponse)
+async def l1_title_attributes_page():
+    """Serve the L1 Title Attribute Editor page."""
+    html_path = os.path.join(os.path.dirname(__file__), "frontend", "templates", "l1-title-attributes.html")
+    try:
+        with open(html_path, "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return HTMLResponse(content="<h1>L1 Title Attributes page not found</h1>", status_code=404)
+
+
+@app.get("/l2-title-attributes", response_class=HTMLResponse)
+async def l2_title_attributes_page():
+    """Serve the L2 Title Attribute Editor page."""
+    html_path = os.path.join(os.path.dirname(__file__), "frontend", "templates", "l2-title-attributes.html")
+    try:
+        with open(html_path, "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return HTMLResponse(content="<h1>L2 Title Attributes page not found</h1>", status_code=404)
+
+
 # Include API routers (will be added in subsequent chunks)
 # Note: Routers will be included as they are implemented
 try:
-    from src.api.routes import upload, processing, books, knowledge_units, images, pages, ocr, search, verify_pages, raw_data_check, image_clips, review_raw, pipeline, worker, auto_slicer, layout_detection, extraction, gpu
+    from src.api.routes import upload, processing, books, knowledge_units, images, pages, ocr, search, verify_pages, raw_data_check, image_clips, review_raw, pipeline, worker, auto_slicer, layout_detection, extraction, gpu, title_hierarchy
 
     app.include_router(upload.router, prefix="/api", tags=["Upload"])
     app.include_router(processing.router, prefix="/api", tags=["Processing"])
@@ -291,6 +313,7 @@ try:
     app.include_router(layout_detection.router, tags=["Layout Detection"])
     app.include_router(extraction.router, prefix="/api", tags=["Extraction"])
     app.include_router(gpu.router, prefix="/api", tags=["GPU Management"])
+    app.include_router(title_hierarchy.router, prefix="/api", tags=["Title Hierarchy"])
 
     logger.info("API routers loaded successfully")
 except ImportError as e:

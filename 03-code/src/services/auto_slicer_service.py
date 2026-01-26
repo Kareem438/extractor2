@@ -230,7 +230,12 @@ def create_paragraph_image(
         img_width, img_height = img.size
         img_format = img.format or 'PNG'
 
-        # Use image dimensions if selection not provided
+        # Validate selection - reject full-page selections (likely a bug)
+        if selection_x == 0 and selection_y == 0 and (selection_width == 0 or selection_width >= img_width * 0.95):
+            logger.warning(f"Rejecting full-page paragraph selection for page {page_number} - likely invalid")
+            return None
+
+        # Use image dimensions if selection not provided (but only for valid partial selections)
         if selection_width == 0:
             selection_width = img_width
         if selection_height == 0:

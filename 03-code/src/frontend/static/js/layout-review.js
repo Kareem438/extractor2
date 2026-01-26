@@ -350,6 +350,14 @@ async function loadCurrentPage() {
     if (state.viewMode !== 'single' && state.secondaryPageNumber) {
         await updateReadyForExtractionState(state.secondaryPageNumber, 'secondary');
     }
+    
+    // Update Skip Page button state for primary canvas
+    await updateSkipPageState(pageNumber, 'primary');
+    
+    // Update Skip Page button state for secondary canvas if in dual view
+    if (state.viewMode !== 'single' && state.secondaryPageNumber) {
+        await updateSkipPageState(state.secondaryPageNumber, 'secondary');
+    }
 }
 
 async function loadSecondaryPage() {
@@ -1890,7 +1898,9 @@ function drawLinkLinesOnContext(ctx, linkedRegions, l3CenterX, l3CenterY, pageRe
 
 /**
  * Toggle the "Ready for Extraction" status for a page.
- * Validates that all diagrams/tables/equations/lists have parent paragraph links.
+ * Validates that:
+ * 1. All diagrams/tables/equations/lists have parent paragraph links
+ * 2. Page is covered by L1 and L2 titles
  */
 async function toggleReadyForExtraction(canvasId) {
     const pageNumber = canvasId === 'primary' ?
@@ -1903,11 +1913,19 @@ async function toggleReadyForExtraction(canvasId) {
     const isCurrentlyReady = btn.classList.contains('ready');
     const newReadyState = !isCurrentlyReady;
 
-    // If trying to mark as ready, validate for orphan regions first
+    // If trying to mark as ready, validate first
     if (newReadyState) {
+        // Check for orphan regions (existing validation)
         const orphanCheck = checkForOrphanRegions(canvasId);
         if (orphanCheck.hasOrphans) {
             showOrphanError(orphanCheck.orphans);
+            return;
+        }
+        
+        // Check L1/L2 title coverage (new validation)
+        const titleCoverageCheck = await checkTitleCoverage(pageNumber);
+        if (!titleCoverageCheck.valid) {
+            showTitleCoverageError(pageNumber, titleCoverageCheck);
             return;
         }
     }
@@ -1951,6 +1969,50 @@ async function toggleReadyForExtraction(canvasId) {
         console.error('Error updating extraction status:', error);
         alert('Error updating extraction status');
     }
+}
+
+/**
+ * Check if a page is covered by L1 and L2 titles.
+ * Returns { valid: boolean, l1_covered: boolean, l2_covered: boolean }
+ */
+async function checkTitleCoverage(pageNumber) {
+    try {
+        const response = await fetch(`/api/books/${state.bookId}/validate-title-coverage?start_page=${pageNumber}&end_page=${pageNumber}`);
+        if (!response.ok) {
+            console.warn('Could not validate title coverage');
+            return { valid: true, l1_covered: true, l2_covered: true }; // Allow if validation fails
+        }
+        
+        const data = await response.json();
+        return {
+            valid: data.valid,
+            l1_covered: data.l1_valid,
+            l2_covered: data.l2_valid,
+            uncovered_l1_pages: data.uncovered_l1_pages || [],
+            uncovered_l2_pages: data.uncovered_l2_pages || []
+        };
+    } catch (error) {
+        console.error('Error checking title coverage:', error);
+        return { valid: true, l1_covered: true, l2_covered: true }; // Allow if error
+    }
+}
+
+/**
+ * Show error message when page is not covered by L1/L2 titles.
+ */
+function showTitleCoverageError(pageNumber, coverageCheck) {
+    let message = `Page ${pageNumber} cannot be marked "Ready for Extraction":\n\n`;
+    
+    if (!coverageCheck.l1_covered) {
+        message += `❌ Not covered by any L1 title (Chapter/Unit)\n`;
+    }
+    if (!coverageCheck.l2_covered) {
+        message += `❌ Not covered by any L2 title (Section/Topic)\n`;
+    }
+    
+    message += `\nPlease update the L1/L2 title page ranges in the Auto-Slicer page to include page ${pageNumber}.`;
+    
+    alert(message);
 }
 
 /**
@@ -2145,38 +2207,173 @@ async function updateReadyForExtractionState(pageNumber, canvasId) {
 }
 
 // =============================================================================
+// Skip Page Functions
+// =============================================================================
+
+/**
+ * Toggle the "Skip Page" status for a page.
+ * Skipped pages will not be processed for extraction.
+ */
+async function toggleSkipPage(canvasId) {
+    const pageNumber = canvasId === 'primary' ?
+        state.pages[state.currentPageIndex] :
+        state.secondaryPageNumber;
+
+    if (!pageNumber) return;
+
+    const btn = document.getElementById(`${canvasId}-skip-page`);
+    const readyBtn = document.getElementById(`${canvasId}-ready-extract`);
+    const isCurrentlySkipped = btn.classList.contains('skipped');
+    const newSkipState = !isCurrentlySkipped;
+
+    try {
+        // Update skip status via API
+        const response = await fetch(`/api/books/${state.bookId}/page-status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                page_number: pageNumber,
+                is_skipped: newSkipState
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            alert(error.detail || 'Failed to update skip status');
+            return;
+        }
+
+        // Update button UI
+        btn.classList.toggle('skipped');
+        btn.textContent = btn.classList.contains('skipped') ? '⏭️ Skipped' : 'Skip Page';
+        
+        // If skipping, also clear ready status
+        if (newSkipState && readyBtn) {
+            readyBtn.classList.remove('ready');
+            readyBtn.textContent = 'Ready for Extraction';
+        }
+
+    } catch (error) {
+        console.error('Error updating skip status:', error);
+        alert('Error updating skip status');
+    }
+}
+
+/**
+ * Update Skip Page button state when loading a page.
+ */
+async function updateSkipPageState(pageNumber, canvasId) {
+    const btn = document.getElementById(`${canvasId}-skip-page`);
+    if (!btn) return;
+
+    try {
+        const response = await fetch(`/api/books/${state.bookId}/page-statuses`);
+        if (response.ok) {
+            const data = await response.json();
+            const pageStatus = data.pages.find(p => p.page_number === pageNumber);
+            if (pageStatus && pageStatus.is_skipped) {
+                btn.classList.add('skipped');
+                btn.textContent = '⏭️ Skipped';
+            } else {
+                btn.classList.remove('skipped');
+                btn.textContent = 'Skip Page';
+            }
+        }
+    } catch (error) {
+        // Ignore errors, default to not skipped
+        btn.classList.remove('skipped');
+        btn.textContent = 'Skip Page';
+    }
+}
+
+// =============================================================================
 // L1/L2 Title Display Functions
 // =============================================================================
 
 /**
- * Load L1/L2 title configurations from auto-slicer config.
+ * Load L1/L2 title configurations from database tables.
  * Stores level1 and level2 titles separately for independent lookup by page number.
+ * Falls back to JSON config if database tables don't exist.
  */
 async function loadTitleConfigs() {
     try {
-        // Fetch from the auto-slicer config endpoint (stored in books_metadata.auto_slicer_config)
-        const response = await fetch(`/api/auto-slicer/${state.bookId}/config`);
-        if (!response.ok) {
-            console.warn('Failed to load auto-slicer config:', response.status);
-            return;
+        // Try to load from database first (new system)
+        let l1Loaded = false;
+        let l2Loaded = false;
+        
+        // Load L1 titles from database
+        try {
+            const l1Response = await fetch(`/api/books/${state.bookId}/l1-titles`);
+            if (l1Response.ok) {
+                const l1Data = await l1Response.json();
+                if (l1Data.titles && l1Data.titles.length > 0) {
+                    // Convert from database format to expected format
+                    state.level1Titles = l1Data.titles.map(t => ({
+                        title: t.title_text,
+                        start_page: t.start_page,
+                        end_page: t.end_page,
+                        id: t.id
+                    }));
+                    l1Loaded = true;
+                    console.log('L1 titles loaded from database:', state.level1Titles);
+                }
+            }
+        } catch (e) {
+            console.warn('Could not load L1 titles from database:', e);
         }
-
-        const data = await response.json();
-        console.log('Auto-slicer config loaded:', data);
-
-        // Auto-slicer returns: {"config": {"titles": {"level1": [{title, start_page, end_page}], "level2": [...]}}}
-        // Store L1 and L2 separately since they have independent page ranges
-        if (data.config && data.config.titles) {
-            const titles = data.config.titles;
-            state.level1Titles = titles.level1 || [];
-            state.level2Titles = titles.level2 || [];
-            console.log('L1 titles loaded:', state.level1Titles);
-            console.log('L2 titles loaded:', state.level2Titles);
-        } else {
-            state.level1Titles = [];
-            state.level2Titles = [];
-            console.log('No titles found in config');
+        
+        // Load L2 titles from database
+        try {
+            const l2Response = await fetch(`/api/books/${state.bookId}/l2-titles`);
+            if (l2Response.ok) {
+                const l2Data = await l2Response.json();
+                if (l2Data.titles && l2Data.titles.length > 0) {
+                    // Convert from database format to expected format
+                    state.level2Titles = l2Data.titles.map(t => ({
+                        title: t.title_text,
+                        start_page: t.start_page,
+                        end_page: t.end_page,
+                        id: t.id
+                    }));
+                    l2Loaded = true;
+                    console.log('L2 titles loaded from database:', state.level2Titles);
+                }
+            }
+        } catch (e) {
+            console.warn('Could not load L2 titles from database:', e);
         }
+        
+        // Fallback to JSON config if database didn't have titles
+        if (!l1Loaded || !l2Loaded) {
+            const response = await fetch(`/api/auto-slicer/${state.bookId}/config`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.config && data.config.titles) {
+                    const titles = data.config.titles;
+                    if (!l1Loaded) {
+                        state.level1Titles = (titles.level1 || []).map(t => ({
+                            title: t.title,
+                            start_page: t.start_page,
+                            end_page: t.end_page
+                        }));
+                        console.log('L1 titles loaded from JSON fallback:', state.level1Titles);
+                    }
+                    if (!l2Loaded) {
+                        state.level2Titles = (titles.level2 || []).map(t => ({
+                            title: t.title,
+                            start_page: t.start_page,
+                            end_page: t.end_page
+                        }));
+                        console.log('L2 titles loaded from JSON fallback:', state.level2Titles);
+                    }
+                }
+            }
+        }
+        
+        // Ensure arrays are initialized
+        if (!state.level1Titles) state.level1Titles = [];
+        if (!state.level2Titles) state.level2Titles = [];
+        
     } catch (error) {
         console.error('Error loading title configs:', error);
         state.level1Titles = [];
@@ -3624,3 +3821,403 @@ function showLoading(message) {
 function hideLoading() {
     document.getElementById('loading-overlay').classList.add('hidden');
 }
+
+// =============================================================================
+// Advanced Tools Section
+// =============================================================================
+
+function toggleAdvancedTools() {
+    const header = document.querySelector('.advanced-tools-header');
+    const content = document.getElementById('advanced-tools-content');
+    header.classList.toggle('expanded');
+    content.classList.toggle('visible');
+}
+
+function goToAutoSlicer() {
+    window.location.href = `/auto-slicer?book_id=${state.bookId}`;
+}
+
+// =============================================================================
+// Reset Regions Functionality
+// =============================================================================
+
+// Track which canvas triggered the reset
+let resetTargetCanvas = null;
+let resetTargetPage = null;
+
+function confirmResetRegions(canvasId) {
+    // Get the page number for this canvas
+    const pageNumber = canvasId === 'primary' 
+        ? state.pages[state.currentPageIndex] 
+        : state.secondaryPageNumber;
+    
+    if (!pageNumber) {
+        alert('No page selected');
+        return;
+    }
+    
+    resetTargetCanvas = canvasId;
+    resetTargetPage = pageNumber;
+    
+    // Update modal text
+    document.getElementById('reset-page-name').textContent = `Page ${pageNumber}`;
+    
+    // Show modal
+    document.getElementById('reset-regions-modal').classList.remove('hidden');
+}
+
+function closeResetModal() {
+    document.getElementById('reset-regions-modal').classList.add('hidden');
+    resetTargetCanvas = null;
+    resetTargetPage = null;
+}
+
+async function executeResetRegions() {
+    if (!resetTargetPage) {
+        closeResetModal();
+        return;
+    }
+    
+    const pageNumber = resetTargetPage;
+    closeResetModal();
+    
+    showLoading(`Resetting regions on page ${pageNumber}...`);
+    
+    try {
+        const response = await fetch(`/api/auto-slicer/${state.bookId}/reset-page-regions/${pageNumber}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to reset regions');
+        }
+        
+        const result = await response.json();
+        
+        // Reload all regions to get the new detections
+        await loadRegions();
+        
+        hideLoading();
+        
+        // Show success message
+        alert(`Reset complete!\n\nDeleted: ${result.deleted_count} old regions\nDetected: ${result.new_regions_count} new regions`);
+        
+    } catch (error) {
+        hideLoading();
+        console.error('Error resetting regions:', error);
+        alert(`Failed to reset regions: ${error.message}`);
+    }
+}
+
+// =============================================================================
+// L3 Title Linking UI Functions (Phase 7)
+// =============================================================================
+
+/**
+ * Load L3 titles for the current page(s) and update the L3 links section.
+ * Called after loading page regions.
+ */
+async function loadL3TitlesForPage() {
+    const currentPage = state.pages[state.currentPageIndex];
+    if (!currentPage) return;
+
+    // Get L3 titles from current page regions
+    const l3TitlesOnPage = state.pageRegions.filter(r => 
+        ['title_level_3', 'title_l3', 'Title L3'].includes(r.class_name)
+    );
+
+    // Also get from secondary page if in dual view
+    let l3TitlesOnSecondary = [];
+    if (state.viewMode !== 'single' && state.secondaryPageRegions.length > 0) {
+        l3TitlesOnSecondary = state.secondaryPageRegions.filter(r => 
+            ['title_level_3', 'title_l3', 'Title L3'].includes(r.class_name)
+        );
+    }
+
+    // Store for dropdown population
+    state.currentPageL3Titles = l3TitlesOnPage;
+    state.secondaryPageL3Titles = l3TitlesOnSecondary;
+
+    // Update the L3 links section UI
+    updateL3LinksSection();
+}
+
+/**
+ * Update the L3 links section in the sidebar.
+ * Shows all paragraphs and their L3 title links.
+ */
+function updateL3LinksSection() {
+    const container = document.getElementById('l3-links-list');
+    const warningDiv = document.getElementById('l3-validation-warning');
+    const warningText = document.getElementById('l3-warning-text');
+
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    // Get all paragraphs from current page(s)
+    let paragraphs = state.pageRegions.filter(r => r.class_name === 'paragraph');
+    if (state.viewMode !== 'single' && state.secondaryPageRegions.length > 0) {
+        paragraphs = paragraphs.concat(
+            state.secondaryPageRegions.filter(r => r.class_name === 'paragraph')
+                .map(r => ({ ...r, _isSecondary: true }))
+        );
+    }
+
+    // Sort by page then y position
+    paragraphs.sort((a, b) => {
+        if (a._isSecondary !== b._isSecondary) return a._isSecondary ? 1 : -1;
+        return a.y - b.y;
+    });
+
+    // Count unlinked paragraphs
+    let unlinkedCount = 0;
+
+    if (paragraphs.length === 0) {
+        container.innerHTML = '<div style="padding: 10px; text-align: center; color: #666; font-size: 11px;">No paragraphs on this page</div>';
+        warningDiv.style.display = 'none';
+        return;
+    }
+
+    // Get all L3 titles for dropdown
+    const allL3Titles = [
+        ...(state.currentPageL3Titles || []),
+        ...(state.secondaryPageL3Titles || []).map(t => ({ ...t, _isSecondary: true }))
+    ];
+
+    paragraphs.forEach(para => {
+        const isLinked = para.l3_title_id !== null && para.l3_title_id !== undefined;
+        if (!isLinked) unlinkedCount++;
+
+        // Find the linked L3 title info
+        let linkedL3Title = null;
+        if (isLinked) {
+            linkedL3Title = allL3Titles.find(t => t.id === para.l3_title_id);
+            if (!linkedL3Title) {
+                // L3 title might be on a different page - just show ID
+                linkedL3Title = { id: para.l3_title_id, _notOnPage: true };
+            }
+        }
+
+        const item = document.createElement('div');
+        item.className = 'l3-link-item' + (isLinked ? '' : ' unlinked');
+        
+        const pageLabel = para._isSecondary ? ` (pg ${state.secondaryPageNumber})` : '';
+        const l3PageLabel = linkedL3Title && linkedL3Title._isSecondary ? ` (pg ${state.secondaryPageNumber})` : '';
+
+        // Create dropdown for L3 title selection
+        const dropdownId = `l3-dropdown-${para.id}`;
+        let dropdownOptions = '<option value="">-- None --</option>';
+        allL3Titles.forEach(l3 => {
+            const selected = para.l3_title_id === l3.id ? 'selected' : '';
+            const l3Label = l3._isSecondary ? ` (pg ${state.secondaryPageNumber})` : '';
+            // Truncate long titles
+            const titleText = (l3.ocr_text || `L3 #${l3.id}`).substring(0, 30);
+            dropdownOptions += `<option value="${l3.id}" ${selected}>${titleText}${l3Label}</option>`;
+        });
+
+        item.innerHTML = `
+            <div class="l3-link-info">
+                <span class="l3-link-region">Para #${para.id}${pageLabel}</span>
+                <span class="l3-link-target ${isLinked ? '' : 'none'}">
+                    ${isLinked ? `→ L3 #${para.l3_title_id}${l3PageLabel}` : '⚠ Not linked'}
+                </span>
+            </div>
+            <select class="l3-link-dropdown" id="${dropdownId}" onchange="changeL3Link(${para.id}, this.value, ${para._isSecondary || false})">
+                ${dropdownOptions}
+            </select>
+        `;
+
+        container.appendChild(item);
+    });
+
+    // Show/hide validation warning
+    if (unlinkedCount > 0) {
+        warningDiv.style.display = 'flex';
+        warningText.textContent = `${unlinkedCount} paragraph(s) not linked to L3 titles`;
+        
+        // Highlight unlinked paragraphs on canvas
+        highlightUnlinkedParagraphs(paragraphs.filter(p => !p.l3_title_id));
+    } else {
+        warningDiv.style.display = 'none';
+        clearOrphanHighlight();
+    }
+}
+
+/**
+ * Highlight unlinked paragraphs on the canvas.
+ */
+function highlightUnlinkedParagraphs(unlinkedParagraphs) {
+    state.orphanHighlight = new Set(unlinkedParagraphs.map(p => p.id));
+    redrawCanvas('primary');
+    if (state.viewMode !== 'single') redrawCanvas('secondary');
+}
+
+/**
+ * Clear orphan highlight.
+ */
+function clearOrphanHighlight() {
+    state.orphanHighlight = null;
+    redrawCanvas('primary');
+    if (state.viewMode !== 'single') redrawCanvas('secondary');
+}
+
+/**
+ * Change the L3 title link for a paragraph.
+ * @param {number} paragraphId - The paragraph region ID
+ * @param {string} l3TitleId - The L3 title region ID (or empty string to unlink)
+ * @param {boolean} isSecondary - Whether the paragraph is on the secondary canvas
+ */
+async function changeL3Link(paragraphId, l3TitleId, isSecondary) {
+    const l3Id = l3TitleId ? parseInt(l3TitleId) : null;
+
+    try {
+        if (l3Id) {
+            // Link to L3 title using the API
+            const response = await fetch(`/api/books/${state.bookId}/paragraph-l3-link`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    paragraph_region_id: paragraphId,
+                    l3_title_id: l3Id
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Failed to update L3 link');
+            }
+        } else {
+            // Unlink - set l3_title_id to null
+            const response = await fetch(`/api/auto-slicer/${state.bookId}/detected-region/${paragraphId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ l3_title_id: null })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to unlink paragraph');
+            }
+        }
+
+        // Update local state
+        const regions = isSecondary ? state.secondaryPageRegions : state.pageRegions;
+        const region = regions.find(r => r.id === paragraphId);
+        if (region) {
+            region.l3_title_id = l3Id;
+        }
+
+        // Also update in allRegions
+        const allRegion = state.allRegions.find(r => r.id === paragraphId);
+        if (allRegion) {
+            allRegion.l3_title_id = l3Id;
+        }
+
+        // Refresh UI
+        updateL3LinksSection();
+        redrawCanvas('primary');
+        if (state.viewMode !== 'single') redrawCanvas('secondary');
+
+        console.log(`Updated paragraph ${paragraphId} L3 link to ${l3Id}`);
+
+    } catch (error) {
+        console.error('Error changing L3 link:', error);
+        alert('Failed to update L3 link: ' + error.message);
+        // Refresh to restore correct state
+        updateL3LinksSection();
+    }
+}
+
+/**
+ * Auto-link all paragraphs on current page(s) to nearest L3 title above.
+ * Uses the API endpoint for auto-linking.
+ */
+async function autoLinkParagraphsToL3() {
+    const currentPage = state.pages[state.currentPageIndex];
+    if (!currentPage) return;
+
+    // Build page list
+    let pageNumbers = [currentPage];
+    if (state.viewMode !== 'single' && state.secondaryPageNumber) {
+        pageNumbers.push(state.secondaryPageNumber);
+    }
+
+    showLoading('Auto-linking paragraphs to L3 titles...');
+
+    try {
+        const response = await fetch(`/api/books/${state.bookId}/auto-link-paragraphs?page_numbers=${pageNumbers.join(',')}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to auto-link paragraphs');
+        }
+
+        const result = await response.json();
+
+        // Reload regions to get updated l3_title_id values
+        await loadRegions();
+
+        hideLoading();
+
+        // Show result
+        if (result.linked_count > 0) {
+            alert(`Auto-linked ${result.linked_count} paragraph(s) to L3 titles`);
+        } else if (result.skipped_pages > 0) {
+            alert(`No paragraphs linked. ${result.skipped_pages} page(s) have no L3 titles.`);
+        } else {
+            alert('All paragraphs were already linked or no paragraphs found.');
+        }
+
+    } catch (error) {
+        hideLoading();
+        console.error('Error auto-linking paragraphs:', error);
+        alert('Failed to auto-link paragraphs: ' + error.message);
+    }
+}
+
+/**
+ * Validate L3 links for current page(s).
+ * Returns validation result with unlinked paragraphs.
+ */
+async function validateL3Links() {
+    const currentPage = state.pages[state.currentPageIndex];
+    if (!currentPage) return { valid: true };
+
+    // Build page list
+    let pageNumbers = [currentPage];
+    if (state.viewMode !== 'single' && state.secondaryPageNumber) {
+        pageNumbers.push(state.secondaryPageNumber);
+    }
+
+    try {
+        const response = await fetch(`/api/books/${state.bookId}/validate-l3-links?page_numbers=${pageNumbers.join(',')}`);
+        if (!response.ok) {
+            console.error('Failed to validate L3 links');
+            return { valid: true }; // Assume valid on error
+        }
+
+        return await response.json();
+
+    } catch (error) {
+        console.error('Error validating L3 links:', error);
+        return { valid: true };
+    }
+}
+
+// =============================================================================
+// Override loadCurrentPage to include L3 title loading
+// =============================================================================
+
+// Store original loadCurrentPage function
+const _originalLoadCurrentPage = loadCurrentPage;
+
+// Override to add L3 title loading
+loadCurrentPage = async function() {
+    await _originalLoadCurrentPage();
+    await loadL3TitlesForPage();
+};

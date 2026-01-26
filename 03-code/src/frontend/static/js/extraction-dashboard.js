@@ -390,6 +390,15 @@ async function extractSinglePage(pageNumber) {
         return;
     }
     
+    // Phase 8: Validate L3 links before extraction
+    const l3ValidationResult = await validateL3LinksBeforeExtraction([pageNumber]);
+    
+    if (!l3ValidationResult.valid) {
+        const errorMsg = buildL3ValidationErrorMessage(l3ValidationResult);
+        alert(errorMsg);
+        return;
+    }
+    
     const confirmed = confirm(`Start OCR extraction for page ${pageNumber}?\n\nThis will extract text from paragraphs using Surya OCR.`);
     if (!confirmed) return;
     
@@ -665,6 +674,16 @@ async function startExtraction() {
         return;
     }
 
+    // Phase 8: Validate L3 links before extraction
+    const pageNumbers = state.readyPages.map(p => p.page_number);
+    const l3ValidationResult = await validateL3LinksBeforeExtraction(pageNumbers);
+    
+    if (!l3ValidationResult.valid) {
+        const errorMsg = buildL3ValidationErrorMessage(l3ValidationResult);
+        alert(errorMsg);
+        return;
+    }
+
     const confirmed = confirm(`Start OCR extraction for ${state.readyPages.length} pages using Surya OCR?`);
 
     if (!confirmed) return;
@@ -696,6 +715,48 @@ async function startExtraction() {
         hideLoading();
         alert('Error starting extraction: ' + error.message);
     }
+}
+
+/**
+ * Validate L3 links before extraction (Phase 8).
+ * Checks that all paragraphs are linked to L3 titles.
+ */
+async function validateL3LinksBeforeExtraction(pageNumbers) {
+    try {
+        const response = await fetch(`/api/books/${state.bookId}/validate-l3-links?page_numbers=${pageNumbers.join(',')}`);
+        if (!response.ok) {
+            console.error('Failed to validate L3 links');
+            return { valid: true }; // Assume valid on error to not block extraction
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error validating L3 links:', error);
+        return { valid: true }; // Assume valid on error
+    }
+}
+
+/**
+ * Build error message for L3 validation failures.
+ */
+function buildL3ValidationErrorMessage(result) {
+    let msg = '⚠️ Cannot start extraction - L3 title linking issues found:\n\n';
+    
+    if (result.pages_without_l3 && result.pages_without_l3.length > 0) {
+        msg += `Pages with paragraphs but NO L3 titles:\n`;
+        msg += `  Pages: ${result.pages_without_l3.join(', ')}\n\n`;
+        msg += `Please add L3 title regions to these pages in Layout Review.\n\n`;
+    }
+    
+    if (result.unlinked_paragraphs && result.unlinked_paragraphs.length > 0) {
+        const count = result.unlinked_paragraphs.length;
+        const pages = [...new Set(result.unlinked_paragraphs.map(p => p.page))];
+        msg += `${count} paragraph(s) not linked to L3 titles:\n`;
+        msg += `  On pages: ${pages.join(', ')}\n\n`;
+        msg += `Please link paragraphs to L3 titles in Layout Review.\n`;
+        msg += `Use the "Auto-Link" button or manually assign L3 titles.`;
+    }
+    
+    return msg;
 }
 
 // View Modal
@@ -1027,11 +1088,16 @@ function updateClassStats() {
 
 // Override selectPage to also update class stats
 const originalSelectPage = selectPage;
+let lastLoadedPage = null;
 selectPage = function(pageNumber) {
     originalSelectPage(pageNumber);
     updateClassStats();
     showPagePreview(pageNumber);
-    loadPageExtractionResults(pageNumber);
+    // Only load results if page changed to avoid duplicate calls
+    if (lastLoadedPage !== pageNumber) {
+        lastLoadedPage = pageNumber;
+        loadPageExtractionResults(pageNumber);
+    }
 };
 
 // Toggle statistics section
@@ -1183,50 +1249,74 @@ async function loadPageExtractionResults(pageNumber) {
     const paragraphsContainer = document.getElementById('paragraphs-results');
     const diagramsContainer = document.getElementById('diagrams-results');
     
+    if (!paragraphsContainer || !diagramsContainer) {
+        console.error('Results containers not found in DOM');
+        return;
+    }
+    
     // Show loading state
     paragraphsContainer.innerHTML = '<div class="no-results">Loading...</div>';
     diagramsContainer.innerHTML = '<div class="no-results">Loading...</div>';
     
     try {
         // Fetch extraction results for this page
-        const response = await fetch(`/api/extraction/${state.bookId}/page/${pageNumber}/results`);
+        const url = `/api/extraction/${state.bookId}/page/${pageNumber}/results`;
+        console.log(`Fetching extraction results from: ${url}`);
+        const response = await fetch(url);
+        
+        console.log(`Response status: ${response.status}`);
         
         if (!response.ok) {
-            throw new Error('Failed to load results');
+            const errorText = await response.text();
+            console.error('API error response:', errorText);
+            throw new Error(`Failed to load results: ${response.status}`);
         }
         
         const data = await response.json();
+        console.log('Extraction results data:', JSON.stringify(data, null, 2));
         
         // Render paragraphs
         if (data.paragraphs && data.paragraphs.length > 0) {
+            console.log(`Rendering ${data.paragraphs.length} paragraphs`);
             paragraphsContainer.innerHTML = data.paragraphs.map(p => `
                 <div class="result-item">
                     ${p.image_url ? `<img src="${p.image_url}" alt="Paragraph" onerror="this.style.display='none'">` : ''}
-                    <div class="result-text">${p.extracted_text || '(No text extracted)'}</div>
+                    <div class="result-text">${escapeHtml(p.extracted_text) || '<em>(No text extracted)</em>'}</div>
                 </div>
             `).join('');
         } else {
-            paragraphsContainer.innerHTML = '<div class="no-results">No paragraphs extracted yet</div>';
+            console.log('No paragraphs in response');
+            paragraphsContainer.innerHTML = '<div class="no-results">No paragraphs extracted yet.<br><br>Click "Extract This Page" to run OCR extraction.</div>';
         }
         
         // Render other classes (diagrams, tables, equations, etc.)
         if (data.diagrams && data.diagrams.length > 0) {
+            console.log(`Rendering ${data.diagrams.length} diagrams/other classes`);
             diagramsContainer.innerHTML = data.diagrams.map(d => `
                 <div class="result-item">
                     <div class="result-class">${formatClassName(d.class_name)}</div>
                     ${d.image_url ? `<img src="${d.image_url}" alt="${d.class_name}" onerror="this.style.display='none'">` : ''}
-                    <div class="result-text">${d.extracted_text || '(Pending Claude analysis)'}</div>
+                    <div class="result-text">${escapeHtml(d.extracted_text) || '<em>(Pending Claude analysis)</em>'}</div>
                 </div>
             `).join('');
         } else {
-            diagramsContainer.innerHTML = '<div class="no-results">No diagrams/tables/equations extracted yet</div>';
+            console.log('No diagrams/other classes in response');
+            diagramsContainer.innerHTML = '<div class="no-results">No diagrams/tables/equations extracted yet.<br><br>Click "Extract This Page" to run OCR extraction.</div>';
         }
         
     } catch (error) {
         console.error('Error loading extraction results:', error);
-        paragraphsContainer.innerHTML = '<div class="no-results">Error loading results</div>';
-        diagramsContainer.innerHTML = '<div class="no-results">Error loading results</div>';
+        paragraphsContainer.innerHTML = `<div class="no-results">Error loading results:<br>${error.message}</div>`;
+        diagramsContainer.innerHTML = `<div class="no-results">Error loading results:<br>${error.message}</div>`;
     }
+}
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // Extract selected page

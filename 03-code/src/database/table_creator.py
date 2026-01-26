@@ -162,6 +162,13 @@ def create_raw_paragraph_images_table(table_prefix: str):
         extracted_text TEXT,
         ocr_confidence NUMERIC(5,2),
 
+        -- Level Titles (5 levels for hierarchy positioning)
+        level_1_title VARCHAR(500),
+        level_2_title VARCHAR(500),
+        level_3_title VARCHAR(500),
+        level_4_title VARCHAR(500),
+        level_5_title VARCHAR(500),
+
         -- Linked Knowledge Unit
         linked_knowledge_unit_id INTEGER,
 
@@ -938,6 +945,10 @@ def create_book_tables(book_id: int, sanitized_name: str, total_pages: int):
     # Create LAYOUT DETECTION table (for Automatic Boundaries feature)
     create_layout_detections_table(table_prefix)
 
+    # Create HIERARCHICAL TITLE tables (for Title Hierarchy feature)
+    create_level1_titles_table(table_prefix)
+    create_level2_titles_table(table_prefix)
+
 
 def create_layout_detections_table(table_prefix: str):
     """Create layout_detections table for YOLO-detected regions and corrections.
@@ -1017,6 +1028,109 @@ def create_layout_detections_table(table_prefix: str):
             f"CREATE INDEX IF NOT EXISTS idx_{table_prefix}_layout_det_status ON {table_name}(review_status)",
             f"CREATE INDEX IF NOT EXISTS idx_{table_prefix}_layout_det_corrected ON {table_name}(was_corrected) WHERE was_corrected = true",
             f"CREATE INDEX IF NOT EXISTS idx_{table_prefix}_layout_det_parent ON {table_name}(parent_region_id)"
+        ]
+        for index_sql in indexes:
+            conn.execute(text(index_sql))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def create_level1_titles_table(table_prefix: str):
+    """Create level1_titles table with 200 custom attributes for chapter-level titles.
+    
+    Each L1 title covers a page range and can have up to 200 custom attributes
+    with user-definable names and values.
+    """
+    table_name = f"{table_prefix}_level1_titles"
+    
+    # Build attribute columns (200 pairs of name/value)
+    attr_columns = []
+    for i in range(1, 201):
+        attr_columns.append(f"attr{i}_name VARCHAR(100)")
+        attr_columns.append(f"attr{i}_value TEXT")
+    
+    attr_columns_sql = ",\n        ".join(attr_columns)
+    
+    sql = text(f"""
+    CREATE TABLE IF NOT EXISTS {table_name} (
+        id SERIAL PRIMARY KEY,
+        title_text VARCHAR(500) NOT NULL,
+        start_page INTEGER NOT NULL,
+        end_page INTEGER NOT NULL,
+        display_order INTEGER DEFAULT 0,
+        
+        -- 200 custom attributes (name + value pairs)
+        {attr_columns_sql},
+        
+        -- Timestamps
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+    )
+    """)
+    
+    conn = engine.connect()
+    try:
+        conn.execute(sql)
+        conn.commit()
+        
+        # Create indexes
+        indexes = [
+            f"CREATE INDEX IF NOT EXISTS idx_{table_prefix}_l1_pages ON {table_name}(start_page, end_page)",
+            f"CREATE INDEX IF NOT EXISTS idx_{table_prefix}_l1_order ON {table_name}(display_order)"
+        ]
+        for index_sql in indexes:
+            conn.execute(text(index_sql))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def create_level2_titles_table(table_prefix: str):
+    """Create level2_titles table with 150 custom attributes for section-level titles.
+    
+    Each L2 title covers a page range within its parent L1 title and can have
+    up to 150 custom attributes with user-definable names and values.
+    """
+    table_name = f"{table_prefix}_level2_titles"
+    l1_table = f"{table_prefix}_level1_titles"
+    
+    # Build attribute columns (150 pairs of name/value)
+    attr_columns = []
+    for i in range(1, 151):
+        attr_columns.append(f"attr{i}_name VARCHAR(100)")
+        attr_columns.append(f"attr{i}_value TEXT")
+    
+    attr_columns_sql = ",\n        ".join(attr_columns)
+    
+    sql = text(f"""
+    CREATE TABLE IF NOT EXISTS {table_name} (
+        id SERIAL PRIMARY KEY,
+        title_text VARCHAR(500) NOT NULL,
+        start_page INTEGER NOT NULL,
+        end_page INTEGER NOT NULL,
+        parent_l1_id INTEGER,
+        display_order INTEGER DEFAULT 0,
+        
+        -- 150 custom attributes (name + value pairs)
+        {attr_columns_sql},
+        
+        -- Timestamps
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+    )
+    """)
+    
+    conn = engine.connect()
+    try:
+        conn.execute(sql)
+        conn.commit()
+        
+        # Create indexes
+        indexes = [
+            f"CREATE INDEX IF NOT EXISTS idx_{table_prefix}_l2_pages ON {table_name}(start_page, end_page)",
+            f"CREATE INDEX IF NOT EXISTS idx_{table_prefix}_l2_parent ON {table_name}(parent_l1_id)",
+            f"CREATE INDEX IF NOT EXISTS idx_{table_prefix}_l2_order ON {table_name}(display_order)"
         ]
         for index_sql in indexes:
             conn.execute(text(index_sql))

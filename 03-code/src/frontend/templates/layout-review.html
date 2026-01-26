@@ -360,6 +360,91 @@
         .status-bar .mode { color: #4fc3f7; font-weight: bold; }
         .status-bar .link-status { color: #ff9800; }
 
+        /* Reset Regions Button */
+        .btn-reset-regions {
+            background: #d32f2f;
+            color: white;
+            font-size: 11px;
+        }
+        .btn-reset-regions:hover { background: #b71c1c; }
+
+        /* Collapsible Advanced Tools Section */
+        .advanced-tools-section {
+            background: #0a1628;
+            border-top: 1px solid #0f3460;
+            margin-top: auto;
+        }
+        .advanced-tools-header {
+            padding: 10px 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #666;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+        .advanced-tools-header:hover { background: #16213e; }
+        .advanced-tools-header .toggle-icon { transition: transform 0.2s; }
+        .advanced-tools-header.expanded .toggle-icon { transform: rotate(180deg); }
+        .advanced-tools-content {
+            display: none;
+            padding: 10px 15px;
+            border-top: 1px solid #0f3460;
+        }
+        .advanced-tools-content.visible { display: block; }
+        .advanced-tools-content button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .btn-auto-slicer {
+            background: #1a4a7a;
+            color: white;
+        }
+        .btn-auto-slicer:hover { background: #2a5a8a; }
+
+        /* Confirmation Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        .modal-overlay.hidden { display: none; }
+        .modal-content {
+            background: #16213e;
+            border: 1px solid #0f3460;
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 400px;
+            width: 90%;
+        }
+        .modal-content h3 { margin: 0 0 15px 0; color: #f44336; }
+        .modal-content p { color: #aaa; margin-bottom: 20px; font-size: 14px; }
+        .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; }
+        .modal-buttons button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-modal-cancel { background: #444; color: white; }
+        .btn-modal-cancel:hover { background: #555; }
+        .btn-modal-confirm { background: #d32f2f; color: white; }
+        .btn-modal-confirm:hover { background: #b71c1c; }
+
         /* Loading Overlay */
         .loading-overlay {
             position: fixed;
@@ -468,6 +553,17 @@
         .btn-ready-extract.ready {
             background: #4CAF50;
         }
+        
+        /* Skip Page Button */
+        .btn-skip-page {
+            background: #607d8b;
+            color: white;
+        }
+        .btn-skip-page:hover { background: #455a64; }
+        .btn-skip-page.skipped {
+            background: #9e9e9e;
+            text-decoration: line-through;
+        }
 
         /* L1/L2 Title Bar */
         .title-bar {
@@ -500,6 +596,132 @@
         .title-separator {
             color: #444;
         }
+
+        /* L3 Title Linking Section */
+        .l3-links-section {
+            padding: 10px 15px;
+            background: #0a1628;
+            border-top: 1px solid #1a4a7a;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .l3-links-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .l3-links-header h4 {
+            margin: 0;
+            font-size: 13px;
+            color: #FFCC00;
+        }
+        .btn-auto-link-l3 {
+            background: #1a4a7a;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-auto-link-l3:hover {
+            background: #2a5a8a;
+        }
+        .l3-validation-warning {
+            background: rgba(255, 152, 0, 0.2);
+            border: 1px solid #ff9800;
+            border-radius: 4px;
+            padding: 6px 10px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #ff9800;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .l3-validation-warning .warning-icon {
+            font-size: 14px;
+        }
+        .l3-links-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .l3-link-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            background: #16213e;
+            border-radius: 4px;
+            font-size: 12px;
+            border-left: 3px solid #FFCC00;
+        }
+        .l3-link-item.unlinked {
+            border-left-color: #f44336;
+            background: rgba(244, 67, 54, 0.1);
+        }
+        .l3-link-item.auto-linked {
+            border-left-color: #4caf50;
+        }
+        .l3-link-item.manual-linked {
+            border-left-color: #2196F3;
+        }
+        .l3-link-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+            min-width: 0;
+        }
+        .l3-link-region {
+            color: #00FF00;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .l3-link-target {
+            color: #aaa;
+            font-size: 11px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .l3-link-target.none {
+            color: #f44336;
+        }
+        .l3-link-badge {
+            font-size: 9px;
+            padding: 2px 5px;
+            border-radius: 3px;
+            margin-left: 6px;
+            white-space: nowrap;
+        }
+        .l3-link-badge.auto {
+            background: #4caf50;
+            color: white;
+        }
+        .l3-link-badge.manual {
+            background: #2196F3;
+            color: white;
+        }
+        .l3-link-dropdown {
+            background: #1a1a2e;
+            border: 1px solid #1a4a7a;
+            color: white;
+            padding: 4px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            max-width: 120px;
+            cursor: pointer;
+        }
+        .l3-link-dropdown:focus {
+            outline: none;
+            border-color: #4fc3f7;
+        }
     </style>
 </head>
 <body>
@@ -516,6 +738,7 @@
             <a href="#" id="back-link">🔪 Auto-Slicer</a>
             <a href="#" id="back-to-extraction-link" style="background: #00897B;">📝 Extraction</a>
             <a href="/pipeline-dashboard">⚙️ Pipeline</a>
+            <a href="/pipeline-config">🔧 Pipeline Config</a>
             <button class="btn-success" onclick="confirmAllAndFinish()">Confirm All & Finish</button>
         </div>
     </nav>
@@ -565,6 +788,23 @@
                 <div id="links-list"></div>
             </div>
 
+            <!-- L3 Title Linking Section -->
+            <div class="l3-links-section" id="l3-links-section">
+                <div class="l3-links-header">
+                    <h4>📌 L3 Title Links</h4>
+                    <button class="btn-auto-link-l3" onclick="autoLinkParagraphsToL3()" title="Auto-link all paragraphs to nearest L3 title above">
+                        ⚡ Auto-Link
+                    </button>
+                </div>
+                <div class="l3-validation-warning" id="l3-validation-warning" style="display: none;">
+                    <span class="warning-icon">⚠️</span>
+                    <span id="l3-warning-text">Some paragraphs are not linked to L3 titles</span>
+                </div>
+                <div class="l3-links-list" id="l3-links-list">
+                    <!-- L3 link items will be populated here -->
+                </div>
+            </div>
+
             <div class="class-editor">
                 <h4>Selected Region</h4>
                 <div style="display: flex; gap: 8px; margin-bottom: 10px;">
@@ -594,6 +834,22 @@
                 <div class="btn-row">
                     <button class="btn-link" id="link-btn" onclick="toggleLinkMode()" title="Link Diagram (L)">Link</button>
                     <button class="btn-delete" onclick="deleteSelectedRegion()" title="Delete (Del)">Delete</button>
+                </div>
+            </div>
+
+            <!-- Advanced Tools (Collapsible) -->
+            <div class="advanced-tools-section">
+                <div class="advanced-tools-header" onclick="toggleAdvancedTools()">
+                    <span>⚙️ Advanced Tools</span>
+                    <span class="toggle-icon">▼</span>
+                </div>
+                <div class="advanced-tools-content" id="advanced-tools-content">
+                    <button class="btn-auto-slicer" onclick="goToAutoSlicer()">
+                        🔪 Open Auto-Slicer (Legacy)
+                    </button>
+                    <p style="color: #666; font-size: 11px; margin: 0;">
+                        Auto-Slicer is deprecated. Use Layout Detection instead.
+                    </p>
                 </div>
             </div>
         </div>
@@ -683,7 +939,9 @@
                 <div class="canvas-wrapper" id="primary-canvas-wrapper">
                     <div class="page-label" id="primary-page-label">Page 1</div>
                     <div class="page-buttons">
+                        <button class="btn-skip-page" id="primary-skip-page" onclick="toggleSkipPage('primary')" title="Mark page as skipped (won't be extracted)">Skip Page</button>
                         <button class="btn-ready-extract" id="primary-ready-extract" onclick="toggleReadyForExtraction('primary')" title="Mark page as ready for extraction (validates all regions are linked)">Ready for Extraction</button>
+                        <button class="btn-reset-regions" id="primary-reset-regions" onclick="confirmResetRegions('primary')" title="Delete all regions and re-run layout detection">⟳ Reset Regions</button>
                     </div>
                     <canvas id="review-canvas"></canvas>
                 </div>
@@ -691,7 +949,9 @@
                 <div class="canvas-wrapper" id="secondary-canvas-wrapper" style="display: none;">
                     <div class="page-label" id="secondary-page-label">Page 2</div>
                     <div class="page-buttons">
+                        <button class="btn-skip-page" id="secondary-skip-page" onclick="toggleSkipPage('secondary')" title="Mark page as skipped (won't be extracted)">Skip Page</button>
                         <button class="btn-ready-extract" id="secondary-ready-extract" onclick="toggleReadyForExtraction('secondary')" title="Mark page as ready for extraction (validates all regions are linked)">Ready for Extraction</button>
+                        <button class="btn-reset-regions" id="secondary-reset-regions" onclick="confirmResetRegions('secondary')" title="Delete all regions and re-run layout detection">⟳ Reset Regions</button>
                     </div>
                     <canvas id="secondary-canvas" class="secondary"></canvas>
                 </div>
@@ -826,6 +1086,19 @@
         </div>
     </div>
 
-    <script src="/static/js/layout-review.js"></script>
+    <!-- Reset Regions Confirmation Modal -->
+    <div class="modal-overlay hidden" id="reset-regions-modal">
+        <div class="modal-content">
+            <h3>⚠️ Reset Page Regions?</h3>
+            <p>This will delete all regions on <strong id="reset-page-name">this page</strong> and re-run layout detection. Any manual corrections will be lost.</p>
+            <p style="color: #ff9800; font-size: 12px;">This action cannot be undone.</p>
+            <div class="modal-buttons">
+                <button class="btn-modal-cancel" onclick="closeResetModal()">Cancel</button>
+                <button class="btn-modal-confirm" onclick="executeResetRegions()">Reset & Re-detect</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/layout-review.js?v=20260126"></script>
 </body>
 </html>

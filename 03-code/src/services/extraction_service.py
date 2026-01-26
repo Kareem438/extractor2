@@ -58,27 +58,65 @@ def get_page_image(db, table_prefix: str, page_number: int) -> Optional[bytes]:
 
 def get_layout_regions(db, table_prefix: str, page_number: int) -> List[Dict]:
     """Get layout detection regions for a page."""
-    result = db.execute(
-        text(f"""
-            SELECT id, class_name, x, y, width, height, confidence, l3_title_id
-            FROM raw_{table_prefix}_layout_detections
-            WHERE page_number = :page_num
-            AND class_name != 'ignore'
-            ORDER BY y, x
+    table_name = f"raw_{table_prefix}_layout_detections"
+    
+    # Check if l3_title_id column exists
+    col_check = db.execute(
+        text("""
+            SELECT EXISTS (
+                SELECT 1 FROM information_schema.columns 
+                WHERE table_name = :table_name AND column_name = 'l3_title_id'
+            )
         """),
-        {"page_num": page_number}
-    ).fetchall()
-
-    return [{
-        "id": row[0],
-        "class_name": row[1],
-        "x": row[2],
-        "y": row[3],
-        "width": row[4],
-        "height": row[5],
-        "confidence": row[6],
-        "l3_title_id": row[7]
-    } for row in result]
+        {"table_name": table_name}
+    ).scalar()
+    
+    if col_check:
+        # Column exists, include it
+        result = db.execute(
+            text(f"""
+                SELECT id, class_name, x, y, width, height, confidence, l3_title_id
+                FROM {table_name}
+                WHERE page_number = :page_num
+                AND class_name != 'ignore'
+                ORDER BY y, x
+            """),
+            {"page_num": page_number}
+        ).fetchall()
+        
+        return [{
+            "id": row[0],
+            "class_name": row[1],
+            "x": row[2],
+            "y": row[3],
+            "width": row[4],
+            "height": row[5],
+            "confidence": row[6],
+            "l3_title_id": row[7]
+        } for row in result]
+    else:
+        # Column doesn't exist, query without it
+        result = db.execute(
+            text(f"""
+                SELECT id, class_name, x, y, width, height, confidence
+                FROM {table_name}
+                WHERE page_number = :page_num
+                AND class_name != 'ignore'
+                ORDER BY y, x
+            """),
+            {"page_num": page_number}
+        ).fetchall()
+        
+        return [{
+            "id": row[0],
+            "class_name": row[1],
+            "x": row[2],
+            "y": row[3],
+            "width": row[4],
+            "height": row[5],
+            "confidence": row[6],
+            "l3_title_id": None
+        } for row in result]
 
 
 def get_diagram_paragraph_links(db, table_prefix: str, page_number: int) -> Dict[int, int]:
@@ -117,28 +155,57 @@ def get_l3_title_text(db, table_prefix: str, l3_title_id: int) -> Optional[str]:
     return result[0] if result and result[0] else None
 
 
-def get_titles_for_page(config: Dict, page_number: int) -> Tuple[str, str]:
-    """Get L1 and L2 titles for a page from auto-slicer config."""
-    l1_title = None
-    l2_title = None
+def get_titles_for_page(db, table_prefix: str, page_number: int) -> Tuple[Optional[int], str, Optional[int], str]:
+    """Get L1 and L2 titles for a page from database tables.
+    
+    Returns: (l1_title_id, l1_title_text, l2_title_id, l2_title_text)
+    """
+    l1_title_id = None
+    l1_title_text = None
+    l2_title_id = None
+    l2_title_text = None
 
-    titles = config.get('titles', {})
+    # Check if L1 titles table exists
+    l1_table = f"{table_prefix}_level1_titles"
+    l2_table = f"{table_prefix}_level2_titles"
+    
+    try:
+        # Find L1 title from database
+        result = db.execute(
+            text(f"""
+                SELECT id, title_text FROM {l1_table}
+                WHERE start_page <= :page_num AND end_page >= :page_num
+                ORDER BY start_page DESC
+                LIMIT 1
+            """),
+            {"page_num": page_number}
+        ).fetchone()
+        
+        if result:
+            l1_title_id = result[0]
+            l1_title_text = result[1]
+    except Exception as e:
+        logger.warning(f"Could not query L1 titles table: {e}")
 
-    # Find L1 title
-    for t in titles.get('level1', []):
-        start = t.get('start_page', 1)
-        end = t.get('end_page', 9999)
-        if start <= page_number <= end:
-            l1_title = t.get('title')
+    try:
+        # Find L2 title from database
+        result = db.execute(
+            text(f"""
+                SELECT id, title_text FROM {l2_table}
+                WHERE start_page <= :page_num AND end_page >= :page_num
+                ORDER BY start_page DESC
+                LIMIT 1
+            """),
+            {"page_num": page_number}
+        ).fetchone()
+        
+        if result:
+            l2_title_id = result[0]
+            l2_title_text = result[1]
+    except Exception as e:
+        logger.warning(f"Could not query L2 titles table: {e}")
 
-    # Find L2 title
-    for t in titles.get('level2', []):
-        start = t.get('start_page', 1)
-        end = t.get('end_page', 9999)
-        if start <= page_number <= end:
-            l2_title = t.get('title')
-
-    return l1_title, l2_title
+    return l1_title_id, l1_title_text, l2_title_id, l2_title_text
 
 
 def crop_region_image(page_image_bytes: bytes, region: Dict) -> bytes:
@@ -184,11 +251,60 @@ async def run_surya_ocr(image_bytes: bytes) -> Tuple[str, float]:
         return '', 0.0
 
 
+def check_paragraph_exists(db, table_prefix: str, page_number: int, x: int, y: int, width: int, height: int) -> bool:
+    """Check if a paragraph with same coordinates already exists."""
+    result = db.execute(
+        text(f"""
+            SELECT COUNT(*) FROM raw_{table_prefix}_paragraph_images
+            WHERE page_number = :page_number
+            AND selection_x = :x AND selection_y = :y
+            AND selection_width = :width AND selection_height = :height
+            AND is_enabled = TRUE
+        """),
+        {"page_number": page_number, "x": x, "y": y, "width": width, "height": height}
+    ).scalar()
+    return result > 0
+
+
+def check_diagram_exists(db, table_prefix: str, page_number: int, x: int, y: int, width: int, height: int) -> bool:
+    """Check if a diagram with same coordinates already exists."""
+    result = db.execute(
+        text(f"""
+            SELECT COUNT(*) FROM raw_{table_prefix}_diagram_images
+            WHERE page_number = :page_number
+            AND selection_x = :x AND selection_y = :y
+            AND selection_width = :width AND selection_height = :height
+            AND is_enabled = TRUE
+        """),
+        {"page_number": page_number, "x": x, "y": y, "width": width, "height": height}
+    ).scalar()
+    return result > 0
+
+
 def save_paragraph(db, table_prefix: str, page_number: int, region: Dict,
                    ocr_text: str, ocr_confidence: float,
-                   l1_title: str, l2_title: str, l3_title: str,
+                   l1_title_id: Optional[int], l1_title: str, 
+                   l2_title_id: Optional[int], l2_title: str, 
+                   l3_title: str,
                    raw_page_id: int) -> int:
-    """Save extracted paragraph to database."""
+    """Save extracted paragraph to database. Returns existing ID if duplicate."""
+    
+    # Check for existing duplicate
+    if check_paragraph_exists(db, table_prefix, page_number, region['x'], region['y'], region['width'], region['height']):
+        logger.info(f"Paragraph already exists at page {page_number} ({region['x']},{region['y']}), skipping")
+        # Return existing ID
+        existing = db.execute(
+            text(f"""
+                SELECT id FROM raw_{table_prefix}_paragraph_images
+                WHERE page_number = :page_number
+                AND selection_x = :x AND selection_y = :y
+                AND selection_width = :width AND selection_height = :height
+                AND is_enabled = TRUE
+                LIMIT 1
+            """),
+            {"page_number": page_number, "x": region['x'], "y": region['y'], "width": region['width'], "height": region['height']}
+        ).fetchone()
+        return existing[0] if existing else None
 
     result = db.execute(
         text(f"""
@@ -198,6 +314,7 @@ def save_paragraph(db, table_prefix: str, page_number: int, region: Dict,
                 image_data, image_format,
                 image_width, image_height, image_size_bytes,
                 extracted_text, ocr_confidence,
+                l1_title_id, l2_title_id,
                 level_1_title, level_2_title, level_3_title,
                 selected_level_text,
                 is_enabled, created_by,
@@ -208,6 +325,7 @@ def save_paragraph(db, table_prefix: str, page_number: int, region: Dict,
                 :image_data, 'png',
                 :width, :height, :image_size,
                 :text, :confidence,
+                :l1_id, :l2_id,
                 :l1, :l2, :l3,
                 :level_text,
                 TRUE, 'extraction',
@@ -226,6 +344,8 @@ def save_paragraph(db, table_prefix: str, page_number: int, region: Dict,
             "image_size": len(region.get('image_bytes', b'')),
             "text": ocr_text,
             "confidence": ocr_confidence,
+            "l1_id": l1_title_id,
+            "l2_id": l2_title_id,
             "l1": l1_title,
             "l2": l2_title,
             "l3": l3_title,
@@ -238,10 +358,29 @@ def save_paragraph(db, table_prefix: str, page_number: int, region: Dict,
 
 def save_diagram(db, table_prefix: str, page_number: int, region: Dict,
                  diagram_type: str, image_bytes: bytes,
-                 l1_title: str, l2_title: str, l3_title: str,
+                 l1_title_id: Optional[int], l1_title: str,
+                 l2_title_id: Optional[int], l2_title: str,
+                 l3_title: str,
                  parent_paragraph_id: Optional[int],
                  raw_page_id: int) -> int:
-    """Save extracted diagram/table/equation/list to database."""
+    """Save extracted diagram/table/equation/list to database. Returns existing ID if duplicate."""
+    
+    # Check for existing duplicate
+    if check_diagram_exists(db, table_prefix, page_number, region['x'], region['y'], region['width'], region['height']):
+        logger.info(f"Diagram already exists at page {page_number} ({region['x']},{region['y']}), skipping")
+        # Return existing ID
+        existing = db.execute(
+            text(f"""
+                SELECT id FROM raw_{table_prefix}_diagram_images
+                WHERE page_number = :page_number
+                AND selection_x = :x AND selection_y = :y
+                AND selection_width = :width AND selection_height = :height
+                AND is_enabled = TRUE
+                LIMIT 1
+            """),
+            {"page_number": page_number, "x": region['x'], "y": region['y'], "width": region['width'], "height": region['height']}
+        ).fetchone()
+        return existing[0] if existing else None
 
     result = db.execute(
         text(f"""
@@ -251,6 +390,7 @@ def save_diagram(db, table_prefix: str, page_number: int, region: Dict,
                 image_data, image_format,
                 image_width, image_height, image_size_bytes,
                 diagram_type,
+                l1_title_id, l2_title_id,
                 level_1_title, level_2_title, level_3_title,
                 linked_knowledge_unit_id,
                 is_enabled, created_by,
@@ -261,6 +401,7 @@ def save_diagram(db, table_prefix: str, page_number: int, region: Dict,
                 :image_data, 'png',
                 :width, :height, :image_size,
                 :diagram_type,
+                :l1_id, :l2_id,
                 :l1, :l2, :l3,
                 :parent_id,
                 TRUE, 'extraction',
@@ -278,6 +419,8 @@ def save_diagram(db, table_prefix: str, page_number: int, region: Dict,
             "image_data": image_bytes,
             "image_size": len(image_bytes),
             "diagram_type": diagram_type,
+            "l1_id": l1_title_id,
+            "l2_id": l2_title_id,
             "l1": l1_title,
             "l2": l2_title,
             "l3": l3_title,
@@ -340,6 +483,17 @@ async def extract_page(book_id: int, page_number: int, job: Dict) -> Dict:
         table_prefix = book_info['table_prefix']
         config = book_info['config']
 
+        # Check if page is marked as skipped
+        pages_table = f"raw_{table_prefix}_pages"
+        skip_check = db.execute(
+            text(f"SELECT is_skipped FROM {pages_table} WHERE page_number = :page_num"),
+            {"page_num": page_number}
+        ).fetchone()
+        
+        if skip_check and skip_check[0]:
+            logger.info(f"Skipping page {page_number} (marked as skipped)")
+            return {"paragraphs": 0, "diagrams": 0, "skipped": True}
+
         # Get page image
         page_image_bytes = get_page_image(db, table_prefix, page_number)
         if not page_image_bytes:
@@ -352,8 +506,8 @@ async def extract_page(book_id: int, page_number: int, job: Dict) -> Dict:
             logger.warning(f"No raw page record for page {page_number}")
             return {"paragraphs": 0, "diagrams": 0, "error": "No raw page record"}
 
-        # Get L1/L2 titles for this page
-        l1_title, l2_title = get_titles_for_page(config, page_number)
+        # Get L1/L2 titles for this page (from database)
+        l1_title_id, l1_title, l2_title_id, l2_title = get_titles_for_page(db, table_prefix, page_number)
 
         # Get all regions for this page
         regions = get_layout_regions(db, table_prefix, page_number)
@@ -407,7 +561,7 @@ async def extract_page(book_id: int, page_number: int, job: Dict) -> Dict:
                     para_id = save_paragraph(
                         db, table_prefix, page_number, region,
                         ocr_text, confidence,
-                        l1_title, l2_title, l3_title,
+                        l1_title_id, l1_title, l2_title_id, l2_title, l3_title,
                         raw_page_id
                     )
 
@@ -446,7 +600,7 @@ async def extract_page(book_id: int, page_number: int, job: Dict) -> Dict:
                     save_diagram(
                         db, table_prefix, page_number, region,
                         region['class_name'], image_bytes,
-                        l1_title, l2_title, l3_title,
+                        l1_title_id, l1_title, l2_title_id, l2_title, l3_title,
                         parent_paragraph_id,
                         raw_page_id
                     )
@@ -512,7 +666,10 @@ async def run_extraction_job(book_id: int, page_numbers: List[int]):
             # Extract the page
             result = await extract_page(book_id, page_num, job)
 
-            if result.get('error'):
+            if result.get('skipped'):
+                # Page was skipped, track it but don't count as error
+                job.setdefault('skipped_pages', []).append(page_num)
+            elif result.get('error'):
                 job.setdefault('errors', []).append({
                     "page": page_num,
                     "error": result['error']

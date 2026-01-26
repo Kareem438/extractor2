@@ -124,6 +124,11 @@ proceedUploadBtn.addEventListener('click', async () => {
             bookSelectionSection.style.display = 'none';
             uploadForm.style.display = 'block';
             showUploadMessage('Upload successful! Configure settings below.', 'success');
+            
+            // Show scanning warning banner
+            if (typeof showScanningWarning === 'function') {
+                showScanningWarning(currentBookId);
+            }
         }
     } catch (error) {
         showUploadMessage(error.message, 'error');

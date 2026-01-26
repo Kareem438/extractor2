@@ -848,6 +848,7 @@ async def get_raw_page_image(book_id: int, page_number: int):
     Get raw page image for Auto-slicer preview.
 
     Returns the original page image from raw_{prefix}_pages table.
+    Returns 404 if page not yet scanned - user must run Page Scanning first.
     """
     from fastapi.responses import Response
 
@@ -860,7 +861,7 @@ async def get_raw_page_image(book_id: int, page_number: int):
 
         table_prefix = book.table_prefix
 
-        # Get raw page image
+        # Get raw page image from database
         query = text(f"""
             SELECT original_image_data, original_format
             FROM raw_{table_prefix}_pages
@@ -869,7 +870,10 @@ async def get_raw_page_image(book_id: int, page_number: int):
         result = db.execute(query, {"page_number": page_number}).first()
 
         if not result or not result[0]:
-            raise HTTPException(status_code=404, detail=f"Page {page_number} image not found")
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Page {page_number} not scanned. Please run Page Scanning in Book Settings first."
+            )
 
         image_data, image_format = result
 
@@ -881,7 +885,7 @@ async def get_raw_page_image(book_id: int, page_number: int):
             elif image_format.lower() == "png":
                 content_type = "image/png"
 
-        return Response(content=image_data, media_type=content_type)
+        return Response(content=bytes(image_data), media_type=content_type)
 
     except HTTPException:
         raise

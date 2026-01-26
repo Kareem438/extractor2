@@ -759,6 +759,18 @@ async def update_region(book_id: int, region_id: int, update: RegionUpdate):
             updates.append("z_index = :z_index")
             params["z_index"] = update.z_index
 
+        # Handle l3_title_id update (can be set to None to unlink)
+        if update.l3_title_id is not None or 'l3_title_id' in (update.model_dump() if hasattr(update, 'model_dump') else update.dict()):
+            # Ensure l3_title_id column exists
+            try:
+                db.execute(text(f"ALTER TABLE {table_name} ADD COLUMN IF NOT EXISTS l3_title_id INTEGER"))
+                db.commit()
+            except Exception:
+                db.rollback()  # Column might already exist
+
+            updates.append("l3_title_id = :l3_title_id")
+            params["l3_title_id"] = update.l3_title_id
+
         # Mark as corrected
         if any([update.class_name, update.x, update.y, update.width, update.height]):
             updates.append("was_corrected = TRUE")
@@ -1604,6 +1616,127 @@ async def delete_page_detections(book_id: int, page_number: int):
     except Exception as e:
         logger.error(f"Error deleting page detections: {e}")
         db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db.close()
+
+
+@router.post("/api/auto-slicer/{book_id}/reset-page-regions/{page_number}")
+async def reset_page_regions(book_id: int, page_number: int):
+    """
+    Reset regions for a specific page: delete all existing regions and re-run layout detection.
+    
+    This is useful when the user wants to start fresh with layout detection on a page
+    after making manual corrections that didn't work out.
+    """
+    if not LAYOUT_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Layout detection service not available")
+    
+    book = get_book_by_id(book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    table_prefix = book.get("table_prefix")
+    if not table_prefix:
+        raise HTTPException(status_code=400, detail="Book has no table prefix")
+
+    detections_table = f"raw_{table_prefix}_layout_detections"
+
+    db = SessionLocal()
+    try:
+        # Step 1: Delete all existing regions for this page
+        delete_result = db.execute(
+            text(f"""
+                DELETE FROM {detections_table}
+                WHERE page_number = :page_number
+            """),
+            {"page_number": page_number}
+        )
+        deleted_count = delete_result.rowcount
+        
+        # Also delete any links involving regions on this page
+        # First get region IDs that were on this page (they're deleted now, but links reference them)
+        db.execute(
+            text("""
+                DELETE FROM layout_reference_links
+                WHERE book_id = :book_id
+                AND (diagram_id IN (
+                    SELECT id FROM layout_reference_links WHERE book_id = :book_id
+                ) OR paragraph_id IN (
+                    SELECT id FROM layout_reference_links WHERE book_id = :book_id
+                ))
+            """),
+            {"book_id": book_id}
+        )
+        
+        db.commit()
+        logger.info(f"Deleted {deleted_count} regions from page {page_number} of book {book_id}")
+
+        # Step 2: Re-run layout detection for this single page
+        # Load model if not loaded
+        if not layout_detection_service.is_loaded:
+            success = layout_detection_service.load_model()
+            if not success:
+                error_msg = layout_detection_service.gpu_error_message or "Failed to load model"
+                raise HTTPException(status_code=503, detail=f"GPU Error: {error_msg}")
+
+        # Get layout config for enabled classes and confidence threshold
+        config = get_layout_detection_config(book_id)
+        enabled_classes = config.get("enabled_classes", [])
+        confidence_threshold = config.get("confidence_threshold", 0.25)
+        
+        if enabled_classes:
+            layout_detection_service.set_enabled_classes(enabled_classes)
+        if confidence_threshold:
+            layout_detection_service.set_confidence_threshold(confidence_threshold)
+
+        # Get page image
+        image_data = get_page_image(book_id, page_number)
+        if not image_data:
+            raise HTTPException(status_code=404, detail=f"Page {page_number} image not found")
+
+        # Convert to PIL Image
+        if not PIL_AVAILABLE:
+            raise HTTPException(status_code=503, detail="PIL not available")
+        
+        image = Image.open(BytesIO(image_data))
+
+        # Detect regions
+        result = layout_detection_service.detect_single_page(image, page_number)
+        
+        # Save new detection results
+        save_detection_results(book_id, [result.to_dict()])
+        
+        # Unload model to free VRAM
+        layout_detection_service.unload_model()
+        
+        # Clear page confirmation status since we re-detected
+        if "page_confirmations" in config:
+            page_key = str(page_number)
+            if page_key in config["page_confirmations"]:
+                del config["page_confirmations"][page_key]
+        if "ready_for_extraction" in config:
+            page_key = str(page_number)
+            if page_key in config["ready_for_extraction"]:
+                del config["ready_for_extraction"][page_key]
+        save_layout_detection_config(book_id, config)
+
+        return {
+            "status": "reset_complete",
+            "page_number": page_number,
+            "deleted_count": deleted_count,
+            "new_regions_count": len(result.regions),
+            "message": f"Deleted {deleted_count} old regions, detected {len(result.regions)} new regions"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error resetting page regions: {e}", exc_info=True)
+        db.rollback()
+        # Ensure model is unloaded on error
+        if LAYOUT_SERVICE_AVAILABLE:
+            layout_detection_service.unload_model()
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()

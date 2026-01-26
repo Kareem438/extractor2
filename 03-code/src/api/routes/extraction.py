@@ -244,6 +244,9 @@ async def get_page_extraction_results(book_id: int, page_number: int):
         paragraphs_table = f"raw_{prefix}_paragraph_images"
         diagrams_table = f"raw_{prefix}_diagram_images"
         
+        logger.info(f"Getting extraction results for book {book_id}, page {page_number}")
+        logger.info(f"Tables: {paragraphs_table}, {diagrams_table}")
+        
         paragraphs = []
         diagrams = []
         
@@ -258,6 +261,8 @@ async def get_page_extraction_results(book_id: int, page_number: int):
             {"table_name": paragraphs_table}
         ).scalar()
         
+        logger.info(f"Paragraphs table exists: {para_exists}")
+        
         if para_exists:
             para_results = db.execute(
                 text(f"""
@@ -265,10 +270,12 @@ async def get_page_extraction_results(book_id: int, page_number: int):
                     FROM {paragraphs_table}
                     WHERE page_number = :page_number
                     AND is_enabled = TRUE
-                    ORDER BY display_order, id
+                    ORDER BY display_order NULLS LAST, id
                 """),
                 {"page_number": page_number}
             ).fetchall()
+            
+            logger.info(f"Found {len(para_results)} paragraphs for page {page_number}")
             
             for row in para_results:
                 paragraphs.append({
@@ -289,6 +296,8 @@ async def get_page_extraction_results(book_id: int, page_number: int):
             {"table_name": diagrams_table}
         ).scalar()
         
+        logger.info(f"Diagrams table exists: {diag_exists}")
+        
         if diag_exists:
             diag_results = db.execute(
                 text(f"""
@@ -296,10 +305,12 @@ async def get_page_extraction_results(book_id: int, page_number: int):
                     FROM {diagrams_table}
                     WHERE page_number = :page_number
                     AND is_enabled = TRUE
-                    ORDER BY display_order, id
+                    ORDER BY display_order NULLS LAST, id
                 """),
                 {"page_number": page_number}
             ).fetchall()
+            
+            logger.info(f"Found {len(diag_results)} diagrams for page {page_number}")
             
             for row in diag_results:
                 diagrams.append({
@@ -308,6 +319,8 @@ async def get_page_extraction_results(book_id: int, page_number: int):
                     "class_name": row[2] or "diagram",
                     "image_url": f"/api/extraction/{book_id}/diagram-image/{row[0]}"
                 })
+        
+        logger.info(f"Returning {len(paragraphs)} paragraphs, {len(diagrams)} diagrams")
         
         return {
             "page_number": page_number,

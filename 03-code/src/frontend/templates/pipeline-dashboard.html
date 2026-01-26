@@ -453,6 +453,7 @@
                 <a href="/auto-slicer" id="auto-slicer-link">🔪 Auto-Slicer</a>
                 <a href="/extraction-dashboard" id="extraction-link">📝 Extraction</a>
                 <a href="/pipeline-dashboard" class="active">⚙️ Pipeline</a>
+                <a href="/pipeline-config" id="pipeline-config-link">🔧 Pipeline Config</a>
                 <a href="/library">📚 Library</a>
                 <a href="/layout-review" id="layout-review-link">🔲 Layout Review</a>
             </div>
@@ -485,6 +486,67 @@
                 Page Status & Knowledge Unit Creation
                 <button class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;" onclick="loadPageStatus()">Refresh</button>
             </h2>
+            
+            <!-- KU Statistics Table -->
+            <div id="kuStatsContainer" style="margin-bottom: 20px; display: none;">
+                <h3 style="font-size: 14px; color: #34495e; margin-bottom: 10px;">Items Ready for KU Creation</h3>
+                <table class="page-status-table" style="margin-top: 0;">
+                    <thead>
+                        <tr>
+                            <th>Paragraphs</th>
+                            <th>Diagrams</th>
+                            <th>Tables</th>
+                            <th>Equations</th>
+                            <th>Lists</th>
+                            <th>Questions</th>
+                            <th>Answers</th>
+                            <th style="background: #e8f5e9; font-weight: bold;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr id="kuStatsRow">
+                            <td id="statParagraphs">-</td>
+                            <td id="statDiagrams">-</td>
+                            <td id="statTables">-</td>
+                            <td id="statEquations">-</td>
+                            <td id="statLists">-</td>
+                            <td id="statQuestions">-</td>
+                            <td id="statAnswers">-</td>
+                            <td id="statTotal" style="background: #e8f5e9; font-weight: bold;">-</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Claude Analysis Statistics Table -->
+            <div id="claudeStatsContainer" style="margin-bottom: 20px; display: none;">
+                <h3 style="font-size: 14px; color: #9b59b6; margin-bottom: 10px;">Items Requiring Claude Analysis</h3>
+                <table class="page-status-table" style="margin-top: 0;">
+                    <thead>
+                        <tr>
+                            <th>Diagrams</th>
+                            <th>Tables</th>
+                            <th>Equations</th>
+                            <th>Lists</th>
+                            <th>Q&A Pairs</th>
+                            <th>Captions</th>
+                            <th style="background: #f3e5f5; font-weight: bold;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr id="claudeStatsRow">
+                            <td id="claudeDiagrams">-</td>
+                            <td id="claudeTables">-</td>
+                            <td id="claudeEquations">-</td>
+                            <td id="claudeLists">-</td>
+                            <td id="claudeQA">-</td>
+                            <td id="claudeCaptions">-</td>
+                            <td id="claudeTotal" style="background: #f3e5f5; font-weight: bold;">-</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
             <div class="ku-actions">
                 <button class="btn btn-purple" id="btnCreateKU" onclick="createKnowledgeUnits()" disabled>
                     Create Knowledge Units
@@ -923,21 +985,45 @@
 
         let pageStatusData = [];
         let selectedPages = new Set();
+        let kuStatistics = null;
+        let claudeStatistics = null;
 
         // Load page status for the selected book
         async function loadPageStatus() {
             if (!currentBookId) return;
 
             try {
-                const response = await fetch(`/api/books/${currentBookId}/pipeline/page-status`);
-                if (!response.ok) {
+                // Load page status, KU statistics, and Claude statistics in parallel
+                const [statusResponse, statsResponse, claudeStatsResponse] = await Promise.all([
+                    fetch(`/api/books/${currentBookId}/pipeline/page-status`),
+                    fetch(`/api/books/${currentBookId}/pipeline/ku-statistics`),
+                    fetch(`/api/books/${currentBookId}/pipeline/claude-analysis-statistics`)
+                ]);
+                
+                if (!statusResponse.ok) {
                     throw new Error('Failed to load page status');
                 }
 
-                const data = await response.json();
-                pageStatusData = data.pages || [];
+                const statusData = await statusResponse.json();
+                pageStatusData = statusData.pages || [];
+                
+                // Load KU statistics
+                if (statsResponse.ok) {
+                    const statsData = await statsResponse.json();
+                    kuStatistics = statsData.statistics;
+                    renderKUStatistics();
+                }
+                
+                // Load Claude analysis statistics
+                if (claudeStatsResponse.ok) {
+                    const claudeData = await claudeStatsResponse.json();
+                    claudeStatistics = claudeData.statistics;
+                    renderClaudeStatistics();
+                }
+                
                 renderPageStatusTable();
                 updateCreateKUButton();
+                updateExecuteAnalysisButton();
 
             } catch (error) {
                 console.error('Error loading page status:', error);
@@ -950,6 +1036,59 @@
                     </tr>
                 `;
             }
+        }
+
+        // Render KU statistics table
+        function renderKUStatistics() {
+            const container = document.getElementById('kuStatsContainer');
+            if (!kuStatistics || kuStatistics.total === 0) {
+                container.style.display = 'none';
+                return;
+            }
+            
+            container.style.display = 'block';
+            document.getElementById('statParagraphs').textContent = kuStatistics.paragraphs || 0;
+            document.getElementById('statDiagrams').textContent = kuStatistics.diagrams || 0;
+            document.getElementById('statTables').textContent = kuStatistics.tables || 0;
+            document.getElementById('statEquations').textContent = kuStatistics.equations || 0;
+            document.getElementById('statLists').textContent = kuStatistics.lists || 0;
+            document.getElementById('statQuestions').textContent = kuStatistics.questions || 0;
+            document.getElementById('statAnswers').textContent = kuStatistics.answers || 0;
+            document.getElementById('statTotal').textContent = kuStatistics.total || 0;
+            
+            // Highlight cells with values > 0
+            ['statParagraphs', 'statDiagrams', 'statTables', 'statEquations', 'statLists', 'statQuestions', 'statAnswers'].forEach(id => {
+                const cell = document.getElementById(id);
+                const value = parseInt(cell.textContent) || 0;
+                cell.style.color = value > 0 ? '#27ae60' : '#95a5a6';
+                cell.style.fontWeight = value > 0 ? 'bold' : 'normal';
+            });
+        }
+
+        // Render Claude analysis statistics table
+        function renderClaudeStatistics() {
+            const container = document.getElementById('claudeStatsContainer');
+            if (!claudeStatistics || claudeStatistics.total === 0) {
+                container.style.display = 'none';
+                return;
+            }
+            
+            container.style.display = 'block';
+            document.getElementById('claudeDiagrams').textContent = claudeStatistics.diagrams || 0;
+            document.getElementById('claudeTables').textContent = claudeStatistics.tables || 0;
+            document.getElementById('claudeEquations').textContent = claudeStatistics.equations || 0;
+            document.getElementById('claudeLists').textContent = claudeStatistics.lists || 0;
+            document.getElementById('claudeQA').textContent = claudeStatistics.question_answer || 0;
+            document.getElementById('claudeCaptions').textContent = claudeStatistics.captions || 0;
+            document.getElementById('claudeTotal').textContent = claudeStatistics.total || 0;
+            
+            // Highlight cells with values > 0
+            ['claudeDiagrams', 'claudeTables', 'claudeEquations', 'claudeLists', 'claudeQA', 'claudeCaptions'].forEach(id => {
+                const cell = document.getElementById(id);
+                const value = parseInt(cell.textContent) || 0;
+                cell.style.color = value > 0 ? '#9b59b6' : '#95a5a6';
+                cell.style.fontWeight = value > 0 ? 'bold' : 'normal';
+            });
         }
 
         // Render the page status table
@@ -1048,23 +1187,62 @@
         // Update Create KU button state
         function updateCreateKUButton() {
             const btn = document.getElementById('btnCreateKU');
-            // Enable if at least one page is selected and has extraction done
+            
+            // Enable if:
+            // 1. At least one page is selected that has extraction done but KU not created, OR
+            // 2. There are items in kuStatistics to process (total > 0)
             const hasValidSelection = selectedPages.size > 0 && 
                 Array.from(selectedPages).some(pageNum => {
                     const page = pageStatusData.find(p => p.page_number === pageNum);
                     return page && page.extraction_done && !page.ku_created;
                 });
-            btn.disabled = !hasValidSelection;
             
-            // Enable Execute Diagram Analysis button if book is selected
-            const btnAnalysis = document.getElementById('btnExecuteAnalysis');
-            btnAnalysis.disabled = !currentBookId;
+            const hasItemsToProcess = kuStatistics && kuStatistics.total > 0;
+            
+            // Enable button if there are items to process OR valid selection
+            btn.disabled = !(hasValidSelection || hasItemsToProcess);
+            
+            // Update button text to show what will happen
+            if (hasItemsToProcess && selectedPages.size === 0) {
+                btn.textContent = `Create Knowledge Units (${kuStatistics.total} items)`;
+            } else if (selectedPages.size > 0) {
+                btn.textContent = `Create Knowledge Units (${selectedPages.size} pages)`;
+            } else {
+                btn.textContent = 'Create Knowledge Units';
+            }
+        }
+
+        // Update Execute Diagram Analysis button state
+        function updateExecuteAnalysisButton() {
+            const btn = document.getElementById('btnExecuteAnalysis');
+            
+            // Enable only if there are items requiring Claude analysis
+            const hasItemsToAnalyze = claudeStatistics && claudeStatistics.total > 0;
+            
+            btn.disabled = !hasItemsToAnalyze;
+            
+            // Update button text to show count
+            if (hasItemsToAnalyze) {
+                btn.textContent = `Execute Diagram Analysis (${claudeStatistics.total} items)`;
+            } else {
+                btn.textContent = 'Execute Diagram Analysis';
+            }
         }
 
         // Create Knowledge Units for selected pages
         async function createKnowledgeUnits() {
-            if (selectedPages.size === 0) {
-                showAlert('Please select at least one page', 'error');
+            // If no pages selected, get all pages with items to process
+            let pagesToProcess = Array.from(selectedPages);
+            
+            if (pagesToProcess.length === 0) {
+                // Get pages that have extraction done but KU not created
+                pagesToProcess = pageStatusData
+                    .filter(p => p.extraction_done && !p.ku_created)
+                    .map(p => p.page_number);
+            }
+            
+            if (pagesToProcess.length === 0) {
+                showAlert('No pages with items to process', 'error');
                 return;
             }
 
@@ -1078,14 +1256,15 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        page_numbers: Array.from(selectedPages)
+                        page_numbers: pagesToProcess
                     })
                 });
 
                 const data = await response.json();
 
                 if (response.ok) {
-                    showAlert(`Created ${data.created_count || 0} Knowledge Units successfully`, 'success');
+                    const totalCreated = (data.paragraphs_created || 0) + (data.diagrams_created || 0) + (data.qa_pairs_created || 0);
+                    showAlert(`Created ${totalCreated} Knowledge Units (${data.paragraphs_created || 0} paragraphs, ${data.diagrams_created || 0} diagrams, ${data.qa_pairs_created || 0} Q&A pairs)`, 'success');
                     selectedPages.clear();
                     document.getElementById('selectAllPages').checked = false;
                     await loadPageStatus();
@@ -1108,9 +1287,28 @@
                 showAlert('Please select a book first', 'error');
                 return;
             }
+            
+            if (!claudeStatistics || claudeStatistics.total === 0) {
+                showAlert('No items require Claude analysis', 'info');
+                return;
+            }
 
             const apiMode = document.getElementById('api-mode').value;
-            const confirmed = confirm(`Start Claude analysis using ${apiMode === 'batch' ? 'Batch API (50% cost, ~24 hour delay)' : 'Direct API (immediate, full cost)'}?\n\nThis will process all unprocessed diagrams, tables, equations, lists, questions, and answers.`);
+            const itemCount = claudeStatistics.total;
+            const breakdown = [];
+            if (claudeStatistics.diagrams > 0) breakdown.push(`${claudeStatistics.diagrams} diagrams`);
+            if (claudeStatistics.tables > 0) breakdown.push(`${claudeStatistics.tables} tables`);
+            if (claudeStatistics.equations > 0) breakdown.push(`${claudeStatistics.equations} equations`);
+            if (claudeStatistics.lists > 0) breakdown.push(`${claudeStatistics.lists} lists`);
+            if (claudeStatistics.question_answer > 0) breakdown.push(`${claudeStatistics.question_answer} Q&A pairs`);
+            if (claudeStatistics.captions > 0) breakdown.push(`${claudeStatistics.captions} captions`);
+            
+            const breakdownText = breakdown.length > 0 ? `\n\nItems: ${breakdown.join(', ')}` : '';
+            
+            const confirmed = confirm(
+                `Start Claude analysis using ${apiMode === 'batch' ? 'Batch API (50% cost, ~24 hour delay)' : 'Direct API (immediate, full cost)'}?\n\n` +
+                `Total items to process: ${itemCount}${breakdownText}`
+            );
 
             if (!confirmed) return;
 
@@ -1148,7 +1346,7 @@
                 showAlert('Error executing diagram analysis', 'error');
             } finally {
                 btn.textContent = originalText;
-                btn.disabled = false;
+                updateExecuteAnalysisButton();
             }
         }
 

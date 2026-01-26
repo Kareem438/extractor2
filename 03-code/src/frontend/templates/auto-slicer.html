@@ -793,6 +793,90 @@
         .ignore-rule-item .rule-delete:hover {
             background: #c62828;
         }
+
+        /* Title Hierarchy Styles */
+        .title-hierarchy-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 12px 15px;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border: 1px solid #e0e0e0;
+            transition: all 0.2s;
+        }
+        .title-hierarchy-row:hover {
+            border-color: #2196F3;
+            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.15);
+        }
+        .title-hierarchy-row input[type="text"] {
+            flex: 2;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .title-hierarchy-row input[type="number"] {
+            width: 80px;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            text-align: center;
+        }
+        .title-hierarchy-row .btn-attrs {
+            padding: 6px 12px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        .title-hierarchy-row .btn-attrs:hover {
+            background: #1976D2;
+        }
+        .title-hierarchy-row .btn-delete-title {
+            padding: 6px 10px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .title-hierarchy-row .btn-delete-title:hover {
+            background: #c62828;
+        }
+        .title-hierarchy-row .btn-save-title {
+            padding: 6px 12px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .title-hierarchy-row .btn-save-title:hover {
+            background: #388E3C;
+        }
+        .validation-success {
+            background: #e8f5e9;
+            border: 2px solid #4CAF50;
+            color: #2e7d32;
+        }
+        .validation-error {
+            background: #ffebee;
+            border: 2px solid #f44336;
+            color: #c62828;
+        }
+        .validation-warning {
+            background: #fff3e0;
+            border: 2px solid #FF9800;
+            color: #e65100;
+        }
     </style>
 </head>
 <body>
@@ -803,6 +887,7 @@
             <a href="/auto-slicer" class="active" style="background: rgba(255,255,255,0.3); font-weight: bold;">🔪 Auto-Slicer</a>
             <a href="/extraction-dashboard">📝 Extraction</a>
             <a href="/pipeline-dashboard">⚙️ Pipeline</a>
+            <a href="/pipeline-config">🔧 Pipeline Config</a>
             <a href="/library">📚 Library</a>
             <a href="/verification">✅ Verification</a>
             <a href="/book-settings">🔧 Book Settings</a>
@@ -841,13 +926,19 @@
 
         <!-- Book Content -->
         <div class="book-content" id="book-content">
-            <!-- Info Box -->
-            <div class="info-box">
-                <strong>How Auto-Slicer Works:</strong><br>
-                1. Configure page range and titles for your book<br>
-                2. Optionally define OCR boundaries to exclude headers/footers<br>
-                3. Click "Run Auto-Slicer" to process pages with Surya OCR at 600 DPI<br>
-                4. Results are saved as paragraphs with page numbers and titles
+            <!-- Workflow Info Box -->
+            <div class="info-box" style="background: #e8f5e9; border-left-color: #4CAF50;">
+                <strong>📋 Recommended Workflow:</strong><br>
+                1. <strong>Page Scanning</strong> (Book Settings) - Render PDF pages at 600 DPI<br>
+                2. <strong>Layout Detection</strong> (This Page) - Run YOLO to detect regions automatically<br>
+                3. <strong>Layout Review</strong> - Review and correct detected regions<br>
+                4. <strong>Extraction</strong> - Run OCR on detected regions to extract text
+            </div>
+            
+            <!-- Scanning Status Warning -->
+            <div class="warning-box" id="scanning-status-warning" style="display: none;">
+                <strong>⚠️ Page Scanning Required</strong><br>
+                This book has not been scanned yet. Please go to <a href="/book-settings" style="color: #e65100; font-weight: bold;">Book Settings</a> and run Page Scanning first to render pages at 600 DPI quality.
             </div>
 
             <!-- Page Range Section -->
@@ -977,8 +1068,8 @@
                     Save Configuration
                 </button>
                 <button type="button" class="btn" id="detect-layout-btn" onclick="detectLayout()"
-                        style="margin-right: 10px; background: #9C27B0; color: white;">
-                    🔍 Detect Layout (YOLO)
+                        style="margin-right: 10px; background: #9C27B0; color: white; padding: 15px 30px; font-size: 16px;">
+                    🔍 Run Layout Detection (YOLO)
                 </button>
                 <button type="button" class="btn" id="review-layout-btn" onclick="openLayoutReview()"
                         style="margin-right: 10px; background: #673AB7; color: white; display: none;">
@@ -987,9 +1078,6 @@
                 <button type="button" class="btn" id="extract-knowledge-btn" onclick="openExtractKnowledge()"
                         style="margin-right: 10px; background: #00897B; color: white; display: none;">
                     📊 Extraction Dashboard
-                </button>
-                <button type="button" class="btn btn-primary" id="run-btn" onclick="runAutoSlicer()">
-                    Run Auto-Slicer
                 </button>
             </div>
 
@@ -1073,17 +1161,6 @@
                 </div>
             </div>
 
-            <!-- Batch Configuration Section (Optional) -->
-            <div class="section">
-                <h2>Batch Configuration (Optional)</h2>
-                <p style="color: #666; margin-bottom: 20px;">
-                    For large books, define batches to process pages in groups with pauses between.
-                    Leave empty to process all pages in one go.
-                </p>
-                <div class="dynamic-rows" id="batches"></div>
-                <button type="button" class="btn btn-add" onclick="addBatchRow()">+ Add Batch</button>
-            </div>
-
             <!-- GPU Model Management Section -->
             <div class="section" id="gpu-management-section">
                 <h2 style="border-color: #607D8B;">GPU Model Management</h2>
@@ -1119,17 +1196,6 @@
                 <div class="gpu-vram-info" style="margin-top: 15px; text-align: center; color: #666; font-size: 13px;">
                     <span id="gpu-vram-display">GPU VRAM: Loading...</span>
                 </div>
-            </div>
-
-            <!-- OCR Boundary Section -->
-            <div class="section">
-                <h2>OCR Boundaries (Optional)</h2>
-                <p style="color: #666; margin-bottom: 20px;">
-                    Define scan regions to exclude headers, footers, or page numbers.
-                    You can define multiple rectangles per boundary, each storing text in different attributes.
-                </p>
-                <div class="boundary-list" id="boundary-list"></div>
-                <button type="button" class="btn btn-secondary" onclick="openBoundaryModal()">+ Add OCR Boundary</button>
             </div>
 
             <!-- Layout Detection Section -->
@@ -1269,6 +1335,53 @@
                     <button type="button" onclick="nextPreviewPage()" id="preview-next-btn">Next</button>
                 </div>
             </div>
+
+            <!-- Legacy Auto-Slicer Section (Collapsed) - At Bottom -->
+            <div class="section" style="margin-top: 30px; border: 2px dashed #9E9E9E; background: #fafafa;">
+                <div style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="toggleLegacyAutoSlicer()">
+                    <div>
+                        <h2 style="margin: 0; color: #666; border: none; padding: 0;">📦 Legacy Auto-Slicer (Manual Process)</h2>
+                        <p style="color: #999; margin: 5px 0 0 0; font-size: 13px;">
+                            Older manual workflow for creating Knowledge Units directly. Use Layout Detection above for the recommended workflow.
+                        </p>
+                    </div>
+                    <span id="legacy-toggle-icon" style="font-size: 20px; color: #666;">▶</span>
+                </div>
+                <div id="legacy-auto-slicer-content" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+                    <div class="warning-box" style="background: #fff3e0;">
+                        <strong>ℹ️ About Legacy Auto-Slicer:</strong><br>
+                        This is the older manual process that creates Knowledge Units directly from configured page ranges and titles.
+                        It bypasses Layout Detection and requires manual configuration of OCR boundaries.<br><br>
+                        <strong>Recommended:</strong> Use "Run Layout Detection (YOLO)" above for automatic region detection.
+                    </div>
+
+                    <!-- Batch Configuration (Legacy) -->
+                    <div style="margin-top: 20px; padding: 15px; background: white; border-radius: 8px; border: 1px solid #e0e0e0;">
+                        <h3 style="margin: 0 0 10px 0; color: #666; font-size: 16px;">📋 Batch Configuration</h3>
+                        <p style="color: #888; font-size: 13px; margin-bottom: 15px;">
+                            Split processing into batches with pauses between - useful for large books to prevent memory issues.
+                        </p>
+                        <div class="dynamic-rows" id="batches"></div>
+                        <button type="button" class="btn btn-add" onclick="addBatchRow()">+ Add Batch</button>
+                    </div>
+
+                    <!-- OCR Boundaries (Legacy) -->
+                    <div style="margin-top: 20px; padding: 15px; background: white; border-radius: 8px; border: 1px solid #e0e0e0;">
+                        <h3 style="margin: 0 0 10px 0; color: #666; font-size: 16px;">📐 OCR Boundaries</h3>
+                        <p style="color: #888; font-size: 13px; margin-bottom: 15px;">
+                            Define rectangular regions on pages to extract text from specific areas (e.g., exclude headers/footers).
+                        </p>
+                        <div class="boundary-list" id="boundary-list"></div>
+                        <button type="button" class="btn btn-secondary" onclick="openBoundaryModal()">+ Add OCR Boundary</button>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button type="button" class="btn btn-primary" id="run-btn" onclick="runAutoSlicer()">
+                            Run Legacy Auto-Slicer
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1350,5 +1463,19 @@
     </div>
 
     <script src="/static/js/auto-slicer.js"></script>
+    <script>
+        // Toggle Legacy Auto-Slicer section
+        function toggleLegacyAutoSlicer() {
+            const content = document.getElementById('legacy-auto-slicer-content');
+            const icon = document.getElementById('legacy-toggle-icon');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.textContent = '▼';
+            } else {
+                content.style.display = 'none';
+                icon.textContent = '▶';
+            }
+        }
+    </script>
 </body>
 </html>

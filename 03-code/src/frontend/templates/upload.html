@@ -26,9 +26,74 @@
         }
         .top-nav-links a:hover { background: rgba(255,255,255,0.2); }
         .top-nav-links a.active { background: rgba(255,255,255,0.3); font-weight: bold; }
+        
+        /* Page Scanning Warning Banner */
+        .scanning-warning-banner {
+            display: none;
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+            color: white;
+            padding: 15px 30px;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: slideDown 0.3s ease-out;
+        }
+        .scanning-warning-banner.visible { display: flex; }
+        .scanning-warning-banner .warning-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .scanning-warning-banner .warning-icon { font-size: 24px; }
+        .scanning-warning-banner .warning-text { flex: 1; }
+        .scanning-warning-banner .warning-text strong { display: block; font-size: 16px; }
+        .scanning-warning-banner .warning-text span { font-size: 14px; opacity: 0.9; }
+        .scanning-warning-banner .warning-actions { display: flex; gap: 10px; }
+        .scanning-warning-banner .btn-scan-now {
+            background: white;
+            color: #f57c00;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .scanning-warning-banner .btn-scan-now:hover { background: #fff3e0; }
+        .scanning-warning-banner .btn-dismiss {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .scanning-warning-banner .btn-dismiss:hover { background: rgba(255,255,255,0.3); }
+        @keyframes slideDown {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
     </style>
 </head>
 <body>
+    <!-- Page Scanning Warning Banner -->
+    <div class="scanning-warning-banner" id="scanning-warning-banner">
+        <div class="warning-content">
+            <span class="warning-icon">⚠️</span>
+            <div class="warning-text">
+                <strong>Page Scanning Required</strong>
+                <span>Your newly uploaded book needs to be scanned before you can use Layout Detection or Auto-Slicer. Go to Book Settings to scan pages at 600 DPI.</span>
+            </div>
+        </div>
+        <div class="warning-actions">
+            <button class="btn-scan-now" onclick="goToBookSettings()">📸 Scan Pages Now</button>
+            <button class="btn-dismiss" onclick="dismissScanningWarning()">Dismiss</button>
+        </div>
+    </div>
+
     <nav class="top-nav">
         <div class="top-nav-brand">📚 Knowledge Extraction System</div>
         <div class="top-nav-links">
@@ -36,6 +101,7 @@
             <a href="/auto-slicer">🔪 Auto-Slicer</a>
             <a href="/extraction-dashboard">📝 Extraction</a>
             <a href="/pipeline-dashboard">⚙️ Pipeline</a>
+            <a href="/pipeline-config">🔧 Pipeline Config</a>
             <a href="/library">📚 Library</a>
             <a href="/verification">✅ Verification</a>
             <a href="/book-settings">🔧 Book Settings</a>
@@ -566,5 +632,63 @@ Examples:
     </div>
 
     <script src="/static/js/upload.js"></script>
+    <script>
+        // Page Scanning Warning Functions
+        let newlyUploadedBookId = null;
+        
+        function showScanningWarning(bookId) {
+            newlyUploadedBookId = bookId;
+            const banner = document.getElementById('scanning-warning-banner');
+            banner.classList.add('visible');
+            // Store in sessionStorage so warning persists across page loads
+            sessionStorage.setItem('unscanedBookId', bookId);
+        }
+        
+        function dismissScanningWarning() {
+            const banner = document.getElementById('scanning-warning-banner');
+            banner.classList.remove('visible');
+            sessionStorage.removeItem('unscanedBookId');
+        }
+        
+        function goToBookSettings() {
+            const bookId = newlyUploadedBookId || sessionStorage.getItem('unscanedBookId');
+            if (bookId) {
+                window.location.href = `/book-settings?book_id=${bookId}`;
+            } else {
+                window.location.href = '/book-settings';
+            }
+        }
+        
+        // Check on page load if there's an unscanned book
+        document.addEventListener('DOMContentLoaded', function() {
+            const unscanedBookId = sessionStorage.getItem('unscanedBookId');
+            if (unscanedBookId) {
+                // Verify the book still needs scanning
+                fetch(`/api/books/${unscanedBookId}`)
+                    .then(r => r.json())
+                    .then(book => {
+                        if (book && book.progress && book.progress.pages_scanned === 0) {
+                            newlyUploadedBookId = unscanedBookId;
+                            document.getElementById('scanning-warning-banner').classList.add('visible');
+                        } else {
+                            sessionStorage.removeItem('unscanedBookId');
+                        }
+                    })
+                    .catch(() => sessionStorage.removeItem('unscanedBookId'));
+            }
+        });
+        
+        // Hook into the upload success to show warning
+        const originalUploadFile = window.uploadFile;
+        if (typeof originalUploadFile === 'function') {
+            window.uploadFile = async function() {
+                const result = await originalUploadFile.apply(this, arguments);
+                if (result) {
+                    showScanningWarning(result);
+                }
+                return result;
+            };
+        }
+    </script>
 </body>
 </html>

@@ -175,6 +175,29 @@ async function onBookSelect() {
 
     // Check if there are existing layout detection regions
     await checkExistingLayoutRegions();
+    
+    // Check scanning status and show warning if needed
+    await checkScanningStatus(currentBookId);
+}
+
+// Check if book has been scanned
+async function checkScanningStatus(bookId) {
+    try {
+        const response = await fetch(`/api/books/${bookId}`);
+        if (response.ok) {
+            const book = await response.json();
+            const warningEl = document.getElementById('scanning-status-warning');
+            if (warningEl) {
+                if (book.progress && book.progress.pages_scanned === 0) {
+                    warningEl.style.display = 'block';
+                } else {
+                    warningEl.style.display = 'none';
+                }
+            }
+        }
+    } catch (e) {
+        console.error('Error checking scanning status:', e);
+    }
 }
 
 // =============================================================================
@@ -299,14 +322,62 @@ function applyEnabledClassesToCheckboxes(enabledClasses) {
     console.log('Applied enabled classes to checkboxes:', enabledClasses);
 }
 
-function loadTitles() {
-    ['level1', 'level2', 'level3'].forEach(level => {
-        const container = document.getElementById(`${level}-titles`);
-        container.innerHTML = '';
-
-        const titles = currentConfig.titles?.[level] || [];
-        titles.forEach(t => addTitleRow(level, t.title, t.start_page, t.end_page));
-    });
+async function loadTitles() {
+    // Load L1 and L2 titles from database, L3 from JSON config
+    
+    // Load L1 titles from database
+    try {
+        const l1Response = await fetch(`/api/books/${currentBookId}/l1-titles`);
+        const l1Data = await l1Response.json();
+        
+        const l1Container = document.getElementById('level1-titles');
+        if (l1Container) {
+            l1Container.innerHTML = '';
+            (l1Data.titles || []).forEach(t => {
+                addTitleRow('level1', t.title_text, t.start_page, t.end_page, t.id);
+            });
+        }
+    } catch (error) {
+        console.warn('Could not load L1 titles from database, falling back to JSON:', error);
+        // Fallback to JSON config
+        const l1Container = document.getElementById('level1-titles');
+        if (l1Container) {
+            l1Container.innerHTML = '';
+            const titles = currentConfig.titles?.level1 || [];
+            titles.forEach(t => addTitleRow('level1', t.title, t.start_page, t.end_page, null));
+        }
+    }
+    
+    // Load L2 titles from database
+    try {
+        const l2Response = await fetch(`/api/books/${currentBookId}/l2-titles`);
+        const l2Data = await l2Response.json();
+        
+        const l2Container = document.getElementById('level2-titles');
+        if (l2Container) {
+            l2Container.innerHTML = '';
+            (l2Data.titles || []).forEach(t => {
+                addTitleRow('level2', t.title_text, t.start_page, t.end_page, t.id);
+            });
+        }
+    } catch (error) {
+        console.warn('Could not load L2 titles from database, falling back to JSON:', error);
+        // Fallback to JSON config
+        const l2Container = document.getElementById('level2-titles');
+        if (l2Container) {
+            l2Container.innerHTML = '';
+            const titles = currentConfig.titles?.level2 || [];
+            titles.forEach(t => addTitleRow('level2', t.title, t.start_page, t.end_page, null));
+        }
+    }
+    
+    // Load L3 titles from JSON config (these are detected by YOLO, not stored in DB)
+    const l3Container = document.getElementById('level3-titles');
+    if (l3Container) {
+        l3Container.innerHTML = '';
+        const titles = currentConfig.titles?.level3 || [];
+        titles.forEach(t => addTitleRow('level3', t.title, t.start_page, t.end_page, null));
+    }
 }
 
 function loadBatches() {
@@ -353,6 +424,7 @@ async function saveConfig() {
     };
 
     try {
+        // Save to JSON config
         const response = await fetch(`/api/auto-slicer/${currentBookId}/config`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -361,6 +433,9 @@ async function saveConfig() {
 
         const result = await response.json();
         if (result.success) {
+            // Also sync L1/L2 titles to database
+            await syncTitlesToDatabase(config.titles);
+            
             showMessage('Configuration saved successfully', 'success');
             currentConfig = config;
         } else {
@@ -369,6 +444,30 @@ async function saveConfig() {
     } catch (error) {
         console.error('Failed to save config:', error);
         showMessage('Failed to save configuration', 'error');
+    }
+}
+
+async function syncTitlesToDatabase(titles) {
+    /**
+     * Sync L1/L2 titles from JSON config to database tables.
+     * This keeps the database in sync with the JSON config.
+     */
+    try {
+        const response = await fetch(`/api/books/${currentBookId}/sync-titles-to-db`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ titles: titles })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            console.log(`Synced titles to DB: ${result.l1_synced} L1, ${result.l2_synced} L2`);
+        } else {
+            console.warn('Failed to sync titles to database:', result);
+        }
+    } catch (error) {
+        console.error('Error syncing titles to database:', error);
+        // Don't show error to user - JSON save succeeded, DB sync is secondary
     }
 }
 
@@ -411,17 +510,33 @@ function gatherBatches() {
 // Dynamic Row Management
 // =============================================================================
 
-function addTitleRow(level, title = '', startPage = '', endPage = '') {
+function addTitleRow(level, title = '', startPage = '', endPage = '', titleId = null) {
     const container = document.getElementById(`${level}-titles`);
     const row = document.createElement('div');
     row.className = 'dynamic-row';
+    
+    // Only show Attributes button for L1 and L2 titles (not L3)
+    const showAttributesBtn = (level === 'level1' || level === 'level2') && titleId;
+    const attrBtnHtml = showAttributesBtn 
+        ? `<button type="button" class="btn btn-secondary btn-sm" onclick="openAttributeEditor('${level}', ${titleId})" title="Edit Attributes">Attrs</button>`
+        : '';
+    
     row.innerHTML = `
-        <input type="text" class="title-input" placeholder="Title text" value="${title}">
+        <input type="text" class="title-input" placeholder="Title text" value="${title}" data-title-id="${titleId || ''}">
         <input type="number" class="page-input start-page" placeholder="Start" min="1" value="${startPage}">
         <input type="number" class="page-input end-page" placeholder="End" min="1" value="${endPage}">
+        ${attrBtnHtml}
         <button type="button" class="btn btn-delete" onclick="this.parentElement.remove()">Delete</button>
     `;
     container.appendChild(row);
+}
+
+function openAttributeEditor(level, titleId) {
+    /**
+     * Open the attribute editor page for an L1 or L2 title.
+     */
+    const levelNum = level === 'level1' ? 'l1' : 'l2';
+    window.open(`/book/${currentBookId}/${levelNum}-title/${titleId}/attributes`, '_blank');
 }
 
 function addBatchRow(startPage = '', endPage = '') {
@@ -1869,6 +1984,13 @@ async function detectLayout() {
         return;
     }
 
+    // Validate title coverage before detection
+    const validationPassed = await checkTitleValidationBeforeDetection();
+    if (!validationPassed) {
+        alert('Please configure L1 and L2 titles to cover all pages in the selected range before running Layout Detection.');
+        return;
+    }
+
     // Show layout detection section
     document.getElementById('layout-detection-section').style.display = 'block';
     document.getElementById('layout-review-section').style.display = 'none';
@@ -2856,3 +2978,443 @@ document.addEventListener('DOMContentLoaded', function() {
         setInterval(loadGpuStatus, 30000);
     }
 });
+
+
+// =============================================================================
+// Title Hierarchy Management (L1/L2 Titles with Attributes)
+// =============================================================================
+
+let titleHierarchyState = {
+    l1Titles: [],
+    l2Titles: [],
+    validationPassed: false
+};
+
+/**
+ * Load L1 and L2 titles for the current book
+ */
+async function loadTitleHierarchy() {
+    if (!currentBookId) return;
+
+    try {
+        // Load L1 titles
+        const l1Response = await fetch(`/api/books/${currentBookId}/l1-titles`);
+        if (l1Response.ok) {
+            const l1Data = await l1Response.json();
+            titleHierarchyState.l1Titles = l1Data.titles || [];
+        }
+
+        // Load L2 titles
+        const l2Response = await fetch(`/api/books/${currentBookId}/l2-titles`);
+        if (l2Response.ok) {
+            const l2Data = await l2Response.json();
+            titleHierarchyState.l2Titles = l2Data.titles || [];
+        }
+
+        renderL1Titles();
+        renderL2Titles();
+
+    } catch (error) {
+        console.error('Error loading title hierarchy:', error);
+    }
+}
+
+/**
+ * Render L1 titles list
+ */
+function renderL1Titles() {
+    const container = document.getElementById('l1-titles-list');
+    if (!container) return;
+
+    if (titleHierarchyState.l1Titles.length === 0) {
+        container.innerHTML = `
+            <div class="no-titles-message" style="color: #999; text-align: center; padding: 20px; background: #f9f9f9; border-radius: 4px;">
+                No L1 titles configured. Click "Add L1 Title" to create one.
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = titleHierarchyState.l1Titles.map(title => `
+        <div class="title-hierarchy-row" data-title-id="${title.id}">
+            <input type="text" value="${escapeHtml(title.title_text)}" placeholder="Title text" 
+                   onchange="updateL1TitleField(${title.id}, 'title_text', this.value)">
+            <label style="font-size: 12px; color: #666;">Start:</label>
+            <input type="number" value="${title.start_page}" min="1" 
+                   onchange="updateL1TitleField(${title.id}, 'start_page', parseInt(this.value))">
+            <label style="font-size: 12px; color: #666;">End:</label>
+            <input type="number" value="${title.end_page}" min="1" 
+                   onchange="updateL1TitleField(${title.id}, 'end_page', parseInt(this.value))">
+            <button class="btn-attrs" onclick="openL1AttributeEditor(${title.id})" title="Edit 200 custom attributes">
+                📝 Attributes
+            </button>
+            <button class="btn-delete-title" onclick="deleteL1Title(${title.id})" title="Delete this L1 title">
+                ×
+            </button>
+        </div>
+    `).join('');
+}
+
+/**
+ * Render L2 titles list
+ */
+function renderL2Titles() {
+    const container = document.getElementById('l2-titles-list');
+    if (!container) return;
+
+    if (titleHierarchyState.l2Titles.length === 0) {
+        container.innerHTML = `
+            <div class="no-titles-message" style="color: #999; text-align: center; padding: 20px; background: #f9f9f9; border-radius: 4px;">
+                No L2 titles configured. Click "Add L2 Title" to create one.
+            </div>
+        `;
+        return;
+    }
+
+    // Build L1 options for parent selection
+    const l1Options = titleHierarchyState.l1Titles.map(l1 => 
+        `<option value="${l1.id}">${escapeHtml(l1.title_text)} (pp. ${l1.start_page}-${l1.end_page})</option>`
+    ).join('');
+
+    container.innerHTML = titleHierarchyState.l2Titles.map(title => `
+        <div class="title-hierarchy-row" data-title-id="${title.id}">
+            <input type="text" value="${escapeHtml(title.title_text)}" placeholder="Title text" 
+                   onchange="updateL2TitleField(${title.id}, 'title_text', this.value)">
+            <label style="font-size: 12px; color: #666;">Start:</label>
+            <input type="number" value="${title.start_page}" min="1" 
+                   onchange="updateL2TitleField(${title.id}, 'start_page', parseInt(this.value))">
+            <label style="font-size: 12px; color: #666;">End:</label>
+            <input type="number" value="${title.end_page}" min="1" 
+                   onchange="updateL2TitleField(${title.id}, 'end_page', parseInt(this.value))">
+            <button class="btn-attrs" onclick="openL2AttributeEditor(${title.id})" title="Edit 150 custom attributes">
+                📝 Attributes
+            </button>
+            <button class="btn-delete-title" onclick="deleteL2Title(${title.id})" title="Delete this L2 title">
+                ×
+            </button>
+        </div>
+    `).join('');
+}
+
+/**
+ * Add a new L1 title
+ */
+async function addL1Title() {
+    if (!currentBookId) return;
+
+    const startPage = parseInt(document.getElementById('start-page')?.value) || 1;
+    const endPage = parseInt(document.getElementById('end-page')?.value) || startPage;
+
+    try {
+        const response = await fetch(`/api/books/${currentBookId}/l1-titles`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title_text: 'New Chapter',
+                start_page: startPage,
+                end_page: endPage,
+                display_order: titleHierarchyState.l1Titles.length
+            })
+        });
+
+        if (response.ok) {
+            await loadTitleHierarchy();
+            clearValidationStatus();
+        } else {
+            const data = await response.json();
+            alert(data.detail || 'Failed to create L1 title');
+        }
+    } catch (error) {
+        console.error('Error creating L1 title:', error);
+        alert('Error creating L1 title');
+    }
+}
+
+/**
+ * Add a new L2 title
+ */
+async function addL2Title() {
+    if (!currentBookId) return;
+
+    const startPage = parseInt(document.getElementById('start-page')?.value) || 1;
+    const endPage = parseInt(document.getElementById('end-page')?.value) || startPage;
+
+    // Find parent L1 based on page range
+    let parentL1Id = null;
+    for (const l1 of titleHierarchyState.l1Titles) {
+        if (startPage >= l1.start_page && endPage <= l1.end_page) {
+            parentL1Id = l1.id;
+            break;
+        }
+    }
+
+    try {
+        const response = await fetch(`/api/books/${currentBookId}/l2-titles`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title_text: 'New Section',
+                start_page: startPage,
+                end_page: endPage,
+                parent_l1_id: parentL1Id,
+                display_order: titleHierarchyState.l2Titles.length
+            })
+        });
+
+        if (response.ok) {
+            await loadTitleHierarchy();
+            clearValidationStatus();
+        } else {
+            const data = await response.json();
+            alert(data.detail || 'Failed to create L2 title');
+        }
+    } catch (error) {
+        console.error('Error creating L2 title:', error);
+        alert('Error creating L2 title');
+    }
+}
+
+/**
+ * Update an L1 title field
+ */
+async function updateL1TitleField(titleId, field, value) {
+    if (!currentBookId) return;
+
+    try {
+        const updateData = {};
+        updateData[field] = value;
+
+        const response = await fetch(`/api/books/${currentBookId}/l1-titles/${titleId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updateData)
+        });
+
+        if (response.ok) {
+            // Update local state
+            const title = titleHierarchyState.l1Titles.find(t => t.id === titleId);
+            if (title) title[field] = value;
+            clearValidationStatus();
+        } else {
+            const data = await response.json();
+            alert(data.detail || 'Failed to update L1 title');
+            await loadTitleHierarchy(); // Reload to reset
+        }
+    } catch (error) {
+        console.error('Error updating L1 title:', error);
+    }
+}
+
+/**
+ * Update an L2 title field
+ */
+async function updateL2TitleField(titleId, field, value) {
+    if (!currentBookId) return;
+
+    try {
+        const updateData = {};
+        updateData[field] = value;
+
+        const response = await fetch(`/api/books/${currentBookId}/l2-titles/${titleId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updateData)
+        });
+
+        if (response.ok) {
+            // Update local state
+            const title = titleHierarchyState.l2Titles.find(t => t.id === titleId);
+            if (title) title[field] = value;
+            clearValidationStatus();
+        } else {
+            const data = await response.json();
+            alert(data.detail || 'Failed to update L2 title');
+            await loadTitleHierarchy(); // Reload to reset
+        }
+    } catch (error) {
+        console.error('Error updating L2 title:', error);
+    }
+}
+
+/**
+ * Delete an L1 title
+ */
+async function deleteL1Title(titleId) {
+    if (!confirm('Delete this L1 title? This cannot be undone.')) return;
+
+    try {
+        const response = await fetch(`/api/books/${currentBookId}/l1-titles/${titleId}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            await loadTitleHierarchy();
+            clearValidationStatus();
+        } else {
+            const data = await response.json();
+            alert(data.detail || 'Failed to delete L1 title');
+        }
+    } catch (error) {
+        console.error('Error deleting L1 title:', error);
+        alert('Error deleting L1 title');
+    }
+}
+
+/**
+ * Delete an L2 title
+ */
+async function deleteL2Title(titleId) {
+    if (!confirm('Delete this L2 title? This cannot be undone.')) return;
+
+    try {
+        const response = await fetch(`/api/books/${currentBookId}/l2-titles/${titleId}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            await loadTitleHierarchy();
+            clearValidationStatus();
+        } else {
+            const data = await response.json();
+            alert(data.detail || 'Failed to delete L2 title');
+        }
+    } catch (error) {
+        console.error('Error deleting L2 title:', error);
+        alert('Error deleting L2 title');
+    }
+}
+
+/**
+ * Validate title coverage for the selected page range
+ */
+async function validateTitleCoverage() {
+    if (!currentBookId) return;
+
+    const startPage = parseInt(document.getElementById('start-page')?.value) || 1;
+    const endPage = parseInt(document.getElementById('end-page')?.value) || startPage;
+
+    try {
+        const response = await fetch(
+            `/api/books/${currentBookId}/validate-title-coverage?start_page=${startPage}&end_page=${endPage}`
+        );
+
+        if (!response.ok) {
+            throw new Error('Validation request failed');
+        }
+
+        const data = await response.json();
+        displayValidationResult(data, startPage, endPage);
+        titleHierarchyState.validationPassed = data.valid;
+
+    } catch (error) {
+        console.error('Error validating title coverage:', error);
+        alert('Error validating title coverage');
+    }
+}
+
+/**
+ * Display validation result
+ */
+function displayValidationResult(data, startPage, endPage) {
+    const statusEl = document.getElementById('title-validation-status');
+    if (!statusEl) return;
+
+    statusEl.style.display = 'block';
+
+    if (data.valid) {
+        statusEl.className = 'validation-success';
+        statusEl.innerHTML = `
+            <strong>✅ Validation Passed!</strong><br>
+            All pages (${startPage}-${endPage}) are covered by both L1 and L2 titles.
+            <br><br>
+            <em>You can now run Layout Detection.</em>
+        `;
+    } else {
+        statusEl.className = 'validation-error';
+        let message = `<strong>❌ Validation Failed</strong><br>`;
+        
+        if (!data.l1_valid && data.uncovered_l1_pages?.length > 0) {
+            message += `<br><strong>L1 Coverage Missing:</strong> Pages ${data.uncovered_l1_pages.join(', ')}`;
+        }
+        
+        if (!data.l2_valid && data.uncovered_l2_pages?.length > 0) {
+            message += `<br><strong>L2 Coverage Missing:</strong> Pages ${data.uncovered_l2_pages.join(', ')}`;
+        }
+        
+        message += `<br><br><em>Please configure titles to cover all pages before running Layout Detection.</em>`;
+        statusEl.innerHTML = message;
+    }
+}
+
+/**
+ * Clear validation status
+ */
+function clearValidationStatus() {
+    const statusEl = document.getElementById('title-validation-status');
+    if (statusEl) {
+        statusEl.style.display = 'none';
+        statusEl.className = '';
+        statusEl.innerHTML = '';
+    }
+    titleHierarchyState.validationPassed = false;
+}
+
+/**
+ * Open L1 attribute editor in a new tab/window
+ */
+function openL1AttributeEditor(titleId) {
+    window.open(`/l1-title-attributes?book_id=${currentBookId}&title_id=${titleId}`, '_blank');
+}
+
+/**
+ * Open L2 attribute editor in a new tab/window
+ */
+function openL2AttributeEditor(titleId) {
+    window.open(`/l2-title-attributes?book_id=${currentBookId}&title_id=${titleId}`, '_blank');
+}
+
+/**
+ * Check title validation before Layout Detection
+ * Returns true if validation passes, false otherwise
+ */
+async function checkTitleValidationBeforeDetection() {
+    const startPage = parseInt(document.getElementById('start-page')?.value) || 1;
+    const endPage = parseInt(document.getElementById('end-page')?.value) || startPage;
+
+    try {
+        const response = await fetch(
+            `/api/books/${currentBookId}/validate-title-coverage?start_page=${startPage}&end_page=${endPage}`
+        );
+
+        if (!response.ok) {
+            return true; // Allow detection if validation endpoint fails
+        }
+
+        const data = await response.json();
+        
+        if (!data.valid) {
+            displayValidationResult(data, startPage, endPage);
+            
+            // Scroll to validation section
+            const section = document.getElementById('title-hierarchy-section');
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            
+            return false;
+        }
+        
+        return true;
+
+    } catch (error) {
+        console.error('Error checking title validation:', error);
+        return true; // Allow detection if validation fails
+    }
+}
+
+// Hook into book selection to load title hierarchy
+const originalOnBookSelect = onBookSelect;
+onBookSelect = async function() {
+    await originalOnBookSelect.apply(this, arguments);
+    await loadTitleHierarchy();
+};

@@ -474,25 +474,38 @@ async def create_knowledge_units(book_id: int, request: CreateKURequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/books/{book_id}/pipeline/page-status", response_model=List[PageStatusResponse])
+@router.get("/books/{book_id}/pipeline/page-status")
 async def get_pipeline_page_status(book_id: int):
     """
     Get the pipeline status for all pages in a book.
     
-    Returns status for each page:
-    - layout_status: pending, detected, ready
-    - extraction_status: pending, completed
-    - ku_status: pending, completed
-    - claude_status: pending, completed
+    Returns status for each page with boolean flags for frontend compatibility:
+    - layout_done: bool
+    - extraction_done: bool
+    - ku_created: bool
+    - claude_done: bool
     """
     try:
         # Validate book exists
-        await _get_table_prefix(book_id)
+        table_prefix = await _get_table_prefix(book_id)
         
         # Get page status from service
         page_status = get_page_ku_status(book_id)
         
-        return [PageStatusResponse(**status) for status in page_status]
+        # Transform to frontend-expected format
+        pages = []
+        for status in page_status:
+            pages.append({
+                "page_number": status["page_number"],
+                "layout_done": status["layout_status"] in ("detected", "ready"),
+                "extraction_done": status["extraction_status"] == "completed",
+                "ku_created": status["ku_status"] == "completed",
+                "claude_done": status["claude_status"] == "completed",
+                "claude_pending": status["claude_status"] == "pending" and status["ku_status"] == "completed",
+                "ready_for_extraction": status.get("ready_for_extraction", False)
+            })
+        
+        return {"pages": pages}
         
     except HTTPException:
         raise
@@ -543,4 +556,144 @@ async def get_pages_ready_for_ku(book_id: int):
         raise
     except Exception as e:
         logger.error(f"Error getting pages ready for KU: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/books/{book_id}/pipeline/ku-statistics")
+async def get_ku_statistics(book_id: int):
+    """
+    Get statistics on items NOT yet created as Knowledge Units.
+    
+    Returns counts by type:
+    - paragraphs: count of paragraphs without linked KU
+    - diagrams: count of diagrams without linked KU
+    - tables: count of tables without linked KU
+    - equations: count of equations without linked KU
+    - lists: count of lists (all types) without linked KU
+    - questions: count of questions without linked KU
+    - answers: count of answers without linked KU
+    - total: total count of all items without linked KU
+    """
+    try:
+        table_prefix = await _get_table_prefix(book_id)
+        
+        # Count unlinked paragraphs
+        para_sql = text(f"""
+            SELECT COUNT(*) 
+            FROM raw_{table_prefix}_paragraph_images
+            WHERE is_enabled = TRUE AND linked_knowledge_unit_id IS NULL
+        """)
+        
+        # Count unlinked diagrams by type
+        diag_sql = text(f"""
+            SELECT 
+                COALESCE(diagram_type, 'diagram') as dtype,
+                COUNT(*) as cnt
+            FROM raw_{table_prefix}_diagram_images
+            WHERE is_enabled = TRUE AND linked_knowledge_unit_id IS NULL
+            GROUP BY COALESCE(diagram_type, 'diagram')
+        """)
+        
+        with engine.connect() as conn:
+            para_count = conn.execute(para_sql).scalar() or 0
+            
+            diag_counts = {}
+            for row in conn.execute(diag_sql).fetchall():
+                dtype = row[0]
+                cnt = row[1]
+                diag_counts[dtype] = cnt
+        
+        # Aggregate list types
+        list_count = sum(diag_counts.get(lt, 0) for lt in ['list_bulleted', 'list_numbered', 'list_lettered', 'list_item'])
+        
+        stats = {
+            "paragraphs": para_count,
+            "diagrams": diag_counts.get('diagram', 0),
+            "tables": diag_counts.get('table', 0),
+            "equations": diag_counts.get('equation', 0),
+            "lists": list_count,
+            "questions": diag_counts.get('question', 0),
+            "answers": diag_counts.get('answer', 0),
+            "captions": diag_counts.get('caption', 0),
+            "references": diag_counts.get('reference', 0),
+            "total": para_count + sum(diag_counts.values())
+        }
+        
+        return {
+            "success": True,
+            "statistics": stats,
+            "has_items_to_process": stats["total"] > 0
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting KU statistics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/books/{book_id}/pipeline/claude-analysis-statistics")
+async def get_claude_analysis_statistics(book_id: int):
+    """
+    Get statistics on items that require Claude analysis.
+    
+    Items requiring Claude analysis are Knowledge Units where:
+    - attr9_value (class type) is NOT 'paragraph' (paragraphs don't need Claude)
+    - text_content is empty or NULL (Claude hasn't processed it yet)
+    
+    Returns counts by type:
+    - diagrams: count needing analysis
+    - tables: count needing analysis
+    - equations: count needing analysis
+    - lists: count needing analysis
+    - questions: count needing analysis (Q&A pairs)
+    - total: total count needing analysis
+    """
+    try:
+        table_prefix = await _get_table_prefix(book_id)
+        
+        # Count KUs by class type that need Claude analysis
+        # These are non-paragraph KUs where text_content is empty/null
+        sql = text(f"""
+            SELECT 
+                COALESCE(attr9_value, 'unknown') as class_type,
+                COUNT(*) as cnt
+            FROM {table_prefix}_knowledge_units
+            WHERE attr9_value != 'paragraph'
+            AND attr9_value IS NOT NULL
+            AND (text_content IS NULL OR text_content = '')
+            GROUP BY attr9_value
+        """)
+        
+        with engine.connect() as conn:
+            type_counts = {}
+            for row in conn.execute(sql).fetchall():
+                class_type = row[0]
+                cnt = row[1]
+                type_counts[class_type] = cnt
+        
+        # Aggregate list types
+        list_count = sum(type_counts.get(lt, 0) for lt in ['list_bulleted', 'list_numbered', 'list_lettered', 'list_item'])
+        
+        stats = {
+            "diagrams": type_counts.get('diagram', 0),
+            "tables": type_counts.get('table', 0),
+            "equations": type_counts.get('equation', 0),
+            "lists": list_count,
+            "question_answer": type_counts.get('question_answer', 0),
+            "captions": type_counts.get('caption', 0),
+            "references": type_counts.get('reference', 0),
+            "total": sum(type_counts.values())
+        }
+        
+        return {
+            "success": True,
+            "statistics": stats,
+            "has_items_to_process": stats["total"] > 0
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting Claude analysis statistics: {e}")
         raise HTTPException(status_code=500, detail=str(e))
