@@ -6,13 +6,13 @@
 
 ---
 
-## Overall Status: 🟢 Requirements Complete | 🟡 Design In Progress
+## Overall Status: 🟢 Requirements Complete | 🟡 Implementation In Progress
 
 | Phase | Status | Progress |
 |-------|--------|----------|
 | Requirements | 🟢 Complete | 100% |
-| Design | 🟡 In Progress | 0% |
-| Implementation | 🔴 Not Started | 0% |
+| Design | 🟢 Complete | 100% |
+| Implementation | 🟡 In Progress | 60% |
 | Testing | 🔴 Not Started | 0% |
 | Documentation | 🔴 Not Started | 0% |
 
@@ -34,27 +34,44 @@
 
 ### Feature 5A: Multi-PDF Upload
 - [x] Requirements clarified
-- [ ] Database schema designed
-- [ ] API endpoints designed
-- [ ] UI mockups created
-- [ ] Implementation started
+- [x] Database schema designed
+- [x] API endpoints designed
+- [x] Database migration created
+- [x] API routes implemented
+- [ ] UI implementation started
 
 ### Feature 5B: Cross-Book Attribute Access
 - [x] Requirements clarified
-- [ ] Permission model designed
-- [ ] Database schema designed
-- [ ] API endpoints designed
-- [ ] Implementation started
+- [x] Permission model designed
+- [x] Database schema designed
+- [x] API endpoints designed
+- [x] Database migration created
+- [x] API routes implemented
+- [ ] UI implementation started
 
 ### Feature 5C: Template Reference UI
 - [x] Requirements clarified
-- [ ] Syntax defined
-- [ ] Autocomplete UI designed
-- [ ] Implementation started
+- [x] Syntax defined
+- [x] Autocomplete UI designed
+- [x] API routes implemented
+- [ ] Frontend autocomplete implementation
 
 ---
 
 ## Session Log
+
+### Session 2026-01-26 (Implementation)
+- Created database migration script (migrate_add_multi_pdf_crossbook.py)
+- Ran migration successfully - created pdf_uploads and cross_book_access_log tables
+- Added has_multiple_pdfs, pdf_count columns to books_metadata
+- Added external_writable_start, external_writable_end columns to L1/L2 title tables
+- Created multi_pdf.py API routes (upload, list, resolve overlaps, page mapping)
+- Created cross_book.py API routes (read/write attributes, audit log)
+- Created template_reference.py API routes (search, tree browser)
+- Updated main.py to register new routes
+- Updated auto-slicer.js to include writable range fields in title rows
+- Updated title_hierarchy.py to return and save writable range fields
+- Updated auto-slicer.html CSS for writable range inputs
 
 ### Session 2026-01-26 (Continued)
 - Fixed Q9 and Q10 answers (were showing PENDING)

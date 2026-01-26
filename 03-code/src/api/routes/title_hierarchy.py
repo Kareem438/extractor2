@@ -109,7 +109,7 @@ async def get_l1_titles(book_id: int):
             return {"titles": [], "message": "L1 titles table not created yet"}
         
         result = db.execute(
-            text(f"SELECT id, title_text, start_page, end_page, display_order, created_at FROM {table_name} ORDER BY display_order, start_page")
+            text(f"SELECT id, title_text, start_page, end_page, display_order, external_writable_start, external_writable_end, created_at FROM {table_name} ORDER BY display_order, start_page")
         ).fetchall()
         
         titles = [{
@@ -118,7 +118,9 @@ async def get_l1_titles(book_id: int):
             "start_page": row[2],
             "end_page": row[3],
             "display_order": row[4],
-            "created_at": row[5].isoformat() if row[5] else None
+            "external_writable_start": row[5] or 151,
+            "external_writable_end": row[6] or 200,
+            "created_at": row[7].isoformat() if row[7] else None
         } for row in result]
         
         return {"titles": titles}
@@ -376,7 +378,7 @@ async def get_l2_titles(book_id: int):
             return {"titles": [], "message": "L2 titles table not created yet"}
         
         result = db.execute(
-            text(f"SELECT id, title_text, start_page, end_page, parent_l1_id, display_order, created_at FROM {table_name} ORDER BY display_order, start_page")
+            text(f"SELECT id, title_text, start_page, end_page, parent_l1_id, display_order, external_writable_start, external_writable_end, created_at FROM {table_name} ORDER BY display_order, start_page")
         ).fetchall()
         
         titles = [{
@@ -386,7 +388,9 @@ async def get_l2_titles(book_id: int):
             "end_page": row[3],
             "parent_l1_id": row[4],
             "display_order": row[5],
-            "created_at": row[6].isoformat() if row[6] else None
+            "external_writable_start": row[6] or 101,
+            "external_writable_end": row[7] or 150,
+            "created_at": row[8].isoformat() if row[8] else None
         } for row in result]
         
         return {"titles": titles}
@@ -1027,6 +1031,8 @@ async def sync_titles_to_database(book_id: int, request: TitleSyncRequest):
             title_text = t.get('title', '').strip()
             start_page = t.get('start_page', 1)
             end_page = t.get('end_page', 1)
+            writable_start = t.get('writable_start', 151)
+            writable_end = t.get('writable_end', 200)
             
             if not title_text:
                 continue
@@ -1036,21 +1042,25 @@ async def sync_titles_to_database(book_id: int, request: TitleSyncRequest):
                 db.execute(
                     text(f"""
                         UPDATE {l1_table} 
-                        SET start_page = :start_page, end_page = :end_page, display_order = :order, updated_at = NOW()
+                        SET start_page = :start_page, end_page = :end_page, display_order = :order,
+                            external_writable_start = :writable_start, external_writable_end = :writable_end,
+                            updated_at = NOW()
                         WHERE id = :id
                     """),
-                    {"id": existing_l1[title_text], "start_page": start_page, "end_page": end_page, "order": idx}
+                    {"id": existing_l1[title_text], "start_page": start_page, "end_page": end_page, "order": idx,
+                     "writable_start": writable_start, "writable_end": writable_end}
                 )
                 new_l1_ids[title_text] = existing_l1[title_text]
             else:
                 # Insert new
                 result = db.execute(
                     text(f"""
-                        INSERT INTO {l1_table} (title_text, start_page, end_page, display_order)
-                        VALUES (:title_text, :start_page, :end_page, :order)
+                        INSERT INTO {l1_table} (title_text, start_page, end_page, display_order, external_writable_start, external_writable_end)
+                        VALUES (:title_text, :start_page, :end_page, :order, :writable_start, :writable_end)
                         RETURNING id
                     """),
-                    {"title_text": title_text, "start_page": start_page, "end_page": end_page, "order": idx}
+                    {"title_text": title_text, "start_page": start_page, "end_page": end_page, "order": idx,
+                     "writable_start": writable_start, "writable_end": writable_end}
                 )
                 new_l1_ids[title_text] = result.fetchone()[0]
             
@@ -1070,6 +1080,8 @@ async def sync_titles_to_database(book_id: int, request: TitleSyncRequest):
             title_text = t.get('title', '').strip()
             start_page = t.get('start_page', 1)
             end_page = t.get('end_page', 1)
+            writable_start = t.get('writable_start', 101)
+            writable_end = t.get('writable_end', 150)
             
             if not title_text:
                 continue
@@ -1091,19 +1103,23 @@ async def sync_titles_to_database(book_id: int, request: TitleSyncRequest):
                 db.execute(
                     text(f"""
                         UPDATE {l2_table} 
-                        SET start_page = :start_page, end_page = :end_page, parent_l1_id = :parent, display_order = :order, updated_at = NOW()
+                        SET start_page = :start_page, end_page = :end_page, parent_l1_id = :parent, display_order = :order,
+                            external_writable_start = :writable_start, external_writable_end = :writable_end,
+                            updated_at = NOW()
                         WHERE id = :id
                     """),
-                    {"id": existing_l2[title_text], "start_page": start_page, "end_page": end_page, "parent": parent_l1_id, "order": idx}
+                    {"id": existing_l2[title_text], "start_page": start_page, "end_page": end_page, "parent": parent_l1_id, "order": idx,
+                     "writable_start": writable_start, "writable_end": writable_end}
                 )
             else:
                 # Insert new
                 db.execute(
                     text(f"""
-                        INSERT INTO {l2_table} (title_text, start_page, end_page, parent_l1_id, display_order)
-                        VALUES (:title_text, :start_page, :end_page, :parent, :order)
+                        INSERT INTO {l2_table} (title_text, start_page, end_page, parent_l1_id, display_order, external_writable_start, external_writable_end)
+                        VALUES (:title_text, :start_page, :end_page, :parent, :order, :writable_start, :writable_end)
                     """),
-                    {"title_text": title_text, "start_page": start_page, "end_page": end_page, "parent": parent_l1_id, "order": idx}
+                    {"title_text": title_text, "start_page": start_page, "end_page": end_page, "parent": parent_l1_id, "order": idx,
+                     "writable_start": writable_start, "writable_end": writable_end}
                 )
             
             l2_synced += 1

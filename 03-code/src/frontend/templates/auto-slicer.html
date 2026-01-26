@@ -127,14 +127,21 @@
             background: #f9f9f9;
             border-radius: 4px;
             margin-bottom: 10px;
+            flex-wrap: wrap;
         }
         .dynamic-row input {
             padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
         }
-        .dynamic-row .title-input { flex: 2; }
+        .dynamic-row .title-input { flex: 2; min-width: 200px; }
         .dynamic-row .page-input { width: 80px; }
+        .dynamic-row .writable-start, .dynamic-row .writable-end { width: 60px; }
+        .dynamic-row .writable-range-label {
+            color: #666;
+            font-size: 12px;
+            margin-left: 10px;
+        }
 
         /* Title Levels */
         .title-level {

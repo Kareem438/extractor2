@@ -293,7 +293,7 @@ async def l2_title_attributes_page():
 # Include API routers (will be added in subsequent chunks)
 # Note: Routers will be included as they are implemented
 try:
-    from src.api.routes import upload, processing, books, knowledge_units, images, pages, ocr, search, verify_pages, raw_data_check, image_clips, review_raw, pipeline, worker, auto_slicer, layout_detection, extraction, gpu, title_hierarchy
+    from src.api.routes import upload, processing, books, knowledge_units, images, pages, ocr, search, verify_pages, raw_data_check, image_clips, review_raw, pipeline, worker, auto_slicer, layout_detection, extraction, gpu, title_hierarchy, multi_pdf, cross_book, template_reference
 
     app.include_router(upload.router, prefix="/api", tags=["Upload"])
     app.include_router(processing.router, prefix="/api", tags=["Processing"])
@@ -314,6 +314,9 @@ try:
     app.include_router(extraction.router, prefix="/api", tags=["Extraction"])
     app.include_router(gpu.router, prefix="/api", tags=["GPU Management"])
     app.include_router(title_hierarchy.router, prefix="/api", tags=["Title Hierarchy"])
+    app.include_router(multi_pdf.router, prefix="/api", tags=["Multi-PDF Upload"])
+    app.include_router(cross_book.router, prefix="/api", tags=["Cross-Book Access"])
+    app.include_router(template_reference.router, prefix="/api", tags=["Template Reference"])
 
     logger.info("API routers loaded successfully")
 except ImportError as e:

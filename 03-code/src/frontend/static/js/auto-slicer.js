@@ -334,7 +334,7 @@ async function loadTitles() {
         if (l1Container) {
             l1Container.innerHTML = '';
             (l1Data.titles || []).forEach(t => {
-                addTitleRow('level1', t.title_text, t.start_page, t.end_page, t.id);
+                addTitleRow('level1', t.title_text, t.start_page, t.end_page, t.id, t.external_writable_start, t.external_writable_end);
             });
         }
     } catch (error) {
@@ -344,7 +344,7 @@ async function loadTitles() {
         if (l1Container) {
             l1Container.innerHTML = '';
             const titles = currentConfig.titles?.level1 || [];
-            titles.forEach(t => addTitleRow('level1', t.title, t.start_page, t.end_page, null));
+            titles.forEach(t => addTitleRow('level1', t.title, t.start_page, t.end_page, null, t.writable_start, t.writable_end));
         }
     }
     
@@ -357,7 +357,7 @@ async function loadTitles() {
         if (l2Container) {
             l2Container.innerHTML = '';
             (l2Data.titles || []).forEach(t => {
-                addTitleRow('level2', t.title_text, t.start_page, t.end_page, t.id);
+                addTitleRow('level2', t.title_text, t.start_page, t.end_page, t.id, t.external_writable_start, t.external_writable_end);
             });
         }
     } catch (error) {
@@ -367,7 +367,7 @@ async function loadTitles() {
         if (l2Container) {
             l2Container.innerHTML = '';
             const titles = currentConfig.titles?.level2 || [];
-            titles.forEach(t => addTitleRow('level2', t.title, t.start_page, t.end_page, null));
+            titles.forEach(t => addTitleRow('level2', t.title, t.start_page, t.end_page, null, t.writable_start, t.writable_end));
         }
     }
     
@@ -480,9 +480,18 @@ function gatherTitles() {
             const title = row.querySelector('.title-input').value.trim();
             const startPage = parseInt(row.querySelector('.start-page').value) || 0;
             const endPage = parseInt(row.querySelector('.end-page').value) || 0;
+            
+            // Get writable range for L1/L2 titles
+            const writableStartEl = row.querySelector('.writable-start');
+            const writableEndEl = row.querySelector('.writable-end');
+            const writableStart = writableStartEl ? parseInt(writableStartEl.value) : null;
+            const writableEnd = writableEndEl ? parseInt(writableEndEl.value) : null;
 
             if (title && startPage && endPage) {
-                titles[level].push({ title, start_page: startPage, end_page: endPage });
+                const titleData = { title, start_page: startPage, end_page: endPage };
+                if (writableStart !== null) titleData.writable_start = writableStart;
+                if (writableEnd !== null) titleData.writable_end = writableEnd;
+                titles[level].push(titleData);
             }
         });
     });
@@ -510,7 +519,7 @@ function gatherBatches() {
 // Dynamic Row Management
 // =============================================================================
 
-function addTitleRow(level, title = '', startPage = '', endPage = '', titleId = null) {
+function addTitleRow(level, title = '', startPage = '', endPage = '', titleId = null, writableStart = null, writableEnd = null) {
     const container = document.getElementById(`${level}-titles`);
     const row = document.createElement('div');
     row.className = 'dynamic-row';
@@ -521,10 +530,22 @@ function addTitleRow(level, title = '', startPage = '', endPage = '', titleId = 
         ? `<button type="button" class="btn btn-secondary btn-sm" onclick="openAttributeEditor('${level}', ${titleId})" title="Edit Attributes">Attrs</button>`
         : '';
     
+    // Writable range fields for L1 and L2 (for cross-book access)
+    const defaultWritableStart = level === 'level1' ? 151 : (level === 'level2' ? 101 : null);
+    const defaultWritableEnd = level === 'level1' ? 200 : (level === 'level2' ? 150 : null);
+    const showWritableRange = (level === 'level1' || level === 'level2');
+    const writableRangeHtml = showWritableRange 
+        ? `<span class="writable-range-label" title="External writable range for cross-book access">Writable:</span>
+           <input type="number" class="page-input writable-start" placeholder="Start" min="1" value="${writableStart || defaultWritableStart}" title="First attribute writable by other books">
+           <span>-</span>
+           <input type="number" class="page-input writable-end" placeholder="End" min="1" value="${writableEnd || defaultWritableEnd}" title="Last attribute writable by other books">`
+        : '';
+    
     row.innerHTML = `
         <input type="text" class="title-input" placeholder="Title text" value="${title}" data-title-id="${titleId || ''}">
         <input type="number" class="page-input start-page" placeholder="Start" min="1" value="${startPage}">
         <input type="number" class="page-input end-page" placeholder="End" min="1" value="${endPage}">
+        ${writableRangeHtml}
         ${attrBtnHtml}
         <button type="button" class="btn btn-delete" onclick="this.parentElement.remove()">Delete</button>
     `;
