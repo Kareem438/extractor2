@@ -290,6 +290,17 @@ async def l2_title_attributes_page():
         return HTMLResponse(content="<h1>L2 Title Attributes page not found</h1>", status_code=404)
 
 
+@app.get("/cross-book-audit", response_class=HTMLResponse)
+async def cross_book_audit_page():
+    """Serve the Cross-Book Audit Log page."""
+    html_path = os.path.join(os.path.dirname(__file__), "frontend", "templates", "cross-book-audit.html")
+    try:
+        with open(html_path, "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return HTMLResponse(content="<h1>Cross-Book Audit Log page not found</h1>", status_code=404)
+
+
 # Include API routers (will be added in subsequent chunks)
 # Note: Routers will be included as they are implemented
 try:

@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cross-Book Audit Log - Knowledge Extraction System</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; background: #f5f5f5; }
+        
+        /* Top Navigation */
+        .top-nav {
+            background: #2196F3;
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .top-nav-brand { font-size: 20px; font-weight: bold; }
+        .top-nav-links { display: flex; gap: 20px; }
+        .top-nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .top-nav-links a:hover { background: rgba(255,255,255,0.2); }
+        .top-nav-links a.active { background: rgba(255,255,255,0.3); font-weight: bold; }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);
+            color: white;
+            padding: 20px 30px;
+        }
+        .header h1 { margin: 0; font-size: 24px; }
+        .header p { margin: 10px 0 0 0; opacity: 0.9; }
+        
+        /* Container */
+        .container { max-width: 1400px; margin: 30px auto; padding: 0 20px; }
+        
+        /* Section */
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .section h2 {
+            margin: 0 0 20px 0;
+            color: #333;
+            border-bottom: 2px solid #9C27B0;
+            padding-bottom: 10px;
+        }
+        
+        /* Filters */
+        .filters {
+            display: flex;
+            gap: 20px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .filter-group label {
+            font-weight: bold;
+            color: #666;
+            font-size: 14px;
+        }
+        .filter-group select {
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 14px;
+            min-width: 200px;
+        }
+        .filter-group select:focus {
+            border-color: #9C27B0;
+            outline: none;
+        }
+        
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: #9C27B0; color: white; }
+        .btn-primary:hover { background: #7B1FA2; }
+        .btn-secondary { background: #2196F3; color: white; }
+        .btn-secondary:hover { background: #1976D2; }
+        
+        /* Table */
+        .audit-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .audit-table th {
+            background: #f5f5f5;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: bold;
+            color: #333;
+            border-bottom: 2px solid #ddd;
+        }
+        .audit-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            vertical-align: top;
+        }
+        .audit-table tr:hover { background: #fafafa; }
+        
+        /* Operation badges */
+        .op-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .op-write { background: #e3f2fd; color: #1565c0; }
+        .op-increment { background: #e8f5e9; color: #2e7d32; }
+        .op-read { background: #f5f5f5; color: #666; }
+        
+        /* Value change */
+        .value-change {
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .value-old { color: #999; text-decoration: line-through; }
+        .value-new { color: #4CAF50; font-weight: bold; }
+        .value-arrow { color: #666; margin: 0 5px; }
+        
+        /* Book/Title info */
+        .book-info { font-weight: bold; color: #333; }
+        .title-info { font-size: 13px; color: #666; margin-top: 3px; }
+        
+        /* Timestamp */
+        .timestamp { font-size: 13px; color: #666; }
+        
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+        .empty-state-icon { font-size: 48px; margin-bottom: 15px; }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        /* Stats */
+        .stats-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #9C27B0;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="top-nav-brand">📚 Knowledge Extraction System</div>
+        <div class="top-nav-links">
+            <a href="/upload">📤 Upload</a>
+            <a href="/auto-slicer">🔪 Auto-Slicer</a>
+            <a href="/extraction-dashboard">📝 Extraction</a>
+            <a href="/pipeline-dashboard">⚙️ Pipeline</a>
+            <a href="/pipeline-config">🔧 Pipeline Config</a>
+            <a href="/library">📚 Library</a>
+            <a href="/verification">✅ Verification</a>
+            <a href="/cross-book-audit" class="active">📊 Audit Log</a>
+        </div>
+    </nav>
+    
+    <div class="header">
+        <h1>📊 Cross-Book Access Audit Log</h1>
+        <p>Track all cross-book attribute reads and writes between books</p>
+    </div>
+    
+    <div class="container">
+        <!-- Stats Row -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-value" id="total-operations">-</div>
+                <div class="stat-label">Total Operations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="write-count">-</div>
+                <div class="stat-label">Write Operations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="increment-count">-</div>
+                <div class="stat-label">Increment Operations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="books-involved">-</div>
+                <div class="stat-label">Books Involved</div>
+            </div>
+        </div>
+        
+        <!-- Filters Section -->
+        <div class="section">
+            <h2>🔍 Filters</h2>
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="source-book-filter">Source Book:</label>
+                    <select id="source-book-filter">
+                        <option value="">All Books</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="target-book-filter">Target Book:</label>
+                    <select id="target-book-filter">
+                        <option value="">All Books</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="limit-filter">Show:</label>
+                    <select id="limit-filter">
+                        <option value="50">Last 50</option>
+                        <option value="100" selected>Last 100</option>
+                        <option value="200">Last 200</option>
+                        <option value="500">Last 500</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="loadAuditLog()">🔄 Refresh</button>
+            </div>
+        </div>
+        
+        <!-- Audit Log Table -->
+        <div class="section">
+            <h2>📋 Audit Log</h2>
+            <div id="audit-log-container">
+                <div class="loading">Loading audit log...</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Load books for filter dropdowns
+        async function loadBooks() {
+            try {
+                const response = await fetch('/api/books?limit=100');
+                const data = await response.json();
+                
+                const sourceSelect = document.getElementById('source-book-filter');
+                const targetSelect = document.getElementById('target-book-filter');
+                
+                data.books.forEach(book => {
+                    const option1 = document.createElement('option');
+                    option1.value = book.book_id;
+                    option1.textContent = book.book_name;
+                    sourceSelect.appendChild(option1);
+                    
+                    const option2 = document.createElement('option');
+                    option2.value = book.book_id;
+                    option2.textContent = book.book_name;
+                    targetSelect.appendChild(option2);
+                });
+            } catch (error) {
+                console.error('Error loading books:', error);
+            }
+        }
+        
+        // Load audit log
+        async function loadAuditLog() {
+            const container = document.getElementById('audit-log-container');
+            const sourceBookId = document.getElementById('source-book-filter').value;
+            const targetBookId = document.getElementById('target-book-filter').value;
+            const limit = document.getElementById('limit-filter').value;
+            
+            container.innerHTML = '<div class="loading">Loading audit log...</div>';
+            
+            try {
+                let url = `/api/cross-book/audit-log?limit=${limit}`;
+                if (sourceBookId) url += `&source_book_id=${sourceBookId}`;
+                if (targetBookId) url += `&target_book_id=${targetBookId}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (!data.logs || data.logs.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <h3>No Audit Log Entries</h3>
+                            <p>Cross-book attribute operations will appear here when they occur.</p>
+                        </div>
+                    `;
+                    updateStats(0, 0, 0, 0);
+                    return;
+                }
+                
+                // Calculate stats
+                const writeCount = data.logs.filter(l => l.operation === 'write').length;
+                const incrementCount = data.logs.filter(l => l.operation === 'increment').length;
+                const uniqueBooks = new Set([
+                    ...data.logs.map(l => l.source_book_id),
+                    ...data.logs.map(l => l.target_book_id)
+                ]).size;
+                
+                updateStats(data.logs.length, writeCount, incrementCount, uniqueBooks);
+                
+                // Render table
+                let html = `
+                    <table class="audit-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Source</th>
+                                <th>Target</th>
+                                <th>Attribute</th>
+                                <th>Value Change</th>
+                                <th>Operation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                data.logs.forEach(log => {
+                    const timestamp = log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A';
+                    const opClass = log.operation === 'write' ? 'op-write' : 
+                                   log.operation === 'increment' ? 'op-increment' : 'op-read';
+                    
+                    html += `
+                        <tr>
+                            <td class="timestamp">${timestamp}</td>
+                            <td>
+                                <div class="book-info">${log.source_book || 'Book #' + log.source_book_id}</div>
+                                ${log.pipeline_rule ? `<div class="title-info">Rule: ${log.pipeline_rule} #${log.pipeline_number || ''}</div>` : ''}
+                            </td>
+                            <td>
+                                <div class="book-info">${log.target_book || 'Book #' + log.target_book_id}</div>
+                                <div class="title-info">${log.target_level} Title #${log.target_title_id}</div>
+                            </td>
+                            <td><strong>${log.attribute}</strong></td>
+                            <td class="value-change">
+                                <span class="value-old">${log.old_value || 'null'}</span>
+                                <span class="value-arrow">→</span>
+                                <span class="value-new">${log.new_value || 'null'}</span>
+                            </td>
+                            <td><span class="op-badge ${opClass}">${log.operation}</span></td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                container.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Error loading audit log:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <h3>Error Loading Audit Log</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Update stats display
+        function updateStats(total, writes, increments, books) {
+            document.getElementById('total-operations').textContent = total;
+            document.getElementById('write-count').textContent = writes;
+            document.getElementById('increment-count').textContent = increments;
+            document.getElementById('books-involved').textContent = books;
+        }
+        
+        // Filter change handlers
+        document.getElementById('source-book-filter').addEventListener('change', loadAuditLog);
+        document.getElementById('target-book-filter').addEventListener('change', loadAuditLog);
+        document.getElementById('limit-filter').addEventListener('change', loadAuditLog);
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadBooks();
+            loadAuditLog();
+        });
+    </script>
+</body>
+</html>

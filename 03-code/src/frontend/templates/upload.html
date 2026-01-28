@@ -76,6 +76,75 @@
             from { transform: translateY(-100%); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
+        
+        /* Modal Overlay for Multi-PDF */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow: auto;
+            padding: 20px;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal-header h3 { margin: 0; }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+        .modal-close:hover { color: #333; }
+        
+        /* Buttons for modal */
+        .btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-cancel { background: #9E9E9E; color: white; }
+        .btn-cancel:hover { background: #757575; }
+        
+        /* PDF list item */
+        .pdf-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            border-left: 3px solid #2196F3;
+        }
+        .pdf-item-info { flex: 1; }
+        .pdf-item-pages { color: #666; font-size: 13px; }
+        
+        /* Overlap item */
+        .overlap-item {
+            padding: 15px;
+            background: #fff3e0;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            border-left: 4px solid #FF9800;
+        }
+        .overlap-item-header { font-weight: bold; margin-bottom: 10px; }
+        .overlap-choice { margin-left: 20px; }
+        .overlap-choice label { display: block; margin-bottom: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -102,6 +171,7 @@
             <a href="/extraction-dashboard">📝 Extraction</a>
             <a href="/pipeline-dashboard">⚙️ Pipeline</a>
             <a href="/pipeline-config">🔧 Pipeline Config</a>
+            <a href="/cross-book-audit">📊 Audit Log</a>
             <a href="/library">📚 Library</a>
             <a href="/verification">✅ Verification</a>
             <a href="/book-settings">🔧 Book Settings</a>
@@ -162,6 +232,83 @@
                     <button type="button" id="proceed-existing-btn" class="btn-primary" style="width: 100%; margin-top: 20px; padding: 15px; background: #2196F3; border: none; border-radius: 4px; color: white; font-size: 16px; cursor: pointer; font-weight: bold;" disabled>
                         ➡️ Proceed with Selected Book
                     </button>
+
+                    <!-- Multi-PDF Upload Section (visible when book selected) -->
+                    <div id="multi-pdf-section" style="display: none; margin-top: 20px; padding: 20px; background: #f0f7ff; border-radius: 8px; border: 2px dashed #2196F3;">
+                        <h3 style="color: #1976D2; margin: 0 0 15px 0;">📄 Upload Additional PDF to This Book</h3>
+                        
+                        <!-- Existing PDFs List -->
+                        <div id="existing-pdfs-list" style="margin-bottom: 20px;">
+                            <strong>Current PDFs:</strong>
+                            <div id="pdf-list-container" style="margin-top: 10px; max-height: 150px; overflow-y: auto;">
+                                <span style="color: #666;">Loading...</span>
+                            </div>
+                        </div>
+
+                        <!-- Upload Form -->
+                        <div class="file-upload" style="margin-bottom: 15px;">
+                            <label for="additional-pdf-input" class="file-label" style="border: 2px dashed #2196F3; background: white;">
+                                <span>📎 Choose Additional PDF File</span>
+                                <input type="file" id="additional-pdf-input" accept=".pdf">
+                            </label>
+                            <div id="additional-file-info" style="margin-top: 10px;"></div>
+                        </div>
+
+                        <!-- Page Mapping -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                            <div class="form-group">
+                                <label for="pdf-skip-pages">Skip first N pages of PDF:</label>
+                                <input type="number" id="pdf-skip-pages" value="0" min="0" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                                <small style="color: #666;">Skip cover pages, table of contents, etc.</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="book-start-page">Starting book page number:</label>
+                                <input type="number" id="book-start-page" value="1" min="1" style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                                <small id="suggested-start-hint" style="color: #4CAF50;"></small>
+                            </div>
+                        </div>
+
+                        <button type="button" id="upload-additional-pdf-btn" class="btn-primary" style="width: 100%; padding: 12px; background: #4CAF50; border: none; border-radius: 4px; color: white; font-weight: bold;" disabled>
+                            📤 Upload Additional PDF
+                        </button>
+                        
+                        <div id="additional-upload-status" style="margin-top: 10px; display: none;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Overlap Resolution Modal -->
+            <div class="modal-overlay" id="overlap-modal">
+                <div class="modal-content" style="max-width: 600px;">
+                    <div class="modal-header">
+                        <h3>⚠️ Page Overlap Detected</h3>
+                        <button class="modal-close" onclick="closeOverlapModal()">&times;</button>
+                    </div>
+                    <p style="color: #666; margin-bottom: 20px;">The following pages already exist in this book. Choose which version to keep:</p>
+                    
+                    <div id="overlap-list" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px;">
+                        <!-- Overlap items will be inserted here -->
+                    </div>
+                    
+                    <div style="background: #f5f5f5; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" id="apply-to-all-checkbox">
+                            <span>Apply same choice to all remaining pages</span>
+                        </label>
+                        <div id="apply-to-all-options" style="display: none; margin-top: 10px; padding-left: 30px;">
+                            <label style="display: block; margin-bottom: 5px;">
+                                <input type="radio" name="default-choice" value="existing" checked> Keep existing (from original PDF)
+                            </label>
+                            <label style="display: block;">
+                                <input type="radio" name="default-choice" value="new"> Use new (from uploaded PDF)
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button class="btn btn-cancel" onclick="closeOverlapModal()">Cancel</button>
+                        <button class="btn btn-primary" onclick="resolveOverlaps()" style="background: #4CAF50;">Resolve Overlaps</button>
+                    </div>
                 </div>
             </div>
 
@@ -633,7 +780,291 @@ Examples:
 
     <script src="/static/js/upload.js"></script>
     <script>
+        // =====================================================
+        // Multi-PDF Upload Functionality
+        // =====================================================
+        
+        let selectedBookIdForMultiPdf = null;
+        let currentOverlaps = [];
+        
+        // Show multi-PDF section when a book is selected
+        function showMultiPdfSection(bookId) {
+            selectedBookIdForMultiPdf = bookId;
+            const section = document.getElementById('multi-pdf-section');
+            section.style.display = 'block';
+            
+            // Load existing PDFs
+            loadExistingPdfs(bookId);
+            
+            // Get suggested start page
+            loadSuggestedStartPage(bookId);
+        }
+        
+        // Hide multi-PDF section
+        function hideMultiPdfSection() {
+            selectedBookIdForMultiPdf = null;
+            document.getElementById('multi-pdf-section').style.display = 'none';
+        }
+        
+        // Load existing PDFs for the book
+        async function loadExistingPdfs(bookId) {
+            const container = document.getElementById('pdf-list-container');
+            try {
+                const response = await fetch(`/api/books/${bookId}/pdf-uploads`);
+                const data = await response.json();
+                
+                if (data.pdfs && data.pdfs.length > 0) {
+                    container.innerHTML = data.pdfs.map(pdf => `
+                        <div class="pdf-item">
+                            <div class="pdf-item-info">
+                                <strong>📄 ${pdf.filename}</strong>
+                                <div class="pdf-item-pages">Pages ${pdf.book_page_range[0]} - ${pdf.book_page_range[1]} (${pdf.total_pdf_pages} PDF pages)</div>
+                            </div>
+                            <span style="color: ${pdf.status === 'active' ? '#4CAF50' : '#999'};">${pdf.status}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<span style="color: #666;">No PDFs uploaded yet. This will be the first PDF for this book.</span>';
+                }
+            } catch (error) {
+                console.error('Error loading PDFs:', error);
+                container.innerHTML = '<span style="color: #f44336;">Error loading PDF list</span>';
+            }
+        }
+        
+        // Load suggested start page
+        async function loadSuggestedStartPage(bookId) {
+            try {
+                const response = await fetch(`/api/books/${bookId}/suggested-start-page`);
+                const data = await response.json();
+                
+                const startPageInput = document.getElementById('book-start-page');
+                const hint = document.getElementById('suggested-start-hint');
+                
+                startPageInput.value = data.suggested_start_page;
+                hint.textContent = `Suggested: ${data.suggested_start_page} (continues from existing pages)`;
+            } catch (error) {
+                console.error('Error getting suggested start page:', error);
+            }
+        }
+        
+        // Handle additional PDF file selection
+        document.getElementById('additional-pdf-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const fileInfo = document.getElementById('additional-file-info');
+            const uploadBtn = document.getElementById('upload-additional-pdf-btn');
+            
+            if (file) {
+                if (file.type !== 'application/pdf') {
+                    fileInfo.innerHTML = '<span style="color: #f44336;">Please select a PDF file</span>';
+                    uploadBtn.disabled = true;
+                    return;
+                }
+                
+                const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                fileInfo.innerHTML = `<span style="color: #4CAF50;">✓ ${file.name} (${sizeMB} MB)</span>`;
+                uploadBtn.disabled = false;
+            } else {
+                fileInfo.innerHTML = '';
+                uploadBtn.disabled = true;
+            }
+        });
+        
+        // Upload additional PDF
+        document.getElementById('upload-additional-pdf-btn').addEventListener('click', async function() {
+            const fileInput = document.getElementById('additional-pdf-input');
+            const file = fileInput.files[0];
+            const skipPages = parseInt(document.getElementById('pdf-skip-pages').value) || 0;
+            const startPage = parseInt(document.getElementById('book-start-page').value) || 1;
+            const statusDiv = document.getElementById('additional-upload-status');
+            
+            if (!file || !selectedBookIdForMultiPdf) {
+                alert('Please select a file and book first');
+                return;
+            }
+            
+            // Show loading
+            statusDiv.style.display = 'block';
+            statusDiv.innerHTML = '<span style="color: #2196F3;">⏳ Uploading PDF...</span>';
+            this.disabled = true;
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('pdf_start_page', skipPages + 1); // Convert skip to start page
+                formData.append('book_start_page', startPage);
+                
+                const response = await fetch(`/api/books/${selectedBookIdForMultiPdf}/upload-pdf`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Upload failed');
+                }
+                
+                // Check for overlaps
+                if (data.has_overlaps && data.overlaps.length > 0) {
+                    currentOverlaps = data.overlaps;
+                    showOverlapModal(data.overlaps, data.upload_id);
+                } else {
+                    statusDiv.innerHTML = `<span style="color: #4CAF50;">✓ Successfully uploaded! Added pages ${data.book_page_range[0]}-${data.book_page_range[1]}</span>`;
+                    
+                    // Refresh PDF list
+                    loadExistingPdfs(selectedBookIdForMultiPdf);
+                    
+                    // Clear file input
+                    fileInput.value = '';
+                    document.getElementById('additional-file-info').innerHTML = '';
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                statusDiv.innerHTML = `<span style="color: #f44336;">❌ Error: ${error.message}</span>`;
+            } finally {
+                this.disabled = false;
+            }
+        });
+        
+        // Show overlap resolution modal
+        function showOverlapModal(overlaps, uploadId) {
+            const modal = document.getElementById('overlap-modal');
+            const overlapList = document.getElementById('overlap-list');
+            
+            // Group overlaps by existing PDF
+            const grouped = {};
+            overlaps.forEach(o => {
+                if (!grouped[o.existing_pdf_id]) {
+                    grouped[o.existing_pdf_id] = {
+                        filename: o.existing_filename,
+                        pages: []
+                    };
+                }
+                grouped[o.existing_pdf_id].pages.push(o.page);
+            });
+            
+            // Render overlap items
+            overlapList.innerHTML = overlaps.slice(0, 10).map((overlap, idx) => `
+                <div class="overlap-item">
+                    <div class="overlap-item-header">Page ${overlap.page}</div>
+                    <div class="overlap-choice">
+                        <label>
+                            <input type="radio" name="overlap-${overlap.page}" value="${overlap.existing_pdf_id}" checked>
+                            Keep existing (from ${overlap.existing_filename})
+                        </label>
+                        <label>
+                            <input type="radio" name="overlap-${overlap.page}" value="new">
+                            Use new (from uploaded PDF)
+                        </label>
+                    </div>
+                </div>
+            `).join('');
+            
+            if (overlaps.length > 10) {
+                overlapList.innerHTML += `<p style="color: #666; text-align: center;">...and ${overlaps.length - 10} more pages</p>`;
+            }
+            
+            modal.classList.add('active');
+            modal.dataset.uploadId = uploadId;
+        }
+        
+        // Close overlap modal
+        function closeOverlapModal() {
+            document.getElementById('overlap-modal').classList.remove('active');
+            currentOverlaps = [];
+        }
+        
+        // Handle apply-to-all checkbox
+        document.getElementById('apply-to-all-checkbox').addEventListener('change', function() {
+            document.getElementById('apply-to-all-options').style.display = this.checked ? 'block' : 'none';
+        });
+        
+        // Resolve overlaps
+        async function resolveOverlaps() {
+            const modal = document.getElementById('overlap-modal');
+            const applyToAll = document.getElementById('apply-to-all-checkbox').checked;
+            const defaultChoice = document.querySelector('input[name="default-choice"]:checked')?.value || 'existing';
+            
+            // Build resolutions
+            const resolutions = currentOverlaps.map(overlap => {
+                let keepPdfId;
+                if (applyToAll) {
+                    keepPdfId = defaultChoice === 'existing' ? overlap.existing_pdf_id : -1; // -1 means new
+                } else {
+                    const selected = document.querySelector(`input[name="overlap-${overlap.page}"]:checked`);
+                    keepPdfId = selected?.value === 'new' ? -1 : parseInt(selected?.value || overlap.existing_pdf_id);
+                }
+                return { page: overlap.page, keep_pdf_id: keepPdfId };
+            });
+            
+            try {
+                const response = await fetch(`/api/books/${selectedBookIdForMultiPdf}/resolve-overlaps`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        resolutions: resolutions,
+                        apply_to_all: applyToAll,
+                        default_choice: defaultChoice
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Failed to resolve overlaps');
+                }
+                
+                // Success
+                closeOverlapModal();
+                document.getElementById('additional-upload-status').innerHTML = 
+                    `<span style="color: #4CAF50;">✓ Upload complete! Resolved ${data.resolved_count} overlapping pages.</span>`;
+                
+                // Refresh PDF list
+                loadExistingPdfs(selectedBookIdForMultiPdf);
+                
+                // Clear file input
+                document.getElementById('additional-pdf-input').value = '';
+                document.getElementById('additional-file-info').innerHTML = '';
+                
+            } catch (error) {
+                console.error('Error resolving overlaps:', error);
+                alert('Error resolving overlaps: ' + error.message);
+            }
+        }
+        
+        // Hook into existing book selection - override the selectBook function
+        const originalSelectBook = window.selectBook;
+        window.selectBook = function(bookId) {
+            // Call original function first
+            if (typeof originalSelectBook === 'function') {
+                originalSelectBook(bookId);
+            } else {
+                // Fallback if original doesn't exist - replicate its behavior
+                document.querySelectorAll('[id^="book-"]').forEach(el => {
+                    el.style.borderColor = '#ddd';
+                    el.style.background = 'white';
+                    el.style.borderWidth = '2px';
+                });
+                const bookEl = document.getElementById(`book-${bookId}`);
+                if (bookEl) {
+                    bookEl.style.borderColor = '#2196F3';
+                    bookEl.style.background = '#e3f2fd';
+                    bookEl.style.borderWidth = '3px';
+                }
+            }
+            
+            // Show multi-PDF section
+            if (bookId) {
+                showMultiPdfSection(bookId);
+            } else {
+                hideMultiPdfSection();
+            }
+        };
+        
+        // =====================================================
         // Page Scanning Warning Functions
+        // =====================================================
         let newlyUploadedBookId = null;
         
         function showScanningWarning(bookId) {

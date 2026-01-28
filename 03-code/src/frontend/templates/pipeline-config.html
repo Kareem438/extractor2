@@ -319,6 +319,155 @@
             color: #7f8c8d;
             margin-top: 4px;
         }
+        
+        /* Template Reference Autocomplete */
+        .autocomplete-container {
+            position: relative;
+        }
+        .autocomplete-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        .autocomplete-dropdown.active { display: block; }
+        .autocomplete-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        .autocomplete-item:hover { background: #f5f5f5; }
+        .autocomplete-item:last-child { border-bottom: none; }
+        .autocomplete-item .ref-text {
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .autocomplete-item .ref-meta {
+            font-size: 11px;
+            color: #666;
+            margin-top: 3px;
+        }
+        .autocomplete-browse {
+            padding: 10px 15px;
+            background: #f8f9fa;
+            border-top: 1px solid #ddd;
+            text-align: center;
+        }
+        .autocomplete-browse button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .autocomplete-browse button:hover { background: #2980b9; }
+        
+        /* Syntax highlighting colors */
+        .ref-book { color: #3498db; font-weight: bold; }
+        .ref-level { color: #9b59b6; }
+        .ref-title { color: #27ae60; }
+        .ref-attr { color: #e67e22; }
+        .ref-writable { background: #fff3cd; padding: 2px 4px; border-radius: 3px; }
+        
+        /* Tree Browser Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid #ddd;
+            background: #f8f9fa;
+        }
+        .modal-header h3 { margin: 0; }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+        .modal-close:hover { color: #333; }
+        .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .modal-search {
+            padding: 10px 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .modal-search input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        /* Tree structure */
+        .tree-node {
+            margin-left: 20px;
+        }
+        .tree-node-header {
+            display: flex;
+            align-items: center;
+            padding: 8px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .tree-node-header:hover { background: #f5f5f5; }
+        .tree-toggle {
+            width: 20px;
+            text-align: center;
+            margin-right: 8px;
+            color: #666;
+        }
+        .tree-icon { margin-right: 8px; }
+        .tree-label { flex: 1; }
+        .tree-children { display: none; }
+        .tree-children.expanded { display: block; }
+        .tree-attr {
+            padding: 6px 10px 6px 48px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .tree-attr:hover { background: #e3f2fd; }
+        .tree-attr.writable { background: #fff3cd; }
+        .tree-attr.writable:hover { background: #ffe69c; }
     </style>
 </head>
 <body>
@@ -331,6 +480,7 @@
             <a href="/extraction-dashboard">📝 Extraction</a>
             <a href="/pipeline-dashboard">⚙️ Pipeline</a>
             <a href="/pipeline-config" class="active">🔧 Pipeline Config</a>
+            <a href="/cross-book-audit">📊 Audit Log</a>
             <a href="/library">📚 Library</a>
             <a href="/book-settings">🔧 Book Settings</a>
         </div>
@@ -759,5 +909,390 @@
     </script>
     </div><!-- End container -->
     </div><!-- End main-content -->
+    
+    <!-- Tree Browser Modal -->
+    <div class="modal-overlay" id="treeBrowserModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📚 Browse Attribute References</h3>
+                <button class="modal-close" onclick="closeTreeBrowser()">&times;</button>
+            </div>
+            <div class="modal-search">
+                <input type="text" id="treeSearchInput" placeholder="🔍 Search attributes..." oninput="filterTree(this.value)">
+            </div>
+            <div class="modal-body" id="treeContainer">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // =====================================================
+        // Template Reference Autocomplete
+        // =====================================================
+        
+        let activeTextarea = null;
+        let autocompleteDropdown = null;
+        let treeData = null;
+        
+        // Initialize autocomplete on textareas
+        function initAutocomplete() {
+            // We'll attach autocomplete to prompt template textareas when they're rendered
+            document.addEventListener('input', handleTextareaInput);
+            document.addEventListener('keydown', handleTextareaKeydown);
+            document.addEventListener('click', handleDocumentClick);
+        }
+        
+        // Handle textarea input for @ trigger
+        function handleTextareaInput(e) {
+            if (e.target.tagName !== 'TEXTAREA') return;
+            
+            const textarea = e.target;
+            const cursorPos = textarea.selectionStart;
+            const text = textarea.value;
+            
+            // Find @ symbol before cursor
+            const beforeCursor = text.substring(0, cursorPos);
+            const atIndex = beforeCursor.lastIndexOf('@');
+            
+            if (atIndex === -1 || (atIndex > 0 && beforeCursor[atIndex - 1] !== ' ' && beforeCursor[atIndex - 1] !== '\n')) {
+                hideAutocomplete();
+                return;
+            }
+            
+            // Get query after @
+            const query = beforeCursor.substring(atIndex + 1);
+            
+            // Don't show if query contains space (completed reference)
+            if (query.includes(' ') || query.includes('\n')) {
+                hideAutocomplete();
+                return;
+            }
+            
+            activeTextarea = textarea;
+            showAutocomplete(textarea, query, atIndex);
+        }
+        
+        // Show autocomplete dropdown
+        async function showAutocomplete(textarea, query, atIndex) {
+            // Create or get dropdown
+            if (!autocompleteDropdown) {
+                autocompleteDropdown = document.createElement('div');
+                autocompleteDropdown.className = 'autocomplete-dropdown';
+                autocompleteDropdown.id = 'autocompleteDropdown';
+            }
+            
+            // Position dropdown
+            const rect = textarea.getBoundingClientRect();
+            autocompleteDropdown.style.position = 'fixed';
+            autocompleteDropdown.style.top = (rect.bottom + 5) + 'px';
+            autocompleteDropdown.style.left = rect.left + 'px';
+            autocompleteDropdown.style.width = rect.width + 'px';
+            
+            // Search for references
+            try {
+                const response = await fetch(`/api/template-reference/search?query=${encodeURIComponent(query)}&limit=10`);
+                const data = await response.json();
+                
+                let html = '';
+                
+                if (data.results && data.results.length > 0) {
+                    data.results.forEach((result, idx) => {
+                        const writableClass = result.is_writable ? 'ref-writable' : '';
+                        html += `
+                            <div class="autocomplete-item" onclick="insertReference('${result.reference}', ${atIndex})">
+                                <div class="ref-text ${writableClass}">${formatReference(result.reference)}</div>
+                                <div class="ref-meta">${result.book_name} → ${result.level} → ${result.title_text}</div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html = '<div class="autocomplete-item" style="color: #999;">No matches found</div>';
+                }
+                
+                html += `
+                    <div class="autocomplete-browse">
+                        <button onclick="openTreeBrowser()">📂 Browse All...</button>
+                    </div>
+                `;
+                
+                autocompleteDropdown.innerHTML = html;
+                autocompleteDropdown.classList.add('active');
+                
+                if (!document.body.contains(autocompleteDropdown)) {
+                    document.body.appendChild(autocompleteDropdown);
+                }
+                
+            } catch (error) {
+                console.error('Error searching references:', error);
+                hideAutocomplete();
+            }
+        }
+        
+        // Format reference with syntax highlighting
+        function formatReference(ref) {
+            // @BookName.Level.TitleName.attrN(Name)
+            const parts = ref.substring(1).split('.');
+            if (parts.length < 4) return ref;
+            
+            const book = parts[0];
+            const level = parts[1];
+            const title = parts[2];
+            const attr = parts.slice(3).join('.');
+            
+            return `@<span class="ref-book">${book}</span>.<span class="ref-level">${level}</span>.<span class="ref-title">${title}</span>.<span class="ref-attr">${attr}</span>`;
+        }
+        
+        // Insert reference into textarea
+        function insertReference(reference, atIndex) {
+            if (!activeTextarea) return;
+            
+            const text = activeTextarea.value;
+            const cursorPos = activeTextarea.selectionStart;
+            
+            // Replace from @ to cursor with the reference
+            const newText = text.substring(0, atIndex) + reference + ' ' + text.substring(cursorPos);
+            activeTextarea.value = newText;
+            
+            // Set cursor after inserted reference
+            const newCursorPos = atIndex + reference.length + 1;
+            activeTextarea.setSelectionRange(newCursorPos, newCursorPos);
+            activeTextarea.focus();
+            
+            // Trigger change event
+            activeTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+            
+            hideAutocomplete();
+        }
+        
+        // Hide autocomplete dropdown
+        function hideAutocomplete() {
+            if (autocompleteDropdown) {
+                autocompleteDropdown.classList.remove('active');
+            }
+        }
+        
+        // Handle keyboard navigation
+        function handleTextareaKeydown(e) {
+            if (!autocompleteDropdown || !autocompleteDropdown.classList.contains('active')) return;
+            
+            if (e.key === 'Escape') {
+                hideAutocomplete();
+                e.preventDefault();
+            }
+        }
+        
+        // Handle clicks outside autocomplete
+        function handleDocumentClick(e) {
+            if (autocompleteDropdown && !autocompleteDropdown.contains(e.target) && e.target !== activeTextarea) {
+                hideAutocomplete();
+            }
+        }
+        
+        // =====================================================
+        // Tree Browser Modal
+        // =====================================================
+        
+        // Open tree browser modal
+        async function openTreeBrowser() {
+            hideAutocomplete();
+            
+            const modal = document.getElementById('treeBrowserModal');
+            const container = document.getElementById('treeContainer');
+            
+            modal.classList.add('active');
+            container.innerHTML = '<div class="loading">Loading attribute tree...</div>';
+            
+            try {
+                const response = await fetch('/api/template-reference/tree');
+                treeData = await response.json();
+                
+                renderTree(treeData.books);
+                
+            } catch (error) {
+                console.error('Error loading tree:', error);
+                container.innerHTML = '<div style="color: red; text-align: center; padding: 20px;">Error loading tree</div>';
+            }
+        }
+        
+        // Close tree browser modal
+        function closeTreeBrowser() {
+            document.getElementById('treeBrowserModal').classList.remove('active');
+        }
+        
+        // Render tree structure
+        function renderTree(books) {
+            const container = document.getElementById('treeContainer');
+            
+            if (!books || books.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">No books found</div>';
+                return;
+            }
+            
+            let html = '';
+            
+            books.forEach(book => {
+                html += `
+                    <div class="tree-node" data-book="${book.book_name}">
+                        <div class="tree-node-header" onclick="toggleTreeNode(this)">
+                            <span class="tree-toggle">▶</span>
+                            <span class="tree-icon">📚</span>
+                            <span class="tree-label ref-book">${book.book_name}</span>
+                        </div>
+                        <div class="tree-children">
+                `;
+                
+                // L1 Titles
+                if (book.levels.L1 && book.levels.L1.length > 0) {
+                    html += `
+                        <div class="tree-node" data-level="L1">
+                            <div class="tree-node-header" onclick="toggleTreeNode(this)">
+                                <span class="tree-toggle">▶</span>
+                                <span class="tree-icon">📑</span>
+                                <span class="tree-label ref-level">L1 Titles (${book.levels.L1.length})</span>
+                            </div>
+                            <div class="tree-children">
+                    `;
+                    
+                    book.levels.L1.forEach(title => {
+                        html += renderTitleNode(book, 'L1', title);
+                    });
+                    
+                    html += '</div></div>';
+                }
+                
+                // L2 Titles
+                if (book.levels.L2 && book.levels.L2.length > 0) {
+                    html += `
+                        <div class="tree-node" data-level="L2">
+                            <div class="tree-node-header" onclick="toggleTreeNode(this)">
+                                <span class="tree-toggle">▶</span>
+                                <span class="tree-icon">📄</span>
+                                <span class="tree-label ref-level">L2 Titles (${book.levels.L2.length})</span>
+                            </div>
+                            <div class="tree-children">
+                    `;
+                    
+                    book.levels.L2.forEach(title => {
+                        html += renderTitleNode(book, 'L2', title);
+                    });
+                    
+                    html += '</div></div>';
+                }
+                
+                html += '</div></div>';
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // Render a title node with attributes
+        function renderTitleNode(book, level, title) {
+            const [writableStart, writableEnd] = title.writable_range || [151, 200];
+            
+            let html = `
+                <div class="tree-node" data-title="${title.title_text}">
+                    <div class="tree-node-header" onclick="toggleTreeNode(this)">
+                        <span class="tree-toggle">▶</span>
+                        <span class="tree-icon">📝</span>
+                        <span class="tree-label ref-title">${title.title_text} (pp. ${title.start_page}-${title.end_page})</span>
+                    </div>
+                    <div class="tree-children">
+            `;
+            
+            // Show only named attributes or writable range
+            title.attributes.forEach(attr => {
+                if (attr.name || attr.is_writable) {
+                    const reference = `@${book.sanitized_name}.${level}.${title.sanitized_title}.attr${attr.num}${attr.name ? '(' + attr.name + ')' : ''}`;
+                    const writableClass = attr.is_writable ? 'writable' : '';
+                    const writableIcon = attr.is_writable ? '✏️ ' : '';
+                    
+                    html += `
+                        <div class="tree-attr ${writableClass}" onclick="insertReferenceFromTree('${reference}')">
+                            ${writableIcon}<span class="ref-attr">attr${attr.num}</span>${attr.name ? ' - ' + attr.name : ''}
+                        </div>
+                    `;
+                }
+            });
+            
+            html += '</div></div>';
+            return html;
+        }
+        
+        // Toggle tree node expansion
+        function toggleTreeNode(header) {
+            const children = header.nextElementSibling;
+            const toggle = header.querySelector('.tree-toggle');
+            
+            if (children.classList.contains('expanded')) {
+                children.classList.remove('expanded');
+                toggle.textContent = '▶';
+            } else {
+                children.classList.add('expanded');
+                toggle.textContent = '▼';
+            }
+        }
+        
+        // Insert reference from tree browser
+        function insertReferenceFromTree(reference) {
+            if (!activeTextarea) {
+                // Find the first visible prompt textarea
+                const textareas = document.querySelectorAll('.step-card textarea');
+                if (textareas.length > 0) {
+                    activeTextarea = textareas[0];
+                }
+            }
+            
+            if (activeTextarea) {
+                const cursorPos = activeTextarea.selectionStart;
+                const text = activeTextarea.value;
+                
+                const newText = text.substring(0, cursorPos) + reference + ' ' + text.substring(cursorPos);
+                activeTextarea.value = newText;
+                
+                // Trigger change event
+                activeTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            
+            closeTreeBrowser();
+        }
+        
+        // Filter tree by search
+        function filterTree(query) {
+            if (!treeData) return;
+            
+            const container = document.getElementById('treeContainer');
+            const nodes = container.querySelectorAll('.tree-node, .tree-attr');
+            
+            if (!query) {
+                nodes.forEach(node => node.style.display = '');
+                return;
+            }
+            
+            const queryLower = query.toLowerCase();
+            
+            nodes.forEach(node => {
+                const text = node.textContent.toLowerCase();
+                if (text.includes(queryLower)) {
+                    node.style.display = '';
+                    // Expand parent nodes
+                    let parent = node.parentElement;
+                    while (parent) {
+                        if (parent.classList.contains('tree-children')) {
+                            parent.classList.add('expanded');
+                            const toggle = parent.previousElementSibling?.querySelector('.tree-toggle');
+                            if (toggle) toggle.textContent = '▼';
+                        }
+                        parent = parent.parentElement;
+                    }
+                } else {
+                    node.style.display = 'none';
+                }
+            });
+        }
+        
+        // Initialize autocomplete on page load
+        initAutocomplete();
+    </script>
 </body>
 </html>
