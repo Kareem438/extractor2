@@ -333,6 +333,184 @@
         .btn-reset-prompts:hover {
             background: #F57C00;
         }
+
+        /* PDF Path Display */
+        .pdf-path-display {
+            color: #666;
+            font-size: 13px;
+            margin-top: 12px;
+            padding: 10px 15px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            font-family: monospace;
+            border-left: 4px solid #2196F3;
+        }
+        .pdf-path-display .path-label {
+            color: #333;
+            font-weight: bold;
+            font-family: Arial, sans-serif;
+        }
+        .pdf-path-display .path-value {
+            word-break: break-all;
+        }
+
+        /* Danger Zone Section */
+        .danger-zone-section {
+            background: linear-gradient(135deg, #fff5f5 0%, #ffe0e0 100%);
+            border: 2px solid #f44336;
+            border-radius: 8px;
+            padding: 30px;
+            margin-top: 30px;
+        }
+        .danger-zone-section h2 {
+            color: #c62828;
+            margin-top: 0;
+            border-bottom: 2px solid #f44336;
+            padding-bottom: 10px;
+        }
+        .danger-zone-section p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .btn-danger-delete {
+            background: #f44336;
+            color: white;
+            padding: 14px 28px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-danger-delete:hover { background: #d32f2f; }
+        .btn-danger-delete:disabled { background: #ccc; cursor: not-allowed; }
+
+        /* Delete Modal Styles */
+        .delete-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .delete-modal-overlay.active { display: flex; }
+        .delete-modal {
+            background: white;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        .delete-modal-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #f44336 0%, #c62828 100%);
+            color: white;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .delete-modal-header h3 { margin: 0; font-size: 18px; }
+        .delete-modal-close {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        .delete-modal-close:hover { background: rgba(255, 255, 255, 0.3); }
+        .delete-modal-body { padding: 20px; }
+        .delete-modal-footer {
+            padding: 15px 20px;
+            background: #f5f5f5;
+            border-radius: 0 0 8px 8px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .delete-warning { color: #c62828; font-weight: bold; margin-bottom: 15px; }
+        .delete-summary {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .summary-item { margin: 8px 0; font-size: 14px; }
+        .summary-item strong { color: #333; }
+        .chromadb-option {
+            margin: 15px 0;
+            padding: 10px;
+            background: #fff3e0;
+            border-radius: 4px;
+            border-left: 4px solid #FF9800;
+        }
+        .chromadb-option label { cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .confirmation-code {
+            font-size: 48px;
+            font-weight: bold;
+            text-align: center;
+            color: #f44336;
+            letter-spacing: 10px;
+            margin: 20px 0;
+            font-family: monospace;
+        }
+        #confirmation-code-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 24px;
+            text-align: center;
+            letter-spacing: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        #confirmation-code-input:focus { border-color: #f44336; outline: none; }
+        .code-hint { color: #999; font-size: 12px; text-align: center; margin-top: 10px; }
+        .btn-modal {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-modal-cancel { background: #9E9E9E; color: white; }
+        .btn-modal-cancel:hover { background: #757575; }
+        .btn-modal-danger { background: #f44336; color: white; }
+        .btn-modal-danger:hover { background: #d32f2f; }
+        .btn-modal-danger:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-modal-continue { background: #FF9800; color: white; }
+        .btn-modal-continue:hover { background: #F57C00; }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+        }
+        .toast-success { background: #4CAF50; }
+        .toast-error { background: #f44336; }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -376,6 +554,12 @@
         <div class="book-content" id="book-content">
             <div class="book-info" id="book-info">
                 <p>Loading book information...</p>
+            </div>
+
+            <!-- PDF File Path Display -->
+            <div class="pdf-path-display" id="pdf-path-display" style="display: none;">
+                <span class="path-label">📁 PDF File:</span> 
+                <span class="path-value" id="pdf-file-path">Loading...</span>
             </div>
 
             <!-- Auto-Slicer Section -->
@@ -609,8 +793,76 @@
                 <button class="btn btn-cancel" onclick="cancelChanges()">❌ Cancel</button>
                 <button class="btn btn-back" onclick="goBack()">◀ Back to Library</button>
             </div>
+
+            <!-- Danger Zone Section -->
+            <div class="danger-zone-section">
+                <h2>⚠️ Danger Zone</h2>
+                <p>Permanently delete this book and all associated data. This action cannot be undone.</p>
+                <p style="font-size: 13px; color: #888;">The original PDF file will be preserved on disk.</p>
+                <button class="btn-danger-delete" id="btn-delete-book" onclick="initiateDeleteBook()">
+                    🗑️ Delete This Book
+                </button>
+            </div>
         </div><!-- end book-content -->
     </div>
-    <script src="/static/js/book-settings.js?v=20260111-reserved-attrs"></script>
+
+    <!-- Delete Summary Modal (Step 1) -->
+    <div class="delete-modal-overlay" id="delete-summary-modal">
+        <div class="delete-modal">
+            <div class="delete-modal-header">
+                <h3>🗑️ Delete Book</h3>
+                <button class="delete-modal-close" onclick="closeDeleteModals()">&times;</button>
+            </div>
+            <div class="delete-modal-body">
+                <p class="delete-warning">You are about to permanently delete:</p>
+                <div class="delete-summary">
+                    <div class="summary-item"><strong>Book:</strong> <span id="delete-book-name"></span></div>
+                    <div class="summary-item"><strong>Pages:</strong> <span id="delete-pages-count"></span></div>
+                    <div class="summary-item"><strong>Knowledge Units:</strong> <span id="delete-ku-count"></span></div>
+                    <div class="summary-item"><strong>Images:</strong> <span id="delete-images-count"></span></div>
+                    <div class="summary-item"><strong>Paragraph Clips:</strong> <span id="delete-para-count"></span></div>
+                    <div class="summary-item"><strong>Diagram Clips:</strong> <span id="delete-diag-count"></span></div>
+                </div>
+                <div class="chromadb-option">
+                    <label>
+                        <input type="checkbox" id="delete-chromadb-checkbox" checked>
+                        Also delete ChromaDB embeddings (<span id="delete-embeddings-count">0</span> vectors)
+                    </label>
+                </div>
+                <p style="color: #666; font-size: 13px; margin-top: 15px;">
+                    ⚠️ The original PDF file will be preserved on disk.
+                </p>
+            </div>
+            <div class="delete-modal-footer">
+                <button class="btn-modal btn-modal-cancel" onclick="closeDeleteModals()">Cancel</button>
+                <button class="btn-modal btn-modal-continue" onclick="showCodeVerification()">Continue →</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Code Verification Modal (Step 2) -->
+    <div class="delete-modal-overlay" id="delete-code-modal">
+        <div class="delete-modal">
+            <div class="delete-modal-header">
+                <h3>🔐 Final Confirmation</h3>
+                <button class="delete-modal-close" onclick="closeDeleteModals()">&times;</button>
+            </div>
+            <div class="delete-modal-body">
+                <p style="text-align: center; margin-bottom: 10px;">Type the following code to confirm deletion:</p>
+                <div class="confirmation-code" id="confirmation-code-display">0000</div>
+                <input type="text" id="confirmation-code-input" 
+                       placeholder="Enter code" maxlength="4"
+                       oninput="validateConfirmationCode()">
+                <p class="code-hint">⚠️ This action cannot be undone.</p>
+            </div>
+            <div class="delete-modal-footer">
+                <button class="btn-modal btn-modal-cancel" onclick="closeDeleteModals()">Cancel</button>
+                <button class="btn-modal btn-modal-danger" id="btn-confirm-delete" 
+                        onclick="executeDelete()" disabled>🗑️ Delete Book</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/book-settings.js?v=20260128-delete"></script>
 </body>
 </html>

@@ -133,6 +133,28 @@ async function loadBookInfo() {
             <strong>Type:</strong> ${book.file_type} |
             <strong>Status:</strong> ${book.processing_status}
         `;
+
+        // Display PDF file path
+        const pdfPathDisplay = document.getElementById('pdf-path-display');
+        const pdfFilePath = document.getElementById('pdf-file-path');
+        if (book.file_path) {
+            pdfFilePath.textContent = book.file_path;
+            pdfPathDisplay.style.display = 'block';
+        } else {
+            pdfPathDisplay.style.display = 'none';
+        }
+
+        // Update delete button state based on processing status
+        const deleteBtn = document.getElementById('btn-delete-book');
+        if (deleteBtn) {
+            if (book.processing_status === 'processing') {
+                deleteBtn.disabled = true;
+                deleteBtn.title = 'Cannot delete - book is processing';
+            } else {
+                deleteBtn.disabled = false;
+                deleteBtn.title = 'Delete this book';
+            }
+        }
     } catch (error) {
         console.error('Error loading book info:', error);
     }
@@ -841,4 +863,156 @@ function resetPrompts() {
 
     applyPromptsToUI(DEFAULT_PROMPTS);
     alert('Prompts reset to defaults. Click "Save Prompts" to persist the changes.');
+}
+
+
+// ============================================================================
+// Book Deletion Functions
+// ============================================================================
+
+// State for deletion
+let deleteBookData = null;
+
+/**
+ * Initiate delete - fetch preview and show summary modal
+ */
+async function initiateDeleteBook() {
+    if (!currentBookId) {
+        alert('Please select a book first');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/books/${currentBookId}/deletion-preview`);
+        const data = await response.json();
+        
+        if (!response.ok) {
+            showToast(data.detail || 'Failed to get deletion preview', 'error');
+            return;
+        }
+        
+        if (!data.can_delete) {
+            showToast(`Cannot delete: ${data.blocking_reason}`, 'error');
+            return;
+        }
+        
+        deleteBookData = data;
+        showDeleteSummaryModal(data);
+    } catch (error) {
+        showToast('Error: ' + error.message, 'error');
+    }
+}
+
+/**
+ * Show the summary modal (Step 1)
+ */
+function showDeleteSummaryModal(data) {
+    document.getElementById('delete-book-name').textContent = data.book_name;
+    document.getElementById('delete-pages-count').textContent = data.counts.pages.toLocaleString();
+    document.getElementById('delete-ku-count').textContent = data.counts.knowledge_units.toLocaleString();
+    document.getElementById('delete-images-count').textContent = data.counts.images.toLocaleString();
+    document.getElementById('delete-para-count').textContent = data.counts.paragraph_clips.toLocaleString();
+    document.getElementById('delete-diag-count').textContent = data.counts.diagram_clips.toLocaleString();
+    document.getElementById('delete-embeddings-count').textContent = data.counts.chromadb_embeddings.toLocaleString();
+    
+    // Reset checkbox to checked
+    document.getElementById('delete-chromadb-checkbox').checked = true;
+    
+    document.getElementById('delete-summary-modal').classList.add('active');
+}
+
+/**
+ * Show code verification modal (Step 2)
+ */
+function showCodeVerification() {
+    document.getElementById('delete-summary-modal').classList.remove('active');
+    document.getElementById('confirmation-code-display').textContent = deleteBookData.confirmation_code;
+    document.getElementById('confirmation-code-input').value = '';
+    document.getElementById('btn-confirm-delete').disabled = true;
+    document.getElementById('delete-code-modal').classList.add('active');
+    
+    // Focus the input
+    setTimeout(() => {
+        document.getElementById('confirmation-code-input').focus();
+    }, 100);
+}
+
+/**
+ * Validate the confirmation code
+ */
+function validateConfirmationCode() {
+    const input = document.getElementById('confirmation-code-input').value;
+    const expected = deleteBookData.confirmation_code;
+    document.getElementById('btn-confirm-delete').disabled = (input !== expected);
+}
+
+/**
+ * Execute the deletion
+ */
+async function executeDelete() {
+    const deleteChromadb = document.getElementById('delete-chromadb-checkbox').checked;
+    const code = document.getElementById('confirmation-code-input').value;
+    const bookName = deleteBookData.book_name;
+    
+    // Disable button to prevent double-click
+    document.getElementById('btn-confirm-delete').disabled = true;
+    document.getElementById('btn-confirm-delete').textContent = '⏳ Deleting...';
+    
+    try {
+        const response = await fetch(`/api/books/${deleteBookData.book_id}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                delete_chromadb: deleteChromadb,
+                confirmation_code: code
+            })
+        });
+        
+        const result = await response.json();
+        
+        closeDeleteModals();
+        
+        if (result.success) {
+            showToast(`Book "${bookName}" deleted successfully`, 'success');
+            // Redirect to Library after a short delay
+            setTimeout(() => {
+                window.location.href = '/library';
+            }, 1500);
+        } else {
+            showToast(result.error || result.detail || 'Deletion failed', 'error');
+        }
+    } catch (error) {
+        closeDeleteModals();
+        showToast('Error: ' + error.message, 'error');
+    }
+}
+
+/**
+ * Close all delete modals
+ */
+function closeDeleteModals() {
+    document.getElementById('delete-summary-modal').classList.remove('active');
+    document.getElementById('delete-code-modal').classList.remove('active');
+    document.getElementById('btn-confirm-delete').textContent = '🗑️ Delete Book';
+    document.getElementById('btn-confirm-delete').disabled = true;
+    deleteBookData = null;
+}
+
+/**
+ * Show toast notification
+ */
+function showToast(message, type) {
+    // Remove any existing toasts
+    document.querySelectorAll('.toast').forEach(t => t.remove());
+    
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        toast.style.animation = 'slideIn 0.3s ease reverse';
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
 }

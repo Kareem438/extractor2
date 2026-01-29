@@ -223,70 +223,9 @@ async def get_book(book_id: int):
         db.close()
 
 
-@router.delete("/books/{book_id}")
-async def delete_book(book_id: int):
-    """
-    Delete a book and its associated data.
-
-    This will delete:
-    - Book metadata from books_metadata table
-    - Book-specific tables (knowledge_units, images, pages, etc.)
-    - Processing state
-    - Settings
-    - Attribute keys
-
-    Args:
-        book_id: Book ID to delete
-
-    Returns:
-        dict: Success message
-
-    Raises:
-        HTTPException: If book not found
-
-    Example:
-        >>> # Via HTTP DELETE
-        >>> response = await fetch('/api/books/1', {method: 'DELETE'})
-    """
-    db = SessionLocal()
-
-    try:
-        # Get book
-        book = db.query(BooksMetadata).filter(BooksMetadata.book_id == book_id).first()
-        if not book:
-            raise HTTPException(status_code=404, detail="Book not found")
-
-        # Get table prefix for dropping book-specific tables
-        table_prefix = book.table_prefix
-        sanitized_name = book.sanitized_name
-
-        # Delete metadata record
-        db.delete(book)
-        db.commit()
-
-        logger.info(f"Deleted book {book_id}: {book.book_name}")
-
-        # TODO: Drop book-specific tables
-        # This would require executing DROP TABLE commands for:
-        # - knowledge_units_{table_prefix}
-        # - images_{table_prefix}
-        # - pages_{table_prefix}
-        # - And other book-specific tables
-        # For now, metadata is deleted but tables remain (can be cleaned up later)
-
-        return {
-            "book_id": book_id,
-            "message": f"Book '{book.book_name}' deleted successfully"
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Error deleting book {book_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to delete book: {str(e)}")
-    finally:
-        db.close()
+# NOTE: DELETE /books/{book_id} endpoint has been moved to delete_book.py
+# The new implementation includes two-step confirmation with code validation
+# and properly drops all book-specific tables + ChromaDB embeddings
 
 
 @router.get("/books/{book_id}/stats")

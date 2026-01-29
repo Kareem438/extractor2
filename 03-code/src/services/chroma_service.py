@@ -301,6 +301,65 @@ class ChromaService:
             logger.error(f"Failed to delete book units from ChromaDB: {e}")
             return False
 
+    def delete_by_book_id(self, book_id: int) -> int:
+        """
+        Delete all embeddings for a specific book and return count deleted.
+
+        Args:
+            book_id: Book ID
+
+        Returns:
+            Number of embeddings deleted
+        """
+        if not self.collection:
+            return 0
+
+        try:
+            # Query for all units of this book
+            results = self.collection.get(
+                where={"book_id": book_id}
+            )
+
+            count = 0
+            if results and results['ids']:
+                count = len(results['ids'])
+                # Delete all matching IDs
+                self.collection.delete(ids=results['ids'])
+                logger.info(f"Deleted {count} embeddings for book {book_id}")
+
+            return count
+
+        except Exception as e:
+            logger.error(f"Failed to delete book embeddings from ChromaDB: {e}")
+            return 0
+
+    def count_by_book_id(self, book_id: int) -> int:
+        """
+        Count embeddings for a specific book.
+
+        Args:
+            book_id: Book ID
+
+        Returns:
+            Number of embeddings for this book
+        """
+        if not self.collection:
+            return 0
+
+        try:
+            # Query for all units of this book
+            results = self.collection.get(
+                where={"book_id": book_id}
+            )
+
+            if results and results['ids']:
+                return len(results['ids'])
+            return 0
+
+        except Exception as e:
+            logger.error(f"Failed to count book embeddings in ChromaDB: {e}")
+            return 0
+
     def update_knowledge_unit(
         self,
         book_id: int,
