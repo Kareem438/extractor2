@@ -1,47 +1,70 @@
 # Next Session Context
 
-**Last Updated:** 2026-01-28
-**Session:** Session 22 - Requirement 6 Implementation In Progress
+**Last Updated:** 2026-01-29
+**Session:** Session 23 - Requirement 7 Requirements Gathering
 
 ---
 
-## STATUS: REQUIREMENT 6 IMPLEMENTATION IN PROGRESS 🟡
+## STATUS: REQUIREMENT 7 REQUIREMENTS GATHERING 🟡
 
-### Requirement 6 - Safe Book Deletion Feature: IMPLEMENTATION IN PROGRESS 🟡
+### Requirement 6 - Delete Book: ✅ COMPLETE
+- Two-step confirmation working
+- Orphaned tables cleaned up
+- All tasks complete
 
-**Feature Summary:**
-- Delete books with two-step confirmation (summary modal → 4-digit code verification)
-- Delete buttons in both Library page and Book Settings page
-- Show PDF file path in Book Settings
-- Block deletion for books with active tasks
-- Delete all PostgreSQL tables + optionally ChromaDB embeddings
-- Preserve PDF file on disk
+### Requirement 7 - KU Grouping, Multi-Tag Extraction & YOLO Training: 🟡 IN PROGRESS
 
-**Design Complete:**
-- Requirements documented in `01-requirements/requirement6-delete-book.md`
-- Kiro spec created in `.kiro/specs/delete-book/`
-- 9 task groups with 35 subtasks defined
+**Three Features:**
+1. **7A: Multi-Tag XML Extraction** - Extract multiple XML tags to different attributes
+2. **7B: Knowledge Unit Grouping** - Combine KUs into single Claude prompts
+3. **7C: YOLO Fine-Tuning** - Train DocLayout-YOLO with user corrections
 
-**Implementation Status:**
-- [ ] Task 1: Backend API Implementation
-- [ ] Task 2: ChromaDB Service Updates
-- [ ] Task 3: Library Page Delete Button
-- [ ] Task 4: Delete Confirmation Modals
-- [ ] Task 5: Library JavaScript Functions
-- [ ] Task 6: Book Settings PDF Path Display
-- [ ] Task 7: Book Settings Danger Zone
-- [ ] Task 8: Book Settings Delete Modals
-- [ ] Task 9: Testing & Validation
+**Requirements Gathering: 60% Complete**
+- 4 of 12 clarification questions answered
+- Need to complete Q5-Q12
 
 ---
 
-## NEXT STEPS (If Session Expires)
+## NEXT STEPS (Continue Requirement 7)
 
-1. **Read the task list:** `.kiro/specs/delete-book/tasks.md`
-2. **Read the design:** `.kiro/specs/delete-book/design.md`
-3. **Start with Task 1:** Create `03-code/src/api/routes/delete_book.py`
-4. **Then Task 2:** Update `03-code/src/services/chroma_service.py`
-5. **Continue sequentially** through tasks 3-9
+1. **Read requirements:** `01-requirements/requirement7-grouping-training.md`
+2. **Read progress:** `01-requirements/requirement7-progress.md`
+3. **Ask remaining questions (Q5-Q12)**
+4. **Review existing code:**
+   - `03-code/src/api/routes/pipeline.py`
+   - `03-code/src/services/claude_batch_service.py`
+5. **Create design document**
+6. **Create tasks.md**
+
+---
+
+## Remaining Questions to Ask User
+
+**7A (Multi-Tag Extraction):**
+- Q5: Should unmapped tags in response be ignored or stored?
+- Q6: Error handling if expected tag is missing?
+
+**7B (KU Grouping):**
+- Q7: Grouping scope - per pipeline step or global?
+- Q8: What if KU ID missing from Claude response?
+- Q9: Dry run mode to preview without executing?
+
+**7C (YOLO Fine-Tuning):**
+- Q10: Minimum pages before training enabled?
+- Q11: Training in background or blocking?
+- Q12: Auto-backup model before training?
+
+---
+
+## Decisions Already Made
+
+| Feature | Decision |
+|---------|----------|
+| Tag mapping UI | Table/grid with Tag → Attribute dropdown |
+| Grouping method | Group by L2 title with max N rule |
+| Response ID | KU ID as XML tags (`<ku_123>...</ku_123>`) |
+| Grouping criteria | KU count OR token limit, with preview button |
+| Preview table | L1 → L2 → KU count → word count |
 
 ---
 
@@ -50,10 +73,9 @@
 | File | Purpose |
 |------|---------|
 | `NEXT-SESSION.md` | This file - session context |
-| `.kiro/specs/delete-book/tasks.md` | Task list (start here) |
-| `.kiro/specs/delete-book/design.md` | Technical design |
-| `01-requirements/requirement6-delete-book.md` | Full requirements |
-| `01-requirements/requirement6-progress.md` | Progress tracker |
+| `01-requirements/requirement7-grouping-training.md` | Full requirements |
+| `01-requirements/requirement7-progress.md` | Progress tracker |
+| `02-architecture/automatic-boundaries-local-llm-part2.md` | YOLO training reference |
 | `.kiro/steering/code-review-first.md` | CRITICAL: Check existing code first |
 
 ---
@@ -70,6 +92,10 @@ Get-Process -Name python -ErrorAction SilentlyContinue | Stop-Process -Force; St
 
 # Check server health
 Invoke-WebRequest -Uri "http://localhost:8888/health" -UseBasicParsing | Select-Object -ExpandProperty Content
+
+# PostgreSQL access
+& "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -d knowledge_extraction_2
+# Password: postgres
 ```
 
 ---
@@ -83,24 +109,11 @@ Invoke-WebRequest -Uri "http://localhost:8888/health" -UseBasicParsing | Select-
 
 ---
 
-## Key Implementation Files for Requirement 6
-
-| Area | File | Status |
-|------|------|--------|
-| Delete API | `03-code/src/api/routes/delete_book.py` | To Create |
-| ChromaDB Service | `03-code/src/services/chroma_service.py` | To Modify |
-| Main Router | `03-code/src/main.py` | To Modify |
-| Library HTML | `03-code/src/frontend/templates/library.html` | To Modify |
-| Library JS | `03-code/src/frontend/static/js/library.js` | To Modify |
-| Book Settings HTML | `03-code/src/frontend/templates/book-settings.html` | To Modify |
-| Book Settings JS | `03-code/src/frontend/static/js/book-settings.js` | To Modify |
-
----
-
 ## Previous Requirements Status
 
 | Requirement | Status |
 |-------------|--------|
 | Req 4 - Title Hierarchy | ✅ Complete |
 | Req 5 - Multi-PDF & Cross-Book | ✅ Complete |
-| Req 6 - Delete Book | 🟡 In Progress |
+| Req 6 - Delete Book | ✅ Complete |
+| Req 7 - KU Grouping & Training | 🟡 Requirements 60% |

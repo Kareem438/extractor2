@@ -1,6 +1,6 @@
 # Session Summary - January 29, 2026
 
-## Delete Book Feature - Bug Fix & Cleanup
+## Part 1: Delete Book Feature - Bug Fix & Cleanup
 
 ### Issues Fixed
 
@@ -24,22 +24,50 @@
 - `03-code/cleanup_orphaned_tables.py` - Interactive cleanup script
 - `03-code/drop_orphaned.py` - Non-interactive cleanup script
 
-### Current Database State
+### Delete Feature Status: ✅ Complete
 
-- 1 book in `books_metadata`: book_id=1 "01-Wessam Explanation 2026"
-- 15 tables for book1 (all valid, no orphans)
-- Database is clean and ready for use
+---
 
-### Delete Feature Status
+## Part 2: Requirement 7 - Requirements Gathering
 
-✅ Complete and working:
-- Two-step confirmation (summary modal → 4-digit code)
-- Delete buttons in Library and Book Settings pages
-- Drops all book-specific tables (17+ per book)
-- Optional ChromaDB deletion
-- PDF file preserved on disk
-- Toast notifications on success/error
+### Three Major Features Requested
 
-### Server
+1. **7A: Multi-Tag XML Extraction**
+   - Extract different XML tags from Claude response into different attributes
+   - UI: Table/grid with Tag Name → Attribute dropdown
 
-Running on port 8888: `http://localhost:8888`
+2. **7B: Knowledge Unit Grouping**
+   - Combine multiple KUs into single Claude prompt
+   - Group by L2 title with max N KUs or max tokens
+   - KU ID as XML tags: `<ku_123>...</ku_123>`
+   - Preview table: L1 → L2 → KU count → word count
+   - Token estimation preview button
+
+3. **7C: YOLO Fine-Tuning**
+   - Train DocLayout-YOLO with user corrections
+   - Existing docs in `02-architecture/automatic-boundaries-local-llm-part2.md`
+
+### Clarification Questions Completed (4 of 12)
+
+| Q# | Question | Answer |
+|----|----------|--------|
+| Q1 | Tag mapping UI | Table/grid |
+| Q2 | Grouping method | Group rule with max N |
+| Q3 | Response ID | KU ID as XML tags |
+| Q4 | Grouping criteria | KU count OR token limit with preview |
+
+### Files Created
+
+- `01-requirements/requirement7-grouping-training.md` - Full requirements
+- `01-requirements/requirement7-progress.md` - Progress tracker
+
+---
+
+## Next Session: Continue Requirement 7
+
+1. Complete remaining clarification questions (Q5-Q12)
+2. Review existing pipeline code
+3. Create design document
+4. Create tasks.md
+
+See `01-requirements/requirement7-progress.md` for full context.
