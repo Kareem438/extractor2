@@ -5,6 +5,8 @@ Handles Claude API integration for diagram/table/equation/list decoding:
 - Message Batches API (50% cost, async processing)
 - Direct API (immediate results, full cost)
 - Result retrieval and database updates
+- Multi-tag XML extraction (Requirement 7A)
+- KU Grouping for batch processing (Requirement 7B)
 
 PIPELINE EXECUTION NOTE:
 - First step: Translate paragraphs to English
@@ -19,7 +21,8 @@ Each diagram decode request includes:
 import json
 import base64
 import time
-from typing import List, Dict, Optional, Any
+import re
+from typing import List, Dict, Optional, Any, Tuple
 from datetime import datetime
 
 import anthropic
@@ -28,6 +31,145 @@ from sqlalchemy import text
 from src.database.connection import SessionLocal
 from src.config import settings
 from src.utils.logging_config import logger
+
+
+# =============================================================================
+# Multi-Tag XML Extraction (Requirement 7A)
+# =============================================================================
+
+def parse_multi_tag_response(
+    response: str, 
+    tag_mappings: List[Dict], 
+    fallback_attr: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Parse Claude response for multiple XML tags.
+    
+    Args:
+        response: Claude's response text
+        tag_mappings: List of {"tag_name": str, "target_attribute": str, "is_required": bool}
+        fallback_attr: Attribute to store unmapped tags (e.g., "attr_20")
+    
+    Returns:
+        {
+            "extracted": {"attr_15": "summary content", "attr_16": "keywords"},
+            "unmapped": {"unknown_tag": "content"},
+            "missing_required": ["tag_name"],
+            "is_complete": True/False
+        }
+    """
+    extracted = {}
+    unmapped = {}
+    missing_required = []
+    
+    # Map tag names to attributes
+    tag_to_attr = {m["tag_name"]: m["target_attribute"] for m in tag_mappings}
+    required_tags = {m["tag_name"] for m in tag_mappings if m.get("is_required", False)}
+    
+    # Find all XML tags in response (handles multiline content)
+    pattern = r'<(\w+)>(.*?)</\1>'
+    matches = re.findall(pattern, response, re.DOTALL)
+    
+    found_tags = set()
+    for tag_name, content in matches:
+        found_tags.add(tag_name)
+        if tag_name in tag_to_attr:
+            extracted[tag_to_attr[tag_name]] = content.strip()
+        else:
+            unmapped[tag_name] = content.strip()
+    
+    # Check for missing required tags
+    missing_required = list(required_tags - found_tags)
+    
+    # Store unmapped in fallback attribute if configured
+    if unmapped and fallback_attr:
+        extracted[fallback_attr] = json.dumps(unmapped)
+    
+    return {
+        "extracted": extracted,
+        "unmapped": unmapped,
+        "missing_required": missing_required,
+        "is_complete": len(missing_required) == 0
+    }
+
+
+def parse_grouped_response(
+    response: str,
+    ku_ids: List[int],
+    tag_mappings: List[Dict],
+    fallback_attr: Optional[str] = None
+) -> Dict[int, Dict[str, Any]]:
+    """
+    Parse grouped Claude response and distribute to individual KUs.
+    
+    Response format:
+        <ku_123>
+            <summary>Generated summary...</summary>
+            <keywords>keyword1, keyword2</keywords>
+        </ku_123>
+        <ku_124>
+            <summary>Another summary...</summary>
+        </ku_124>
+    
+    Args:
+        response: Claude's grouped response
+        ku_ids: List of KU IDs that were in the request
+        tag_mappings: Tag-to-attribute mappings
+        fallback_attr: Fallback attribute for unmapped tags
+    
+    Returns:
+        {
+            123: {"extracted": {...}, "is_complete": True},
+            124: {"extracted": {...}, "is_complete": True},
+            125: {"is_complete": False, "error": "Missing from response"}
+        }
+    """
+    results = {}
+    
+    # Find all KU blocks in response
+    ku_pattern = r'<ku_(\d+)>(.*?)</ku_\1>'
+    ku_matches = re.findall(ku_pattern, response, re.DOTALL)
+    
+    found_ku_ids = set()
+    for ku_id_str, ku_content in ku_matches:
+        ku_id = int(ku_id_str)
+        found_ku_ids.add(ku_id)
+        
+        # Parse tags within this KU block
+        parsed = parse_multi_tag_response(ku_content, tag_mappings, fallback_attr)
+        results[ku_id] = parsed
+    
+    # Mark missing KUs as incomplete
+    for ku_id in ku_ids:
+        if ku_id not in found_ku_ids:
+            results[ku_id] = {
+                "extracted": {},
+                "unmapped": {},
+                "missing_required": [],
+                "is_complete": False,
+                "error": "Missing from response"
+            }
+    
+    return results
+
+
+# =============================================================================
+# Token Estimation
+# =============================================================================
+
+def estimate_tokens(text: str) -> int:
+    """
+    Estimate Claude tokens for text.
+    Uses simple heuristic (~4 chars per token for English).
+    For more accuracy, install tiktoken: pip install tiktoken
+    """
+    try:
+        import tiktoken
+        encoding = tiktoken.get_encoding("cl100k_base")
+        return len(encoding.encode(text))
+    except ImportError:
+        # Fallback: ~4 chars per token
+        return len(text) // 4
 
 
 # =============================================================================

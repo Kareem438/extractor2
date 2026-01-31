@@ -81,6 +81,60 @@ class TaskQueueRequest(BaseModel):
     priority: int = Field(default=0, description="Task priority")
 
 
+# =============================================================================
+# Tag Mapping Models (Requirement 7A)
+# =============================================================================
+
+class TagMapping(BaseModel):
+    """Model for a single tag-to-attribute mapping"""
+    tag_name: str = Field(..., description="XML tag name (e.g., 'summary')")
+    target_attribute: str = Field(..., description="Target attribute (e.g., 'attr_15')")
+    is_required: bool = Field(default=False, description="Mark KU incomplete if missing")
+    order: int = Field(default=0, description="Display order")
+
+
+class TagMappingsUpdate(BaseModel):
+    """Model for updating tag mappings"""
+    tag_mappings: List[TagMapping] = Field(default=[], description="List of tag mappings")
+    fallback_attribute: Optional[str] = Field(None, description="Attribute for unmapped tags")
+
+
+class TagMappingsResponse(BaseModel):
+    """Model for tag mappings response"""
+    tag_mappings: List[TagMapping]
+    fallback_attribute: Optional[str]
+
+
+# =============================================================================
+# KU Grouping Models (Requirement 7B)
+# =============================================================================
+
+class GroupingConfigUpdate(BaseModel):
+    """Model for updating grouping configuration"""
+    is_enabled: bool = Field(default=False, description="Enable KU grouping")
+    grouping_mode: str = Field(default="ku_count", description="'ku_count' or 'token_limit'")
+    max_kus_per_group: int = Field(default=5, description="Max KUs per group")
+    max_tokens_per_group: int = Field(default=4000, description="Max tokens per group")
+    fallback_attribute: Optional[str] = Field(None, description="Attribute for unmapped tags")
+
+
+class GroupingPreviewItem(BaseModel):
+    """Model for grouping preview item"""
+    l1_title: str
+    l2_title: str
+    ku_count: int
+    word_count: int
+    estimated_tokens: int
+
+
+class ExecutionRequest(BaseModel):
+    """Model for pipeline execution request"""
+    mode: str = Field(default="individual", description="'individual', 'grouped', or 'incomplete'")
+    dry_run: bool = Field(default=False, description="Preview without executing")
+    save_preview_to: Optional[str] = Field(None, description="Attribute to save preview")
+    priority: int = Field(default=0, description="Task priority")
+
+
 # Pipeline Configuration Endpoints
 
 @router.get("/books/{book_id}/pipeline/steps", response_model=List[PipelineStepResponse])
@@ -232,6 +286,220 @@ async def delete_pipeline_step(book_id: int, step_id: int):
             raise HTTPException(status_code=404, detail="Pipeline step not found")
 
         return {"success": True, "message": "Pipeline step deleted"}
+
+
+# =============================================================================
+# Tag Mapping Endpoints (Requirement 7A)
+# =============================================================================
+
+@router.get("/books/{book_id}/pipeline/steps/{step_id}/tag-mappings")
+async def get_tag_mappings(book_id: int, step_id: int):
+    """Get tag mappings for a pipeline step"""
+    
+    table_prefix = await _get_table_prefix(book_id)
+    table_name = f"{table_prefix}_pipeline_config"
+    
+    sql = text(f"""
+    SELECT tag_mappings, fallback_attribute
+    FROM {table_name}
+    WHERE id = :step_id
+    """)
+    
+    with engine.connect() as conn:
+        result = conn.execute(sql, {"step_id": step_id}).fetchone()
+        
+        if not result:
+            raise HTTPException(status_code=404, detail="Pipeline step not found")
+        
+        tag_mappings = result[0] if result[0] else []
+        fallback_attribute = result[1]
+        
+        return {
+            "tag_mappings": tag_mappings,
+            "fallback_attribute": fallback_attribute
+        }
+
+
+@router.put("/books/{book_id}/pipeline/steps/{step_id}/tag-mappings")
+async def update_tag_mappings(book_id: int, step_id: int, request: TagMappingsUpdate):
+    """Update tag mappings for a pipeline step"""
+    
+    table_prefix = await _get_table_prefix(book_id)
+    table_name = f"{table_prefix}_pipeline_config"
+    
+    # Convert to JSON-serializable format
+    import json
+    tag_mappings_json = json.dumps([m.model_dump() for m in request.tag_mappings])
+    
+    sql = text(f"""
+    UPDATE {table_name}
+    SET tag_mappings = :tag_mappings::jsonb,
+        fallback_attribute = :fallback_attribute,
+        updated_at = NOW()
+    WHERE id = :step_id
+    RETURNING id
+    """)
+    
+    with engine.connect() as conn:
+        result = conn.execute(sql, {
+            "step_id": step_id,
+            "tag_mappings": tag_mappings_json,
+            "fallback_attribute": request.fallback_attribute
+        }).fetchone()
+        conn.commit()
+        
+        if not result:
+            raise HTTPException(status_code=404, detail="Pipeline step not found")
+        
+        return {"success": True, "message": "Tag mappings updated"}
+
+
+# =============================================================================
+# KU Grouping Endpoints (Requirement 7B)
+# =============================================================================
+
+@router.get("/books/{book_id}/pipeline/grouping/config")
+async def get_grouping_config(book_id: int):
+    """Get KU grouping configuration for a book"""
+    
+    table_prefix = await _get_table_prefix(book_id)
+    table_name = f"{table_prefix}_ku_grouping_config"
+    
+    sql = text(f"""
+    SELECT is_enabled, grouping_mode, max_kus_per_group, max_tokens_per_group, fallback_attribute
+    FROM {table_name}
+    WHERE id = 1
+    """)
+    
+    with engine.connect() as conn:
+        result = conn.execute(sql).fetchone()
+        
+        if not result:
+            return {
+                "is_enabled": False,
+                "grouping_mode": "ku_count",
+                "max_kus_per_group": 5,
+                "max_tokens_per_group": 4000,
+                "fallback_attribute": None
+            }
+        
+        return {
+            "is_enabled": result[0],
+            "grouping_mode": result[1],
+            "max_kus_per_group": result[2],
+            "max_tokens_per_group": result[3],
+            "fallback_attribute": result[4]
+        }
+
+
+@router.put("/books/{book_id}/pipeline/grouping/config")
+async def update_grouping_config(book_id: int, request: GroupingConfigUpdate):
+    """Update KU grouping configuration for a book"""
+    
+    table_prefix = await _get_table_prefix(book_id)
+    table_name = f"{table_prefix}_ku_grouping_config"
+    
+    sql = text(f"""
+    UPDATE {table_name}
+    SET is_enabled = :is_enabled,
+        grouping_mode = :grouping_mode,
+        max_kus_per_group = :max_kus_per_group,
+        max_tokens_per_group = :max_tokens_per_group,
+        fallback_attribute = :fallback_attribute,
+        updated_at = NOW()
+    WHERE id = 1
+    RETURNING id
+    """)
+    
+    with engine.connect() as conn:
+        result = conn.execute(sql, request.model_dump()).fetchone()
+        conn.commit()
+        
+        if not result:
+            # Insert if not exists
+            conn.execute(text(f"""
+                INSERT INTO {table_name} (id, is_enabled, grouping_mode, max_kus_per_group, max_tokens_per_group, fallback_attribute)
+                VALUES (1, :is_enabled, :grouping_mode, :max_kus_per_group, :max_tokens_per_group, :fallback_attribute)
+            """), request.model_dump())
+            conn.commit()
+        
+        return {"success": True, "message": "Grouping config updated"}
+
+
+@router.get("/books/{book_id}/pipeline/grouping/preview")
+async def get_grouping_preview(book_id: int):
+    """Get preview of KU grouping by L1/L2 titles"""
+    
+    table_prefix = await _get_table_prefix(book_id)
+    ku_table = f"{table_prefix}_knowledge_units"
+    
+    # Get KU counts and word counts grouped by L1/L2 titles
+    sql = text(f"""
+    SELECT 
+        COALESCE(chapter, 'No Chapter') as l1_title,
+        COALESCE(topic, 'No Topic') as l2_title,
+        COUNT(*) as ku_count,
+        SUM(LENGTH(COALESCE(text_content, ''))) as total_chars
+    FROM {ku_table}
+    WHERE attr8_value = 'enabled' OR attr8_value IS NULL
+    GROUP BY chapter, topic
+    ORDER BY chapter, topic
+    """)
+    
+    with engine.connect() as conn:
+        results = conn.execute(sql).fetchall()
+        
+        preview = []
+        for row in results:
+            total_chars = row[3] or 0
+            # Estimate tokens (~4 chars per token)
+            estimated_tokens = total_chars // 4
+            
+            preview.append({
+                "l1_title": row[0],
+                "l2_title": row[1],
+                "ku_count": row[2],
+                "word_count": total_chars // 5,  # Rough word estimate
+                "estimated_tokens": estimated_tokens
+            })
+        
+        return {"preview": preview, "total_groups": len(preview)}
+
+
+@router.post("/books/{book_id}/pipeline/grouping/estimate-tokens")
+async def estimate_group_tokens(book_id: int, ku_ids: List[int]):
+    """Estimate tokens for a group of KUs"""
+    
+    from src.services.claude_batch_service import estimate_tokens
+    
+    table_prefix = await _get_table_prefix(book_id)
+    ku_table = f"{table_prefix}_knowledge_units"
+    
+    if not ku_ids:
+        return {"input_tokens": 0, "estimated_output_tokens": 0}
+    
+    sql = text(f"""
+    SELECT unit_id, text_content
+    FROM {ku_table}
+    WHERE unit_id IN :ku_ids
+    """)
+    
+    with engine.connect() as conn:
+        results = conn.execute(sql, {"ku_ids": tuple(ku_ids)}).fetchall()
+        
+        total_text = ""
+        for row in results:
+            total_text += f"<ku_{row[0]}>{row[1] or ''}</ku_{row[0]}>\n"
+        
+        input_tokens = estimate_tokens(total_text)
+        # Estimate output as ~50% of input for summaries
+        estimated_output = input_tokens // 2
+        
+        return {
+            "input_tokens": input_tokens,
+            "estimated_output_tokens": estimated_output,
+            "total_kus": len(results)
+        }
 
 
 @router.get("/books/{book_id}/pipeline/variables", response_model=TemplateVariablesResponse)
@@ -696,4 +964,82 @@ async def get_claude_analysis_statistics(book_id: int):
         raise
     except Exception as e:
         logger.error(f"Error getting Claude analysis statistics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# =============================================================================
+# Execution Mode Endpoint (Requirement 7B)
+# =============================================================================
+
+@router.post("/books/{book_id}/pipeline/execute")
+async def execute_pipeline(book_id: int, request: ExecutionRequest):
+    """
+    Execute pipeline with specified mode.
+    
+    Modes:
+    - individual: Process each KU separately (default)
+    - grouped: Process KUs in groups by L1/L2 title
+    - incomplete: Retry only incomplete KUs
+    
+    Options:
+    - dry_run: Preview without executing
+    - save_preview_to: Attribute to save preview (for dry run)
+    """
+    try:
+        from src.services.ku_grouper_service import execute_grouped_pipeline
+        
+        result = execute_grouped_pipeline(
+            book_id=book_id,
+            step_id=1,  # TODO: Allow specifying step_id
+            execution_mode=request.mode,
+            dry_run=request.dry_run,
+            save_preview_to=request.save_preview_to
+        )
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error executing pipeline: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/books/{book_id}/pipeline/incomplete-kus")
+async def get_incomplete_kus(book_id: int):
+    """
+    Get list of incomplete KUs for retry.
+    """
+    try:
+        table_prefix = await _get_table_prefix(book_id)
+        ku_table = f"{table_prefix}_knowledge_units"
+        
+        sql = text(f"""
+            SELECT unit_id, chapter, topic, incomplete_reason
+            FROM {ku_table}
+            WHERE is_complete = FALSE
+            ORDER BY chapter, topic, unit_id
+        """)
+        
+        with engine.connect() as conn:
+            results = conn.execute(sql).fetchall()
+            
+            kus = [
+                {
+                    "unit_id": row[0],
+                    "chapter": row[1],
+                    "topic": row[2],
+                    "incomplete_reason": row[3]
+                }
+                for row in results
+            ]
+        
+        return {
+            "success": True,
+            "incomplete_kus": kus,
+            "count": len(kus)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting incomplete KUs: {e}")
         raise HTTPException(status_code=500, detail=str(e))

@@ -1,70 +1,54 @@
 # Next Session Context
 
-**Last Updated:** 2026-01-29
-**Session:** Session 23 - Requirement 7 Requirements Gathering
+**Last Updated:** 2026-01-31
+**Session:** Session 24 - E2E Testing & Bug Fixes
 
 ---
 
-## STATUS: REQUIREMENT 7 REQUIREMENTS GATHERING 🟡
+## STATUS: E2E TESTING IN PROGRESS
 
-### Requirement 6 - Delete Book: ✅ COMPLETE
-- Two-step confirmation working
-- Orphaned tables cleaned up
-- All tasks complete
-
-### Requirement 7 - KU Grouping, Multi-Tag Extraction & YOLO Training: 🟡 IN PROGRESS
-
-**Three Features:**
-1. **7A: Multi-Tag XML Extraction** - Extract multiple XML tags to different attributes
-2. **7B: Knowledge Unit Grouping** - Combine KUs into single Claude prompts
-3. **7C: YOLO Fine-Tuning** - Train DocLayout-YOLO with user corrections
-
-**Requirements Gathering: 60% Complete**
-- 4 of 12 clarification questions answered
-- Need to complete Q5-Q12
+### Session Summary (2026-01-31)
+- E2E testing for Requirements 4-8
+- **3 bugs found and fixed**
+- Auto-Slicer page layout reorganized
+- Root cause fix applied to `table_creator.py`
 
 ---
 
-## NEXT STEPS (Continue Requirement 7)
+## BUGS FIXED THIS SESSION
 
-1. **Read requirements:** `01-requirements/requirement7-grouping-training.md`
-2. **Read progress:** `01-requirements/requirement7-progress.md`
-3. **Ask remaining questions (Q5-Q12)**
-4. **Review existing code:**
-   - `03-code/src/api/routes/pipeline.py`
-   - `03-code/src/services/claude_batch_service.py`
-5. **Create design document**
-6. **Create tasks.md**
+### Bug 1: "Attr" Button Shows "Not Found" ✅
+- Fixed URL format in `openAttributeEditor()`
+- File: `03-code/src/frontend/static/js/auto-slicer.js`
 
----
+### Bug 2: Layout Detection Validation Error Messages ✅
+- Improved error messages to show which pages need coverage
+- File: `03-code/src/frontend/static/js/auto-slicer.js`
 
-## Remaining Questions to Ask User
-
-**7A (Multi-Tag Extraction):**
-- Q5: Should unmapped tags in response be ignored or stored?
-- Q6: Error handling if expected tag is missing?
-
-**7B (KU Grouping):**
-- Q7: Grouping scope - per pipeline step or global?
-- Q8: What if KU ID missing from Claude response?
-- Q9: Dry run mode to preview without executing?
-
-**7C (YOLO Fine-Tuning):**
-- Q10: Minimum pages before training enabled?
-- Q11: Training in background or blocking?
-- Q12: Auto-backup model before training?
+### Bug 3: Extraction Results Not Appearing ✅
+- **Symptom:** Ran migration `migrate_add_title_fk_columns.py`
+- **Root Cause:** Updated `table_creator.py` to include all required columns
 
 ---
 
-## Decisions Already Made
+## ROOT CAUSE FIX: table_creator.py
 
-| Feature | Decision |
-|---------|----------|
-| Tag mapping UI | Table/grid with Tag → Attribute dropdown |
-| Grouping method | Group by L2 title with max N rule |
-| Response ID | KU ID as XML tags (`<ku_123>...</ku_123>`) |
-| Grouping criteria | KU count OR token limit, with preview button |
-| Preview table | L1 → L2 → KU count → word count |
+Updated for new books to include all required columns:
+- `raw_{prefix}_pages`: Added `is_skipped`, `is_ready_for_extraction`
+- `raw_{prefix}_paragraph_images`: Added `l1_title_id`, `l2_title_id`
+- `raw_{prefix}_diagram_images`: Added `l1_title_id`, `l2_title_id`
+- `raw_{prefix}_layout_detections`: Added `l1_title_id`, `l2_title_id`
+- `{prefix}_level1_titles`: Added `external_writable_start`, `external_writable_end`
+- `{prefix}_level2_titles`: Added `external_writable_start`, `external_writable_end`
+
+---
+
+## NEXT STEPS
+
+1. **Continue E2E testing** for Requirements 4-8
+2. **Test new book upload** to verify table_creator.py changes work
+3. **Test extraction workflow** end-to-end
+4. **Implement Requirement 7** tasks (KU Grouping & YOLO Training)
 
 ---
 
@@ -73,17 +57,17 @@
 | File | Purpose |
 |------|---------|
 | `NEXT-SESSION.md` | This file - session context |
-| `01-requirements/requirement7-grouping-training.md` | Full requirements |
-| `01-requirements/requirement7-progress.md` | Progress tracker |
-| `02-architecture/automatic-boundaries-local-llm-part2.md` | YOLO training reference |
-| `.kiro/steering/code-review-first.md` | CRITICAL: Check existing code first |
+| `SESSION-SUMMARY-2026-01-31.md` | Detailed session summary |
+| `01-requirements/requirement4-progress.md` | Bug tracking & progress |
+| `04-tests/E2E-MANUAL-TESTS-R4-R8.html` | E2E test cases |
+| `.kiro/steering/code-review-first.md` | CRITICAL: Server commands & code review rules |
 
 ---
 
 ## Quick Commands
 
 ```powershell
-# Start server
+# Start server (PORT 8888!)
 cd H:\13-extractor2
 Start-Process -FilePath ".\venv\Scripts\python.exe" -ArgumentList "-m uvicorn src.main:app --host 0.0.0.0 --port 8888" -WorkingDirectory "03-code" -WindowStyle Hidden
 
@@ -93,9 +77,9 @@ Get-Process -Name python -ErrorAction SilentlyContinue | Stop-Process -Force; St
 # Check server health
 Invoke-WebRequest -Uri "http://localhost:8888/health" -UseBasicParsing | Select-Object -ExpandProperty Content
 
-# PostgreSQL access
-& "C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres -d knowledge_extraction_2
-# Password: postgres
+# Run migrations for new books
+.\venv\Scripts\python.exe 03-code/migrate_add_title_fk_columns.py
+.\venv\Scripts\python.exe 03-code/migrate_add_multi_pdf_crossbook.py
 ```
 
 ---
@@ -104,16 +88,26 @@ Invoke-WebRequest -Uri "http://localhost:8888/health" -UseBasicParsing | Select-
 
 - **Location:** `H:\13-extractor2`
 - **Database:** `knowledge_extraction_2`
-- **Port:** `8888`
+- **Port:** `8888` (NOT 8000!)
 - **Virtual Environment:** `H:\13-extractor2\venv`
 
 ---
 
-## Previous Requirements Status
+## Requirements Status
 
 | Requirement | Status |
 |-------------|--------|
-| Req 4 - Title Hierarchy | ✅ Complete |
+| Req 4 - Title Hierarchy | ✅ Complete (bugs fixed) |
 | Req 5 - Multi-PDF & Cross-Book | ✅ Complete |
 | Req 6 - Delete Book | ✅ Complete |
-| Req 7 - KU Grouping & Training | 🟡 Requirements 60% |
+| Req 7 - KU Grouping & Training | ✅ Design Complete → Tasks Phase |
+| Req 8 - YOLO Fine-Tuning | ✅ Design Complete |
+
+---
+
+## Key URLs
+
+- Auto-Slicer: http://localhost:8888/auto-slicer?book_id=2
+- Extraction Dashboard: http://localhost:8888/extraction-dashboard?book_id=2
+- Layout Review: http://localhost:8888/layout-review?book_id=2
+- Book Settings: http://localhost:8888/book-settings

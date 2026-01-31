@@ -1,7 +1,7 @@
 # Requirement 7: KU Grouping, Multi-Tag Extraction & YOLO Fine-Tuning
 
 **Created:** January 29, 2026  
-**Status:** Requirements Gathering (In Progress)
+**Status:** ✅ Requirements Complete (Ready for Design)
 
 ---
 
@@ -67,6 +67,10 @@ Combine multiple knowledge units into a single Claude prompt, with responses dis
 | Grouping definition | **C) Group rule** - "Group by L2 title with max N units per group" |
 | Response identification | **A) KU ID as XML tags** - `<ku_123>answer</ku_123>` |
 | Grouping criteria | **B+D) Both KU count AND token limit** - User chooses, with preview |
+| Unmapped tags | **B) Store in user-specified fallback attribute** |
+| Grouping scope | **B) Global for entire pipeline** |
+| Missing KU ID | **A) Mark as "incomplete"** + 3 execution modes |
+| Dry run mode | **C) Optional toggle** + save preview to custom attribute |
 
 ### Functional Requirements
 
@@ -115,6 +119,20 @@ Combine multiple knowledge units into a single Claude prompt, with responses dis
    - Uses tiktoken or similar for Claude token estimation
    - Shows: "Selected: 5 KUs, ~3,200 tokens (input) + ~1,500 tokens (output estimate)"
 
+6. **Dry Run Mode**
+   - Optional "Dry Run" checkbox before execution
+   - Shows full preview of groups, prompts, and estimated costs without API calls
+   - User can save preview output to a custom attribute
+   - Available for all 3 execution modes: Individual KUs, Grouped KUs, Incomplete KUs
+
+7. **Database Requirements for KU Grouping**
+   - 80 custom attributes for grouped KU results (similar to individual KU attributes)
+   - New DB fields to store grouping configuration:
+     - Group definition rules
+     - Max KUs per group / max tokens per group
+     - Fallback attribute for unmapped tags
+     - Execution mode preference
+
 ---
 
 ## Requirement 7C: YOLO Fine-Tuning
@@ -138,23 +156,18 @@ Fine-tune DocLayout-YOLO model using user corrections from layout review. After 
 - Batch size: 4 (with AMP enabled)
 - ~50-100 corrected pages recommended for improvement
 
----
+### Clarification Answers
+| Question | Answer |
+|----------|--------|
+| Min pages for training | **D) No hard minimum** - Warning if < 20 pages, show quality metrics |
+| Training UI blocking | **C) User choice** - Let user decide (background recommended) |
+| Model backup | **A) Yes, always auto-backup** - Save to `models/backups/` with timestamp |
 
-## Questions Still Needed (Continue in Next Session)
-
-### 7A Questions
-- [ ] Q5: Should unmapped tags in response be ignored or stored somewhere?
-- [ ] Q6: Error handling if expected tag is missing from response?
-
-### 7B Questions
-- [ ] Q7: Should grouping be per-pipeline-step or global setting?
-- [ ] Q8: What happens if a KU ID is missing from Claude's response?
-- [ ] Q9: Should there be a "dry run" mode to preview without executing?
-
-### 7C Questions
-- [ ] Q10: Minimum pages required before training button is enabled?
-- [ ] Q11: Should training run in background or block UI?
-- [ ] Q12: Auto-backup current model before training?
+### Training Data Storage Requirements
+- **Store BOTH original YOLO-detected regions AND user-corrected regions**
+- Original regions: What YOLO detected before user correction
+- Corrected regions: What user manually adjusted
+- This pairing is essential for fine-tuning the model to learn from corrections
 
 ---
 

@@ -1,5 +1,17 @@
 # Code Review First - CRITICAL RULE
 
+## CRITICAL: Server & Project Commands
+
+**BEFORE running ANY server commands, READ: `docs/QUICK-COMMANDS.md`**
+
+Key facts:
+- Server port: **8888** (NOT 8000)
+- Virtual env: `.\venv\Scripts\python.exe`
+- Start server: `Start-Process -FilePath ".\venv\Scripts\python.exe" -ArgumentList "-m uvicorn src.main:app --host 0.0.0.0 --port 8888" -WorkingDirectory "03-code" -WindowStyle Hidden`
+- Project path: `H:\13-extractor2`
+
+---
+
 ## ALWAYS CHECK EXISTING CODE BEFORE IMPLEMENTING
 
 Before implementing ANY feature or making ANY changes:

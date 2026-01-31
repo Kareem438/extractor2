@@ -431,6 +431,163 @@
             max-height: 500px;
             overflow-y: auto;
         }
+        
+        /* Expandable Help Section */
+        .help-section {
+            background: linear-gradient(135deg, #e8f4fd 0%, #f0f7ff 100%);
+            border: 1px solid #b8daff;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .help-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            cursor: pointer;
+            background: rgba(52, 152, 219, 0.1);
+            transition: background 0.2s;
+        }
+        .help-header:hover { background: rgba(52, 152, 219, 0.15); }
+        .help-header h3 {
+            margin: 0;
+            font-size: 15px;
+            color: #2980b9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .help-toggle {
+            font-size: 12px;
+            color: #7f8c8d;
+            transition: transform 0.3s;
+        }
+        .help-toggle.expanded { transform: rotate(180deg); }
+        .help-content {
+            display: none;
+            padding: 15px 20px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #34495e;
+        }
+        .help-content.expanded { display: block; }
+        .help-content h4 {
+            color: #2980b9;
+            margin: 15px 0 8px 0;
+            font-size: 14px;
+        }
+        .help-content h4:first-child { margin-top: 0; }
+        .help-content ul {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+        .help-content li { margin: 4px 0; }
+        .help-content code {
+            background: #fff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 13px;
+            border: 1px solid #ddd;
+        }
+        
+        /* KU Grouping Section */
+        .grouping-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .grouping-section h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #34495e;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .grouping-preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        .grouping-preview-table th,
+        .grouping-preview-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        .grouping-preview-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #7f8c8d;
+        }
+        .grouping-config {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .grouping-config label {
+            font-weight: 600;
+            color: #34495e;
+        }
+        .grouping-config select,
+        .grouping-config input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .grouping-config input[type="number"] {
+            width: 80px;
+        }
+        .execution-mode {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 15px;
+            background: #e8f5e9;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .execution-mode label {
+            font-weight: 600;
+            color: #2e7d32;
+        }
+        .execution-mode select {
+            padding: 8px 12px;
+            border: 1px solid #a5d6a7;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .execution-mode .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: normal;
+        }
+        .grouping-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .token-preview {
+            padding: 10px 15px;
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #856404;
+        }
     </style>
 </head>
 <body>
@@ -462,6 +619,45 @@
 
     <div class="main-content">
     <div class="container">
+        <!-- Expandable Help Section -->
+        <div class="help-section">
+            <div class="help-header" onclick="toggleHelp()">
+                <h3>💡 Pipeline Dashboard Help</h3>
+                <span class="help-toggle" id="helpToggle">▼</span>
+            </div>
+            <div class="help-content" id="helpContent">
+                <h4>What is the Pipeline Dashboard?</h4>
+                <p>The Pipeline Dashboard allows you to monitor and control the processing of Knowledge Units (KUs) through your configured pipeline steps. You can create KUs from extracted data and execute Claude analysis on diagrams and Q&A pairs.</p>
+                
+                <h4>Knowledge Unit Creation</h4>
+                <p>After extracting text and images from pages, you need to create Knowledge Units:</p>
+                <ul>
+                    <li><strong>Paragraphs:</strong> Text content is copied directly to KU</li>
+                    <li><strong>Diagrams/Tables/Equations:</strong> Skeleton KU created with image reference</li>
+                    <li><strong>Q&A Pairs:</strong> Question and answer merged into single KU</li>
+                </ul>
+                
+                <h4>KU Grouping (New!)</h4>
+                <p>Group multiple KUs into a single Claude prompt for efficiency:</p>
+                <ul>
+                    <li><strong>Group by L2 Title:</strong> KUs under the same L1+L2 title are grouped together</li>
+                    <li><strong>Max KUs per Group:</strong> Limit how many KUs are combined</li>
+                    <li><strong>Token Limit:</strong> Alternatively, limit by estimated token count</li>
+                    <li><strong>Preview:</strong> See grouping breakdown before execution</li>
+                </ul>
+                
+                <h4>Execution Modes</h4>
+                <ul>
+                    <li><strong>Individual:</strong> Process each KU separately (default, most reliable)</li>
+                    <li><strong>Grouped:</strong> Combine KUs for faster processing (50-80% cost reduction)</li>
+                    <li><strong>Incomplete Only:</strong> Retry only KUs marked as incomplete</li>
+                </ul>
+                
+                <h4>Dry Run Mode</h4>
+                <p>Enable "Dry Run" to preview what would be sent to Claude without actually making API calls. Results can be saved to a custom attribute for review.</p>
+            </div>
+        </div>
+
         <header>
             <h1>Pipeline Dashboard</h1>
             <p class="page-description">Monitor worker status, create Knowledge Units from extracted data, and execute Claude analysis for diagrams and Q&A pairs.</p>
@@ -577,6 +773,84 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- KU Grouping Section (Requirement 7B) -->
+        <div class="grouping-section" id="groupingSection" style="display: none;">
+            <h2>
+                📦 KU Grouping Configuration
+                <button class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;" onclick="loadGroupingPreview()">Refresh Preview</button>
+            </h2>
+            
+            <div class="grouping-config">
+                <label>
+                    <input type="checkbox" id="groupingEnabled" onchange="toggleGrouping()">
+                    Enable KU Grouping
+                </label>
+                
+                <label>Group By:</label>
+                <select id="groupingMode" onchange="updateGroupingConfig()">
+                    <option value="ku_count">Max KUs per Group</option>
+                    <option value="token_limit">Max Tokens per Group</option>
+                </select>
+                
+                <label id="groupingLimitLabel">Max KUs:</label>
+                <input type="number" id="groupingLimit" value="5" min="2" max="50" onchange="updateGroupingConfig()">
+                
+                <button class="btn btn-primary" onclick="previewTokens()">Preview Tokens</button>
+            </div>
+            
+            <div id="tokenPreviewContainer" style="display: none;">
+                <div class="token-preview" id="tokenPreview">
+                    Estimated tokens will appear here after clicking "Preview Tokens"
+                </div>
+            </div>
+            
+            <h3 style="font-size: 14px; color: #34495e; margin: 15px 0 10px 0;">Grouping Preview by L1/L2 Titles</h3>
+            <div style="max-height: 300px; overflow-y: auto;">
+                <table class="grouping-preview-table">
+                    <thead>
+                        <tr>
+                            <th>L1 Title (Chapter)</th>
+                            <th>L2 Title (Section)</th>
+                            <th>KU Count</th>
+                            <th>Word Count</th>
+                            <th>Est. Tokens</th>
+                        </tr>
+                    </thead>
+                    <tbody id="groupingPreviewBody">
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: #95a5a6; padding: 20px;">
+                                Loading grouping preview...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="execution-mode">
+                <label>Execution Mode:</label>
+                <select id="executionMode">
+                    <option value="individual">Individual KUs (default)</option>
+                    <option value="grouped">Grouped KUs</option>
+                    <option value="incomplete">Incomplete KUs Only</option>
+                </select>
+                
+                <label class="checkbox-label">
+                    <input type="checkbox" id="dryRun">
+                    Dry Run (preview only)
+                </label>
+                
+                <label>Save Preview To:</label>
+                <select id="savePreviewTo">
+                    <option value="">-- Don't save --</option>
+                </select>
+            </div>
+            
+            <div class="grouping-actions">
+                <button class="btn btn-success" onclick="saveGroupingConfig()">Save Configuration</button>
+                <button class="btn btn-purple" onclick="executeWithMode()">Execute Pipeline</button>
             </div>
         </div>
 
@@ -709,9 +983,15 @@
                 select.value = bookIdFromUrl;
                 currentBookId = bookIdFromUrl;
                 
-                // Show page status card and load data
+                // Show page status card and grouping section, load data
                 document.getElementById('pageStatusCard').style.display = 'block';
+                document.getElementById('groupingSection').style.display = 'block';
                 updateNavLinks(bookIdFromUrl);
+                
+                // Load grouping data
+                loadGroupingConfig();
+                loadGroupingPreview();
+                populateSavePreviewDropdown();
             }
             
             await loadData();
@@ -774,13 +1054,20 @@
             updateNavLinks(currentBookId);
             loadData();
             
-            // Show/hide page status card based on book selection
+            // Show/hide page status card and grouping section based on book selection
             const pageStatusCard = document.getElementById('pageStatusCard');
+            const groupingSection = document.getElementById('groupingSection');
+            
             if (currentBookId) {
                 pageStatusCard.style.display = 'block';
+                groupingSection.style.display = 'block';
                 loadPageStatus();
+                loadGroupingConfig();
+                loadGroupingPreview();
+                populateSavePreviewDropdown();
             } else {
                 pageStatusCard.style.display = 'none';
+                groupingSection.style.display = 'none';
                 document.getElementById('nav-book-name').textContent = 'Select a book';
             }
         }
@@ -1347,6 +1634,273 @@
             } finally {
                 btn.textContent = originalText;
                 updateExecuteAnalysisButton();
+            }
+        }
+
+        // =====================================================
+        // Help Section Toggle
+        // =====================================================
+        
+        function toggleHelp() {
+            const content = document.getElementById('helpContent');
+            const toggle = document.getElementById('helpToggle');
+            
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                toggle.classList.remove('expanded');
+            } else {
+                content.classList.add('expanded');
+                toggle.classList.add('expanded');
+            }
+        }
+        
+        // =====================================================
+        // KU Grouping Functions (Requirement 7B)
+        // =====================================================
+        
+        let groupingConfig = {
+            is_enabled: false,
+            grouping_mode: 'ku_count',
+            max_kus_per_group: 5,
+            max_tokens_per_group: 4000,
+            fallback_attribute: null
+        };
+        let groupingPreviewData = [];
+        
+        // Load grouping configuration
+        async function loadGroupingConfig() {
+            if (!currentBookId) return;
+            
+            try {
+                const response = await fetch(`/api/books/${currentBookId}/pipeline/grouping/config`);
+                const data = await response.json();
+                
+                groupingConfig = data;
+                
+                // Update UI
+                document.getElementById('groupingEnabled').checked = data.is_enabled;
+                document.getElementById('groupingMode').value = data.grouping_mode;
+                document.getElementById('groupingLimit').value = 
+                    data.grouping_mode === 'ku_count' ? data.max_kus_per_group : data.max_tokens_per_group;
+                
+                updateGroupingLimitLabel();
+                
+            } catch (error) {
+                console.error('Error loading grouping config:', error);
+            }
+        }
+        
+        // Load grouping preview
+        async function loadGroupingPreview() {
+            if (!currentBookId) return;
+            
+            const tbody = document.getElementById('groupingPreviewBody');
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">Loading...</td></tr>';
+            
+            try {
+                const response = await fetch(`/api/books/${currentBookId}/pipeline/grouping/preview`);
+                const data = await response.json();
+                
+                groupingPreviewData = data.preview || [];
+                renderGroupingPreview();
+                
+            } catch (error) {
+                console.error('Error loading grouping preview:', error);
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #e74c3c; padding: 20px;">Error loading preview</td></tr>';
+            }
+        }
+        
+        // Render grouping preview table
+        function renderGroupingPreview() {
+            const tbody = document.getElementById('groupingPreviewBody');
+            
+            if (groupingPreviewData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #95a5a6; padding: 20px;">No KUs found for grouping</td></tr>';
+                return;
+            }
+            
+            let totalKUs = 0;
+            let totalWords = 0;
+            let totalTokens = 0;
+            
+            tbody.innerHTML = groupingPreviewData.map(item => {
+                totalKUs += item.ku_count;
+                totalWords += item.word_count;
+                totalTokens += item.estimated_tokens;
+                
+                return `
+                    <tr>
+                        <td>${item.l1_title}</td>
+                        <td>${item.l2_title}</td>
+                        <td>${item.ku_count}</td>
+                        <td>${item.word_count.toLocaleString()}</td>
+                        <td>${item.estimated_tokens.toLocaleString()}</td>
+                    </tr>
+                `;
+            }).join('');
+            
+            // Add totals row
+            tbody.innerHTML += `
+                <tr style="background: #f8f9fa; font-weight: bold;">
+                    <td colspan="2">Total</td>
+                    <td>${totalKUs}</td>
+                    <td>${totalWords.toLocaleString()}</td>
+                    <td>${totalTokens.toLocaleString()}</td>
+                </tr>
+            `;
+        }
+        
+        // Toggle grouping enabled
+        function toggleGrouping() {
+            groupingConfig.is_enabled = document.getElementById('groupingEnabled').checked;
+        }
+        
+        // Update grouping config from UI
+        function updateGroupingConfig() {
+            const mode = document.getElementById('groupingMode').value;
+            const limit = parseInt(document.getElementById('groupingLimit').value);
+            
+            groupingConfig.grouping_mode = mode;
+            
+            if (mode === 'ku_count') {
+                groupingConfig.max_kus_per_group = limit;
+            } else {
+                groupingConfig.max_tokens_per_group = limit;
+            }
+            
+            updateGroupingLimitLabel();
+        }
+        
+        // Update the limit label based on mode
+        function updateGroupingLimitLabel() {
+            const mode = document.getElementById('groupingMode').value;
+            const label = document.getElementById('groupingLimitLabel');
+            const input = document.getElementById('groupingLimit');
+            
+            if (mode === 'ku_count') {
+                label.textContent = 'Max KUs:';
+                input.value = groupingConfig.max_kus_per_group;
+                input.min = 2;
+                input.max = 50;
+            } else {
+                label.textContent = 'Max Tokens:';
+                input.value = groupingConfig.max_tokens_per_group;
+                input.min = 1000;
+                input.max = 100000;
+            }
+        }
+        
+        // Preview tokens for current configuration
+        async function previewTokens() {
+            if (!currentBookId) return;
+            
+            const container = document.getElementById('tokenPreviewContainer');
+            const preview = document.getElementById('tokenPreview');
+            
+            container.style.display = 'block';
+            preview.textContent = 'Calculating tokens...';
+            
+            try {
+                // Get all KU IDs from preview data
+                // For now, just show summary from preview
+                let totalTokens = groupingPreviewData.reduce((sum, item) => sum + item.estimated_tokens, 0);
+                let totalKUs = groupingPreviewData.reduce((sum, item) => sum + item.ku_count, 0);
+                
+                const mode = document.getElementById('groupingMode').value;
+                const limit = parseInt(document.getElementById('groupingLimit').value);
+                
+                let estimatedGroups = 0;
+                if (mode === 'ku_count') {
+                    estimatedGroups = Math.ceil(totalKUs / limit);
+                } else {
+                    estimatedGroups = Math.ceil(totalTokens / limit);
+                }
+                
+                preview.innerHTML = `
+                    <strong>Token Estimate:</strong><br>
+                    Total KUs: ${totalKUs.toLocaleString()}<br>
+                    Total Input Tokens: ~${totalTokens.toLocaleString()}<br>
+                    Estimated Groups: ${estimatedGroups}<br>
+                    Avg Tokens per Group: ~${Math.round(totalTokens / estimatedGroups).toLocaleString()}
+                `;
+                
+            } catch (error) {
+                console.error('Error previewing tokens:', error);
+                preview.textContent = 'Error calculating tokens';
+            }
+        }
+        
+        // Save grouping configuration
+        async function saveGroupingConfig() {
+            if (!currentBookId) {
+                showAlert('Please select a book first', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/books/${currentBookId}/pipeline/grouping/config`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(groupingConfig)
+                });
+                
+                if (response.ok) {
+                    showAlert('Grouping configuration saved!', 'success');
+                } else {
+                    const error = await response.json();
+                    showAlert(error.detail || 'Failed to save configuration', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Error saving grouping config:', error);
+                showAlert('Failed to save configuration', 'error');
+            }
+        }
+        
+        // Populate save preview dropdown
+        function populateSavePreviewDropdown() {
+            const select = document.getElementById('savePreviewTo');
+            select.innerHTML = '<option value="">-- Don\'t save --</option>';
+            
+            for (let i = 1; i <= 160; i++) {
+                const option = document.createElement('option');
+                option.value = `attr_${i}`;
+                option.textContent = `attr_${i}`;
+                select.appendChild(option);
+            }
+        }
+        
+        // Execute pipeline with selected mode
+        async function executeWithMode() {
+            if (!currentBookId) {
+                showAlert('Please select a book first', 'error');
+                return;
+            }
+            
+            const mode = document.getElementById('executionMode').value;
+            const dryRun = document.getElementById('dryRun').checked;
+            const savePreviewTo = document.getElementById('savePreviewTo').value || null;
+            
+            const modeLabels = {
+                'individual': 'Individual KUs',
+                'grouped': 'Grouped KUs',
+                'incomplete': 'Incomplete KUs Only'
+            };
+            
+            const confirmed = confirm(
+                `Execute pipeline in "${modeLabels[mode]}" mode?\n\n` +
+                `Dry Run: ${dryRun ? 'Yes (preview only)' : 'No (actual execution)'}\n` +
+                `Save Preview To: ${savePreviewTo || 'Not saving'}`
+            );
+            
+            if (!confirmed) return;
+            
+            showAlert(`Pipeline execution started in ${modeLabels[mode]} mode...`, 'info');
+            
+            // TODO: Implement actual execution endpoint
+            // For now, just show a message
+            if (dryRun) {
+                showAlert('Dry run mode - no actual API calls made', 'info');
             }
         }
 

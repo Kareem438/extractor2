@@ -20,6 +20,7 @@ confirmation_codes = {}
 class DeleteBookRequest(BaseModel):
     """Request body for book deletion."""
     delete_chromadb: bool = True
+    delete_yolo_model: bool = True  # NEW: Option to delete trained YOLO model
     confirmation_code: str
 
 
@@ -33,13 +34,14 @@ async def get_deletion_preview(book_id: int):
     - Counts of entities to be deleted
     - Whether deletion is allowed
     - A 4-digit confirmation code
+    - Whether book has a trained YOLO model
     """
     db = SessionLocal()
     try:
         # Get book info
         book = db.execute(
             text("""
-                SELECT book_id, book_name, file_path, table_prefix, processing_status 
+                SELECT book_id, book_name, file_path, table_prefix, processing_status, yolo_model_path 
                 FROM books_metadata 
                 WHERE book_id = :id
             """),
@@ -75,6 +77,13 @@ async def get_deletion_preview(book_id: int):
         # Get counts of entities
         counts = get_book_counts(db, book.table_prefix, book_id)
         
+        # Check if book has a trained YOLO model
+        has_yolo_model = False
+        yolo_model_path = book.yolo_model_path
+        if yolo_model_path:
+            from pathlib import Path
+            has_yolo_model = Path(yolo_model_path).exists()
+        
         # Generate 4-digit confirmation code
         code = ''.join([str(random.randint(0, 9)) for _ in range(4)])
         confirmation_codes[book_id] = code
@@ -88,7 +97,9 @@ async def get_deletion_preview(book_id: int):
             "blocking_reason": blocking_reason,
             "active_tasks": active_tasks_count,
             "counts": counts,
-            "confirmation_code": code
+            "confirmation_code": code,
+            "has_yolo_model": has_yolo_model,
+            "yolo_model_path": yolo_model_path
         }
     finally:
         db.close()
@@ -108,6 +119,7 @@ async def delete_book(book_id: int, request: DeleteBookRequest):
     - Row from books_metadata
     - Related rows from pdf_uploads and cross_book_access_log
     - ChromaDB embeddings (if delete_chromadb is True)
+    - Trained YOLO model (if delete_yolo_model is True)
     
     Preserves:
     - Original PDF file on disk
@@ -123,7 +135,7 @@ async def delete_book(book_id: int, request: DeleteBookRequest):
     try:
         # Get book info
         book = db.execute(
-            text("SELECT book_name, table_prefix, processing_status FROM books_metadata WHERE book_id = :id"),
+            text("SELECT book_name, table_prefix, processing_status, yolo_model_path FROM books_metadata WHERE book_id = :id"),
             {"id": book_id}
         ).fetchone()
         
@@ -183,6 +195,19 @@ async def delete_book(book_id: int, request: DeleteBookRequest):
             except Exception as e:
                 logger.warning(f"Failed to delete ChromaDB embeddings: {e}")
         
+        # Delete YOLO model if requested
+        yolo_model_deleted = False
+        if request.delete_yolo_model and book.yolo_model_path:
+            try:
+                from pathlib import Path
+                model_path = Path(book.yolo_model_path)
+                if model_path.exists():
+                    model_path.unlink()
+                    yolo_model_deleted = True
+                    logger.info(f"Deleted YOLO model: {model_path}")
+            except Exception as e:
+                logger.warning(f"Failed to delete YOLO model: {e}")
+        
         # Clean up confirmation code
         del confirmation_codes[book_id]
         
@@ -195,7 +220,8 @@ async def delete_book(book_id: int, request: DeleteBookRequest):
                 "book_name": book.book_name,
                 "tables_dropped": tables_dropped,
                 "chromadb_deleted": request.delete_chromadb,
-                "embeddings_removed": embeddings_removed
+                "embeddings_removed": embeddings_removed,
+                "yolo_model_deleted": yolo_model_deleted
             }
         }
     except HTTPException:

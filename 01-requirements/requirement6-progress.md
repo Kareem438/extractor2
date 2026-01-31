@@ -6,7 +6,7 @@
 
 ---
 
-## Overall Status: 🟢 Complete & Tested
+## Overall Status: 🟢 Complete & E2E Verified
 
 | Phase | Status | Progress |
 |-------|--------|----------|
@@ -14,6 +14,7 @@
 | Design | 🟢 Complete | 100% |
 | Implementation | 🟢 Complete | 100% |
 | Testing | 🟢 Complete | 100% |
+| E2E Testing | 🟢 Complete | 100% |
 | Documentation | 🟢 Complete | 100% |
 
 ---
@@ -69,6 +70,16 @@
 ---
 
 ## Session Log
+
+### Session 2026-01-29 (E2E Testing Complete)
+- Verified Requirement 6 APIs working:
+  - GET /api/books/{id}/deletion-preview ✅ (returns book info, counts, confirmation code)
+  - Deletion preview shows: 272 pages, 54 KUs, 5 images, can_delete=true
+- Verified frontend pages:
+  - /library ✅ (Delete button in Actions column)
+  - /book-settings ✅ (Danger Zone section with Delete button)
+  - PDF file path display present
+- All E2E tests passed
 
 ### Session 2026-01-29 (Cleanup Complete)
 - Ran cleanup script to drop orphaned tables

@@ -33,6 +33,10 @@ def create_raw_pages_table(table_prefix: str):
         topic VARCHAR(255),
         sub_topic VARCHAR(255),
 
+        -- Skip Pages Feature (Requirement 4)
+        is_skipped BOOLEAN DEFAULT FALSE,
+        is_ready_for_extraction BOOLEAN DEFAULT FALSE,
+
         -- Timestamps
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
@@ -45,11 +49,13 @@ def create_raw_pages_table(table_prefix: str):
         conn.commit()
 
         # Create indexes
-        index_sql = text(f"""
-        CREATE INDEX IF NOT EXISTS idx_raw_{table_prefix}_pages_number
-        ON {table_name}(page_number)
-        """)
-        conn.execute(index_sql)
+        indexes = [
+            f"CREATE INDEX IF NOT EXISTS idx_raw_{table_prefix}_pages_number ON {table_name}(page_number)",
+            f"CREATE INDEX IF NOT EXISTS idx_raw_{table_prefix}_pages_skipped ON {table_name}(is_skipped)",
+            f"CREATE INDEX IF NOT EXISTS idx_raw_{table_prefix}_pages_ready ON {table_name}(is_ready_for_extraction)"
+        ]
+        for index_sql in indexes:
+            conn.execute(text(index_sql))
         conn.commit()
     finally:
         conn.close()
@@ -172,6 +178,10 @@ def create_raw_paragraph_images_table(table_prefix: str):
         -- Linked Knowledge Unit
         linked_knowledge_unit_id INTEGER,
 
+        -- Title Hierarchy Foreign Keys (Requirement 4)
+        l1_title_id INTEGER,
+        l2_title_id INTEGER,
+
         -- Timestamps
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW(),
@@ -193,7 +203,9 @@ def create_raw_paragraph_images_table(table_prefix: str):
             f"CREATE INDEX IF NOT EXISTS idx_raw_{table_prefix}_para_img_status ON {table_name}(approval_status)",
             f"CREATE INDEX IF NOT EXISTS idx_raw_{table_prefix}_para_img_category ON {table_name}(category)",
             f"CREATE INDEX IF NOT EXISTS idx_raw_{table_prefix}_para_img_order ON {table_name}(display_order)",
-            f"CREATE INDEX IF NOT EXISTS idx_raw_{table_prefix}_para_img_enabled ON {table_name}(is_enabled)"
+            f"CREATE INDEX IF NOT EXISTS idx_raw_{table_prefix}_para_img_enabled ON {table_name}(is_enabled)",
+            f"CREATE INDEX IF NOT EXISTS idx_raw_{table_prefix}_para_l1_title ON {table_name}(l1_title_id)",
+            f"CREATE INDEX IF NOT EXISTS idx_raw_{table_prefix}_para_l2_title ON {table_name}(l2_title_id)"
         ]
         for index_sql in indexes:
             conn.execute(text(index_sql))
@@ -273,6 +285,10 @@ def create_raw_diagram_images_table(table_prefix: str):
         selected_level_number INTEGER,
         selected_level_text VARCHAR(500),
 
+        -- Title Hierarchy Foreign Keys (Requirement 4)
+        l1_title_id INTEGER,
+        l2_title_id INTEGER,
+
         -- Timestamps
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW(),
@@ -294,7 +310,9 @@ def create_raw_diagram_images_table(table_prefix: str):
             f"CREATE INDEX IF NOT EXISTS idx_raw_{table_prefix}_diag_img_status ON {table_name}(approval_status)",
             f"CREATE INDEX IF NOT EXISTS idx_raw_{table_prefix}_diag_img_category ON {table_name}(category)",
             f"CREATE INDEX IF NOT EXISTS idx_raw_{table_prefix}_diag_img_order ON {table_name}(display_order)",
-            f"CREATE INDEX IF NOT EXISTS idx_raw_{table_prefix}_diag_img_enabled ON {table_name}(is_enabled)"
+            f"CREATE INDEX IF NOT EXISTS idx_raw_{table_prefix}_diag_img_enabled ON {table_name}(is_enabled)",
+            f"CREATE INDEX IF NOT EXISTS idx_raw_{table_prefix}_diag_l1_title ON {table_name}(l1_title_id)",
+            f"CREATE INDEX IF NOT EXISTS idx_raw_{table_prefix}_diag_l2_title ON {table_name}(l2_title_id)"
         ]
         for index_sql in indexes:
             conn.execute(text(index_sql))
@@ -1010,6 +1028,10 @@ def create_layout_detections_table(table_prefix: str):
         exported_for_training BOOLEAN DEFAULT FALSE,
         exported_at TIMESTAMP,
 
+        -- Title Hierarchy Foreign Keys (Requirement 4)
+        l1_title_id INTEGER,
+        l2_title_id INTEGER,
+
         -- Timestamps
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
@@ -1027,7 +1049,9 @@ def create_layout_detections_table(table_prefix: str):
             f"CREATE INDEX IF NOT EXISTS idx_{table_prefix}_layout_det_class ON {table_name}(class_name)",
             f"CREATE INDEX IF NOT EXISTS idx_{table_prefix}_layout_det_status ON {table_name}(review_status)",
             f"CREATE INDEX IF NOT EXISTS idx_{table_prefix}_layout_det_corrected ON {table_name}(was_corrected) WHERE was_corrected = true",
-            f"CREATE INDEX IF NOT EXISTS idx_{table_prefix}_layout_det_parent ON {table_name}(parent_region_id)"
+            f"CREATE INDEX IF NOT EXISTS idx_{table_prefix}_layout_det_parent ON {table_name}(parent_region_id)",
+            f"CREATE INDEX IF NOT EXISTS idx_{table_prefix}_ld_l1_title ON {table_name}(l1_title_id)",
+            f"CREATE INDEX IF NOT EXISTS idx_{table_prefix}_ld_l2_title ON {table_name}(l2_title_id)"
         ]
         for index_sql in indexes:
             conn.execute(text(index_sql))
@@ -1059,6 +1083,10 @@ def create_level1_titles_table(table_prefix: str):
         start_page INTEGER NOT NULL,
         end_page INTEGER NOT NULL,
         display_order INTEGER DEFAULT 0,
+        
+        -- Cross-book access writable range (Requirement 5)
+        external_writable_start INTEGER DEFAULT 151,
+        external_writable_end INTEGER DEFAULT 200,
         
         -- 200 custom attributes (name + value pairs)
         {attr_columns_sql},
@@ -1111,6 +1139,10 @@ def create_level2_titles_table(table_prefix: str):
         end_page INTEGER NOT NULL,
         parent_l1_id INTEGER,
         display_order INTEGER DEFAULT 0,
+        
+        -- Cross-book access writable range (Requirement 5)
+        external_writable_start INTEGER DEFAULT 101,
+        external_writable_end INTEGER DEFAULT 150,
         
         -- 150 custom attributes (name + value pairs)
         {attr_columns_sql},

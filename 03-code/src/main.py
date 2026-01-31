@@ -301,6 +301,17 @@ async def cross_book_audit_page():
         return HTMLResponse(content="<h1>Cross-Book Audit Log page not found</h1>", status_code=404)
 
 
+@app.get("/layout-training", response_class=HTMLResponse)
+async def layout_training_page():
+    """Serve the YOLO Training page for fine-tuning the layout detection model."""
+    html_path = os.path.join(os.path.dirname(__file__), "frontend", "templates", "layout-training.html")
+    try:
+        with open(html_path, "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return HTMLResponse(content="<h1>Layout training page not found</h1>", status_code=404)
+
+
 # Include API routers (will be added in subsequent chunks)
 # Note: Routers will be included as they are implemented
 try:

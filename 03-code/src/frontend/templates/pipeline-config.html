@@ -468,6 +468,152 @@
         .tree-attr:hover { background: #e3f2fd; }
         .tree-attr.writable { background: #fff3cd; }
         .tree-attr.writable:hover { background: #ffe69c; }
+        
+        /* Expandable Help Section */
+        .help-section {
+            background: linear-gradient(135deg, #e8f4fd 0%, #f0f7ff 100%);
+            border: 1px solid #b8daff;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .help-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            cursor: pointer;
+            background: rgba(52, 152, 219, 0.1);
+            transition: background 0.2s;
+        }
+        .help-header:hover { background: rgba(52, 152, 219, 0.15); }
+        .help-header h3 {
+            margin: 0;
+            font-size: 15px;
+            color: #2980b9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .help-toggle {
+            font-size: 12px;
+            color: #7f8c8d;
+            transition: transform 0.3s;
+        }
+        .help-toggle.expanded { transform: rotate(180deg); }
+        .help-content {
+            display: none;
+            padding: 15px 20px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #34495e;
+        }
+        .help-content.expanded { display: block; }
+        .help-content h4 {
+            color: #2980b9;
+            margin: 15px 0 8px 0;
+            font-size: 14px;
+        }
+        .help-content h4:first-child { margin-top: 0; }
+        .help-content ul {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+        .help-content li { margin: 4px 0; }
+        .help-content code {
+            background: #fff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 13px;
+            border: 1px solid #ddd;
+        }
+        
+        /* Tag Mapping Section */
+        .tag-mapping-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .tag-mapping-section h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #34495e;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .tag-mapping-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        .tag-mapping-table th,
+        .tag-mapping-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        .tag-mapping-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            font-size: 13px;
+            color: #34495e;
+        }
+        .tag-mapping-table input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .tag-mapping-table select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .tag-mapping-table .btn-remove {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .tag-mapping-table .btn-remove:hover { background: #c0392b; }
+        .tag-mapping-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .fallback-config {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .fallback-config label {
+            font-weight: 600;
+            color: #34495e;
+            white-space: nowrap;
+        }
+        .fallback-config select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-width: 200px;
+        }
+        .fallback-config .help-text {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
     </style>
 </head>
 <body>
@@ -488,6 +634,42 @@
 
     <div class="main-content">
     <div class="container">
+        <!-- Expandable Help Section -->
+        <div class="help-section">
+            <div class="help-header" onclick="toggleHelp()">
+                <h3>💡 Pipeline Configuration Help</h3>
+                <span class="help-toggle" id="helpToggle">▼</span>
+            </div>
+            <div class="help-content" id="helpContent">
+                <h4>What is Pipeline Configuration?</h4>
+                <p>Pipeline configuration allows you to define a series of processing steps that will be applied to your Knowledge Units (KUs). Each step can read data from KU attributes, send it to Claude for processing, and store the results in other attributes.</p>
+                
+                <h4>Template Variables</h4>
+                <p>Use template variables in your prompts to dynamically insert KU data:</p>
+                <ul>
+                    <li><code>{{text_content}}</code> - The main text content of the KU</li>
+                    <li><code>{{attr1_value}}</code> through <code>{{attr160_value}}</code> - Custom attribute values</li>
+                    <li>Use <code>@</code> in the prompt textarea to autocomplete cross-book references</li>
+                </ul>
+                
+                <h4>Multi-Tag XML Extraction (New!)</h4>
+                <p>Configure tag mappings to extract multiple pieces of information from a single Claude response:</p>
+                <ul>
+                    <li>Define XML tags that Claude should use in its response (e.g., <code>&lt;summary&gt;</code>, <code>&lt;keywords&gt;</code>)</li>
+                    <li>Map each tag to a target attribute where the content will be stored</li>
+                    <li>Mark tags as "required" to flag KUs as incomplete if the tag is missing</li>
+                    <li>Set a fallback attribute to capture any unmapped tags</li>
+                </ul>
+                
+                <h4>Execution Modes</h4>
+                <ul>
+                    <li><strong>Individual:</strong> Process each KU separately (default)</li>
+                    <li><strong>Grouped:</strong> Combine multiple KUs into a single prompt for efficiency</li>
+                    <li><strong>Incomplete Only:</strong> Retry only KUs marked as incomplete</li>
+                </ul>
+            </div>
+        </div>
+
         <header>
             <h1>Claude Pipeline Configuration</h1>
             <p style="color: #7f8c8d; margin-top: 5px;">Configure AI-powered processing steps for your book. Define custom prompts that read from KU attributes and store results in other attributes.</p>
@@ -518,6 +700,53 @@
                     <!-- Variables will be loaded here -->
                 </tbody>
             </table>
+        </div>
+
+        <!-- Tag Mapping Section (Requirement 7A) -->
+        <div class="tag-mapping-section" id="tagMappingSection" style="display: none;">
+            <h2>🏷️ Multi-Tag XML Extraction</h2>
+            <p style="color: #7f8c8d; margin-bottom: 15px; font-size: 14px;">
+                Configure how Claude's XML-tagged responses are extracted and stored in KU attributes.
+            </p>
+            
+            <div id="stepSelector" style="margin-bottom: 15px;">
+                <label style="font-weight: 600; margin-right: 10px;">Configure for Step:</label>
+                <select id="tagMappingStepSelect" onchange="loadTagMappingsForStep()">
+                    <option value="">-- Select a pipeline step --</option>
+                </select>
+            </div>
+            
+            <table class="tag-mapping-table" id="tagMappingTable">
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">XML Tag Name</th>
+                        <th style="width: 30%;">Target Attribute</th>
+                        <th style="width: 15%;">Required</th>
+                        <th style="width: 10%;">Order</th>
+                        <th style="width: 20%;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="tagMappingsBody">
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: #95a5a6; padding: 20px;">
+                            Select a pipeline step to configure tag mappings
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="tag-mapping-actions">
+                <button class="btn btn-primary" onclick="addTagMapping()" id="btnAddTagMapping" disabled>+ Add Tag Mapping</button>
+                <button class="btn btn-success" onclick="saveTagMappings()" id="btnSaveTagMappings" disabled>Save Tag Mappings</button>
+            </div>
+            
+            <div class="fallback-config">
+                <label>Fallback Attribute:</label>
+                <select id="fallbackAttribute" disabled>
+                    <option value="">-- None (discard unmapped tags) --</option>
+                </select>
+                <span class="help-text">Unmapped XML tags will be stored as JSON in this attribute</span>
+            </div>
         </div>
 
         <div class="steps-section">
@@ -578,6 +807,7 @@
 
             if (!currentBookId) {
                 document.getElementById('variablesSection').style.display = 'none';
+                document.getElementById('tagMappingSection').style.display = 'none';
                 document.getElementById('stepsContainer').innerHTML = '<div class="empty-state"><div class="empty-state-icon">📚</div><h3>Select a book to configure its pipeline</h3></div>';
                 document.getElementById('btnAddStep').disabled = true;
                 document.getElementById('btnSave').disabled = true;
@@ -592,6 +822,9 @@
                 loadTemplateVariables(),
                 loadPipelineSteps()
             ]);
+            
+            // Show tag mapping section
+            document.getElementById('tagMappingSection').style.display = 'block';
         }
 
         // Load template variables
@@ -650,11 +883,15 @@
                         <p style="margin-top: 10px;">Click "Add Step" to create your first processing step</p>
                     </div>
                 `;
+                populateStepSelector();  // Still populate (will be empty)
                 return;
             }
 
             container.innerHTML = '';
             steps.forEach((step, index) => renderStep(step, index));
+            
+            // Populate step selector for tag mappings
+            populateStepSelector();
         }
 
         // Render a single step
@@ -906,6 +1143,228 @@
 
         // Initialize on page load
         init();
+        
+        // =====================================================
+        // Help Section Toggle
+        // =====================================================
+        
+        function toggleHelp() {
+            const content = document.getElementById('helpContent');
+            const toggle = document.getElementById('helpToggle');
+            
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                toggle.classList.remove('expanded');
+            } else {
+                content.classList.add('expanded');
+                toggle.classList.add('expanded');
+            }
+        }
+        
+        // =====================================================
+        // Tag Mapping Functions (Requirement 7A)
+        // =====================================================
+        
+        let currentTagMappings = [];
+        let currentFallbackAttribute = null;
+        let selectedStepId = null;
+        
+        // Populate step selector when steps are loaded
+        function populateStepSelector() {
+            const select = document.getElementById('tagMappingStepSelect');
+            select.innerHTML = '<option value="">-- Select a pipeline step --</option>';
+            
+            steps.forEach(step => {
+                if (step.id > 0) {  // Only show saved steps
+                    const option = document.createElement('option');
+                    option.value = step.id;
+                    option.textContent = `Step ${step.step_order}: ${step.step_name}`;
+                    select.appendChild(option);
+                }
+            });
+        }
+        
+        // Load tag mappings for selected step
+        async function loadTagMappingsForStep() {
+            const stepId = document.getElementById('tagMappingStepSelect').value;
+            
+            if (!stepId || !currentBookId) {
+                document.getElementById('tagMappingsBody').innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: #95a5a6; padding: 20px;">
+                            Select a pipeline step to configure tag mappings
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('btnAddTagMapping').disabled = true;
+                document.getElementById('btnSaveTagMappings').disabled = true;
+                document.getElementById('fallbackAttribute').disabled = true;
+                return;
+            }
+            
+            selectedStepId = stepId;
+            
+            try {
+                const response = await fetch(`/api/books/${currentBookId}/pipeline/steps/${stepId}/tag-mappings`);
+                const data = await response.json();
+                
+                currentTagMappings = data.tag_mappings || [];
+                currentFallbackAttribute = data.fallback_attribute;
+                
+                renderTagMappings();
+                populateFallbackDropdown();
+                
+                document.getElementById('btnAddTagMapping').disabled = false;
+                document.getElementById('btnSaveTagMappings').disabled = false;
+                document.getElementById('fallbackAttribute').disabled = false;
+                document.getElementById('fallbackAttribute').value = currentFallbackAttribute || '';
+                
+            } catch (error) {
+                console.error('Error loading tag mappings:', error);
+                showAlert('Failed to load tag mappings', 'error');
+            }
+        }
+        
+        // Render tag mappings table
+        function renderTagMappings() {
+            const tbody = document.getElementById('tagMappingsBody');
+            
+            if (currentTagMappings.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: #95a5a6; padding: 20px;">
+                            No tag mappings configured. Click "Add Tag Mapping" to create one.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = currentTagMappings.map((mapping, index) => `
+                <tr>
+                    <td>
+                        <input type="text" value="${mapping.tag_name || ''}" 
+                               onchange="updateTagMapping(${index}, 'tag_name', this.value)"
+                               placeholder="e.g., summary">
+                    </td>
+                    <td>
+                        <select onchange="updateTagMapping(${index}, 'target_attribute', this.value)">
+                            ${generateAttributeOptions(mapping.target_attribute)}
+                        </select>
+                    </td>
+                    <td style="text-align: center;">
+                        <input type="checkbox" ${mapping.is_required ? 'checked' : ''} 
+                               onchange="updateTagMapping(${index}, 'is_required', this.checked)">
+                    </td>
+                    <td>
+                        <input type="number" value="${mapping.order || index + 1}" min="1" max="99"
+                               style="width: 60px;"
+                               onchange="updateTagMapping(${index}, 'order', parseInt(this.value))">
+                    </td>
+                    <td>
+                        <button class="btn-remove" onclick="removeTagMapping(${index})">Remove</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        // Generate attribute options for dropdown
+        function generateAttributeOptions(selectedValue) {
+            let options = '<option value="">-- Select attribute --</option>';
+            
+            // Generate attr_1 through attr_160
+            for (let i = 1; i <= 160; i++) {
+                const value = `attr_${i}`;
+                const selected = value === selectedValue ? 'selected' : '';
+                options += `<option value="${value}" ${selected}>attr_${i}</option>`;
+            }
+            
+            return options;
+        }
+        
+        // Populate fallback attribute dropdown
+        function populateFallbackDropdown() {
+            const select = document.getElementById('fallbackAttribute');
+            select.innerHTML = '<option value="">-- None (discard unmapped tags) --</option>';
+            
+            for (let i = 1; i <= 160; i++) {
+                const option = document.createElement('option');
+                option.value = `attr_${i}`;
+                option.textContent = `attr_${i}`;
+                select.appendChild(option);
+            }
+        }
+        
+        // Add new tag mapping
+        function addTagMapping() {
+            currentTagMappings.push({
+                tag_name: '',
+                target_attribute: '',
+                is_required: false,
+                order: currentTagMappings.length + 1
+            });
+            renderTagMappings();
+        }
+        
+        // Update tag mapping field
+        function updateTagMapping(index, field, value) {
+            currentTagMappings[index][field] = value;
+        }
+        
+        // Remove tag mapping
+        function removeTagMapping(index) {
+            currentTagMappings.splice(index, 1);
+            // Re-order remaining mappings
+            currentTagMappings.forEach((m, i) => m.order = i + 1);
+            renderTagMappings();
+        }
+        
+        // Save tag mappings
+        async function saveTagMappings() {
+            if (!selectedStepId || !currentBookId) {
+                showAlert('Please select a pipeline step first', 'error');
+                return;
+            }
+            
+            // Validate mappings
+            const validMappings = currentTagMappings.filter(m => m.tag_name && m.target_attribute);
+            
+            if (validMappings.length !== currentTagMappings.length) {
+                showAlert('Please fill in all tag names and target attributes', 'error');
+                return;
+            }
+            
+            const fallbackAttr = document.getElementById('fallbackAttribute').value || null;
+            
+            const btn = document.getElementById('btnSaveTagMappings');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            
+            try {
+                const response = await fetch(`/api/books/${currentBookId}/pipeline/steps/${selectedStepId}/tag-mappings`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tag_mappings: validMappings,
+                        fallback_attribute: fallbackAttr
+                    })
+                });
+                
+                if (response.ok) {
+                    showAlert('Tag mappings saved successfully!', 'success');
+                } else {
+                    const error = await response.json();
+                    showAlert(error.detail || 'Failed to save tag mappings', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Error saving tag mappings:', error);
+                showAlert('Failed to save tag mappings', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Save Tag Mappings';
+            }
+        }
     </script>
     </div><!-- End container -->
     </div><!-- End main-content -->

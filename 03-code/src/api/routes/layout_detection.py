@@ -1740,3 +1740,359 @@ async def reset_page_regions(book_id: int, page_number: int):
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
+
+
+# =============================================================================
+# YOLO Training Endpoints (Requirement 7C)
+# =============================================================================
+
+# Import training service
+try:
+    from src.services.yolo_training_service import get_yolo_training_service
+    TRAINING_SERVICE_AVAILABLE = True
+except ImportError as e:
+    TRAINING_SERVICE_AVAILABLE = False
+    logger.warning(f"YOLO training service not available: {e}")
+
+
+class TrainingConfig(BaseModel):
+    """Configuration for YOLO training."""
+    epochs: int = 50
+    batch_size: int = 8
+    learning_rate: float = 0.001
+    auto_backup: bool = True
+    background: bool = True
+
+
+@router.get("/api/auto-slicer/{book_id}/training/statistics")
+async def get_training_statistics(book_id: int):
+    """
+    Get statistics about user corrections for YOLO training.
+    
+    Returns correction counts, class distribution, and training readiness.
+    """
+    if not TRAINING_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Training service not available")
+    
+    book = get_book_by_id(book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    
+    try:
+        service = get_yolo_training_service(book_id)
+        stats = service.get_correction_statistics()
+        return {"success": True, "book_id": book_id, **stats}
+    except Exception as e:
+        logger.error(f"Error getting training statistics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/api/auto-slicer/{book_id}/training/export")
+async def export_training_data(book_id: int):
+    """
+    Export training data in YOLO format.
+    
+    Creates images/ and labels/ folders with YOLO-format annotations.
+    """
+    if not TRAINING_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Training service not available")
+    
+    book = get_book_by_id(book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    
+    try:
+        service = get_yolo_training_service(book_id)
+        result = service.export_training_data()
+        return result
+    except Exception as e:
+        logger.error(f"Error exporting training data: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/api/auto-slicer/{book_id}/training/backup")
+async def backup_model(book_id: int):
+    """
+    Backup the current YOLO model before training.
+    
+    Creates a timestamped backup in models/backups/
+    """
+    if not TRAINING_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Training service not available")
+    
+    book = get_book_by_id(book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    
+    try:
+        service = get_yolo_training_service(book_id)
+        result = service.backup_current_model()
+        return result
+    except Exception as e:
+        logger.error(f"Error backing up model: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/api/auto-slicer/{book_id}/training/backups")
+async def list_model_backups(book_id: int):
+    """List all available model backups."""
+    if not TRAINING_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Training service not available")
+    
+    book = get_book_by_id(book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    
+    try:
+        service = get_yolo_training_service(book_id)
+        backups = service.list_backups()
+        return {"success": True, "backups": backups}
+    except Exception as e:
+        logger.error(f"Error listing backups: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/api/auto-slicer/{book_id}/training/start")
+async def start_training(book_id: int, config: TrainingConfig):
+    """
+    Start YOLO fine-tuning training.
+    
+    By default runs in background mode and returns a job ID.
+    """
+    if not TRAINING_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Training service not available")
+    
+    book = get_book_by_id(book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    
+    try:
+        service = get_yolo_training_service(book_id)
+        result = service.start_training(
+            epochs=config.epochs,
+            batch_size=config.batch_size,
+            learning_rate=config.learning_rate,
+            auto_backup=config.auto_backup,
+            background=config.background
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Error starting training: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/api/auto-slicer/{book_id}/training/progress/{job_id}")
+async def get_training_progress(book_id: int, job_id: str):
+    """Get progress of a training job."""
+    if not TRAINING_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Training service not available")
+    
+    book = get_book_by_id(book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    
+    try:
+        service = get_yolo_training_service(book_id)
+        result = service.get_training_progress(job_id)
+        return result
+    except Exception as e:
+        logger.error(f"Error getting training progress: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/api/auto-slicer/{book_id}/training/jobs")
+async def list_training_jobs(book_id: int):
+    """List all training jobs for this book."""
+    if not TRAINING_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Training service not available")
+    
+    book = get_book_by_id(book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    
+    try:
+        service = get_yolo_training_service(book_id)
+        jobs = service.list_training_jobs()
+        return {"success": True, "jobs": jobs}
+    except Exception as e:
+        logger.error(f"Error listing training jobs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# =============================================================================
+# YOLO Model Management Endpoints (Requirement 8)
+# =============================================================================
+
+@router.get("/api/books/{book_id}/yolo-model")
+async def get_book_yolo_model(book_id: int):
+    """
+    Get YOLO model info for a book.
+    
+    Returns model type (global/book_specific), path, existence, size, training date.
+    """
+    if not TRAINING_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Training service not available")
+    
+    book = get_book_by_id(book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    
+    try:
+        service = get_yolo_training_service(book_id)
+        return service.get_book_model_info()
+    except Exception as e:
+        logger.error(f"Error getting YOLO model info: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class SetYoloModelRequest(BaseModel):
+    """Request to set YOLO model type for a book."""
+    model_type: str  # "global" or "book_specific"
+
+
+@router.put("/api/books/{book_id}/yolo-model")
+async def set_book_yolo_model(book_id: int, request: SetYoloModelRequest):
+    """
+    Set YOLO model for a book.
+    
+    model_type: "global" to use global model, "book_specific" to use book's trained model.
+    """
+    if not TRAINING_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Training service not available")
+    
+    book = get_book_by_id(book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    
+    try:
+        service = get_yolo_training_service(book_id)
+        
+        if request.model_type == "global":
+            # Set to None to use global model
+            service.set_book_model_path(None)
+            return {
+                "success": True,
+                "model_type": "global",
+                "model_path": None
+            }
+        elif request.model_type == "book_specific":
+            # Check if book has a trained model
+            from pathlib import Path
+            book_model_path = Path("models/layout_detection") / f"book_{book_id}_yolo.pt"
+            
+            if not book_model_path.exists():
+                raise HTTPException(
+                    status_code=400, 
+                    detail="No trained model found for this book. Train a model first."
+                )
+            
+            service.set_book_model_path(str(book_model_path))
+            return {
+                "success": True,
+                "model_type": "book_specific",
+                "model_path": str(book_model_path)
+            }
+        else:
+            raise HTTPException(status_code=400, detail="Invalid model_type. Use 'global' or 'book_specific'.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error setting YOLO model: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class CopyYoloModelRequest(BaseModel):
+    """Request to copy another book's YOLO model."""
+    source_book_id: int
+
+
+@router.post("/api/books/{book_id}/copy-yolo-model")
+async def copy_yolo_model(book_id: int, request: CopyYoloModelRequest):
+    """
+    Copy another book's YOLO model to use for this book.
+    
+    Creates an independent copy of the source book's model.
+    """
+    if not TRAINING_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Training service not available")
+    
+    book = get_book_by_id(book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    
+    # Check source book exists
+    source_book = get_book_by_id(request.source_book_id)
+    if not source_book:
+        raise HTTPException(status_code=404, detail="Source book not found")
+    
+    try:
+        service = get_yolo_training_service(book_id)
+        result = service.copy_model_from_book(request.source_book_id)
+        
+        if not result.get("success"):
+            raise HTTPException(status_code=400, detail=result.get("error"))
+        
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error copying YOLO model: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/api/yolo-models/books")
+async def get_books_with_yolo_models_endpoint():
+    """
+    List all books that have trained YOLO models.
+    
+    Used for the "Copy from another book" modal.
+    """
+    if not TRAINING_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Training service not available")
+    
+    try:
+        from src.services.yolo_training_service import get_books_with_yolo_models
+        books = get_books_with_yolo_models()
+        return {"books": books}
+    except Exception as e:
+        logger.error(f"Error getting books with YOLO models: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/api/books/{book_id}/use-trained-model")
+async def use_trained_model(book_id: int):
+    """
+    Set the book to use its trained model after training completes.
+    
+    Called from the post-training prompt when user confirms "Use this model".
+    """
+    if not TRAINING_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Training service not available")
+    
+    book = get_book_by_id(book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    
+    try:
+        from pathlib import Path
+        book_model_path = Path("models/layout_detection") / f"book_{book_id}_yolo.pt"
+        
+        if not book_model_path.exists():
+            raise HTTPException(
+                status_code=400, 
+                detail="No trained model found for this book"
+            )
+        
+        service = get_yolo_training_service(book_id)
+        service.set_book_model_path(str(book_model_path))
+        
+        return {
+            "success": True,
+            "message": "Book now using its trained model",
+            "model_path": str(book_model_path)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error setting trained model: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

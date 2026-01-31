@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E2E Manual Tests - Requirements 4-8</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1000px; margin: 0 auto; }
+        
+        h1 { 
+            color: white; 
+            text-align: center; 
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .summary-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .summary-card h2 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .api-status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        .api-item {
+            background: #e8f5e9;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border-left: 4px solid #4caf50;
+        }
+        .api-item.warning {
+            background: #fff3e0;
+            border-left-color: #ff9800;
+        }
+        .api-item code {
+            font-size: 0.85em;
+            color: #1565c0;
+        }
+        
+        .test-card {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .test-header {
+            padding: 20px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .test-header h2 { margin: 0; font-size: 1.4em; }
+        .test-header .badge {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+        
+        .r4 .test-header { background: linear-gradient(135deg, #2196F3, #1976D2); }
+        .r5 .test-header { background: linear-gradient(135deg, #9C27B0, #7B1FA2); }
+        .r6 .test-header { background: linear-gradient(135deg, #f44336, #d32f2f); }
+        .r7 .test-header { background: linear-gradient(135deg, #FF9800, #F57C00); }
+        .r8 .test-header { background: linear-gradient(135deg, #4CAF50, #388E3C); }
+        
+        .test-body { padding: 20px; }
+        
+        .step {
+            display: flex;
+            gap: 15px;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #ddd;
+            transition: all 0.2s;
+        }
+        .step:hover { background: #e3f2fd; border-left-color: #2196F3; }
+        .step.action { border-left-color: #2196F3; }
+        .step.verify { border-left-color: #4CAF50; background: #e8f5e9; }
+        .step.warning { border-left-color: #ff9800; background: #fff3e0; }
+        
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .step.verify .step-number { background: #4CAF50; }
+        .step.warning .step-number { background: #ff9800; }
+        
+        .step-content { flex: 1; }
+        .step-content strong { color: #333; }
+        .step-content .url {
+            display: inline-block;
+            background: #e3f2fd;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #1565c0;
+            margin: 5px 0;
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .checkbox-container input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .checkbox-container label {
+            cursor: pointer;
+            color: #666;
+        }
+        
+        .checklist {
+            background: #fafafa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        .checklist h4 {
+            color: #333;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .checklist-item:last-child { border-bottom: none; }
+        
+        .note {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .note.danger {
+            background: #ffebee;
+            border-left-color: #f44336;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .progress-bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .footer {
+            text-align: center;
+            color: rgba(255,255,255,0.8);
+            padding: 20px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 E2E Manual Tests</h1>
+        <p class="subtitle">Requirements 4-8 | UI Interaction Tests</p>
+        
+        <!-- Summary Card -->
+        <div class="summary-card">
+            <h2>✅ API Tests Already Passed (Automated)</h2>
+            <div class="api-status">
+                <div class="api-item"><strong>R4:</strong> <code>/api/books/1/l1-titles</code></div>
+                <div class="api-item"><strong>R4:</strong> <code>/api/books/1/l2-titles</code></div>
+                <div class="api-item"><strong>R5:</strong> <code>/api/cross-book/books</code></div>
+                <div class="api-item"><strong>R5:</strong> <code>/api/cross-book/audit-log</code></div>
+                <div class="api-item"><strong>R5:</strong> <code>/api/template-reference/search</code></div>
+                <div class="api-item"><strong>R6:</strong> <code>/api/books/1/deletion-preview</code></div>
+                <div class="api-item warning"><strong>R7:</strong> Tag Mappings (needs pipeline step)</div>
+                <div class="api-item"><strong>R8:</strong> <code>/api/books/1/yolo-model</code></div>
+                <div class="api-item"><strong>R8:</strong> <code>/api/yolo-models/books</code></div>
+            </div>
+        </div>
+
+        <!-- Test 1: Title Hierarchy (R4) -->
+        <div class="test-card r4">
+            <div class="test-header">
+                <h2>📋 Test 1: Title Hierarchy</h2>
+                <span class="badge">Requirement 4</span>
+            </div>
+            <div class="test-body">
+                <div class="step action">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <strong>Navigate to Book Settings</strong>
+                        <div class="url">http://localhost:8888/book-settings?book_id=1</div>
+                    </div>
+                </div>
+                
+                <div class="step action">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <strong>Scroll down to find "Title Hierarchy" section</strong>
+                        <p>Look for L1 and L2 title configuration areas</p>
+                    </div>
+                </div>
+                
+                <div class="step verify">
+                    <div class="step-number">✓</div>
+                    <div class="step-content">
+                        <strong>Verify the following elements exist:</strong>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r4-1">
+                            <label for="r4-1">L1 Title dropdown/list is visible</label>
+                        </div>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r4-2">
+                            <label for="r4-2">L2 Title dropdown/list is visible</label>
+                        </div>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r4-3">
+                            <label for="r4-3">Can select/view existing titles</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step action">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <strong>Navigate to Auto-Slicer</strong>
+                        <div class="url">http://localhost:8888/auto-slicer?book_id=1</div>
+                    </div>
+                </div>
+                
+                <div class="step verify">
+                    <div class="step-number">✓</div>
+                    <div class="step-content">
+                        <strong>Verify title hierarchy in Auto-Slicer:</strong>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r4-4">
+                            <label for="r4-4">Title Configuration section exists</label>
+                        </div>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r4-5">
+                            <label for="r4-5">L1/L2 titles show with page ranges</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test 2: Delete Book Flow (R6) -->
+        <div class="test-card r6">
+            <div class="test-header">
+                <h2>🗑️ Test 2: Delete Book Flow</h2>
+                <span class="badge">Requirement 6</span>
+            </div>
+            <div class="test-body">
+                <div class="note danger">
+                    <strong>⚠️ WARNING:</strong> Do NOT actually delete the book! Click "Cancel" at the end.
+                </div>
+                
+                <div class="step action">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <strong>Navigate to Library</strong>
+                        <div class="url">http://localhost:8888/library</div>
+                    </div>
+                </div>
+                
+                <div class="step action">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <strong>Find the Delete button in the Actions column</strong>
+                        <p>Look for a red "Delete" or trash icon button next to the book</p>
+                    </div>
+                </div>
+                
+                <div class="step verify">
+                    <div class="step-number">✓</div>
+                    <div class="step-content">
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r6-1">
+                            <label for="r6-1">Delete button exists in Library page</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step action">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <strong>Click the Delete button</strong>
+                        <p>A confirmation modal should appear</p>
+                    </div>
+                </div>
+                
+                <div class="step verify">
+                    <div class="step-number">✓</div>
+                    <div class="step-content">
+                        <strong>Verify Delete Summary Modal shows:</strong>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r6-2">
+                            <label for="r6-2">Book name is displayed</label>
+                        </div>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r6-3">
+                            <label for="r6-3">Entity counts shown (pages, KUs, images)</label>
+                        </div>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r6-4">
+                            <label for="r6-4">"Delete ChromaDB embeddings" checkbox exists</label>
+                        </div>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r6-5">
+                            <label for="r6-5">"Delete trained YOLO model" checkbox exists (R8)</label>
+                        </div>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r6-6">
+                            <label for="r6-6">4-digit confirmation code is displayed</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step action">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <strong>Click "Continue" to see the code verification step</strong>
+                    </div>
+                </div>
+                
+                <div class="step verify">
+                    <div class="step-number">✓</div>
+                    <div class="step-content">
+                        <strong>Verify Code Verification Modal:</strong>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r6-7">
+                            <label for="r6-7">Input field for 4-digit code exists</label>
+                        </div>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r6-8">
+                            <label for="r6-8">Delete button is disabled until code entered</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step warning">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <strong>Click "Cancel" - DO NOT DELETE THE BOOK!</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test 3: KU Grouping (R7) -->
+        <div class="test-card r7">
+            <div class="test-header">
+                <h2>🏷️ Test 3: KU Grouping & Tag Mapping</h2>
+                <span class="badge">Requirement 7</span>
+            </div>
+            <div class="test-body">
+                <div class="step action">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <strong>Navigate to Pipeline Config</strong>
+                        <div class="url">http://localhost:8888/pipeline-config?book_id=1</div>
+                    </div>
+                </div>
+                
+                <div class="step action">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <strong>Scroll to find "Tag Mapping" or "Multi-Tag Extraction" section</strong>
+                    </div>
+                </div>
+                
+                <div class="step verify">
+                    <div class="step-number">✓</div>
+                    <div class="step-content">
+                        <strong>Verify Tag Mapping UI:</strong>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r7-1">
+                            <label for="r7-1">Tag mapping table/section exists</label>
+                        </div>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r7-2">
+                            <label for="r7-2">Can see tag name → attribute mapping options</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step action">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <strong>Navigate to Pipeline Dashboard</strong>
+                        <div class="url">http://localhost:8888/pipeline-dashboard?book_id=1</div>
+                    </div>
+                </div>
+                
+                <div class="step verify">
+                    <div class="step-number">✓</div>
+                    <div class="step-content">
+                        <strong>Verify KU Grouping UI:</strong>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r7-3">
+                            <label for="r7-3">KU grouping preview section exists</label>
+                        </div>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r7-4">
+                            <label for="r7-4">Execution mode options visible (Individual/Grouped/Incomplete)</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test 4: YOLO Model Management (R8) -->
+        <div class="test-card r8">
+            <div class="test-header">
+                <h2>🎯 Test 4: YOLO Model Management</h2>
+                <span class="badge">Requirement 8</span>
+            </div>
+            <div class="test-body">
+                <div class="step action">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <strong>Navigate to Book Settings</strong>
+                        <div class="url">http://localhost:8888/book-settings?book_id=1</div>
+                    </div>
+                </div>
+                
+                <div class="step action">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <strong>Scroll to find "Layout Detection Model" section</strong>
+                        <p>Should have a blue gradient background</p>
+                    </div>
+                </div>
+                
+                <div class="step verify">
+                    <div class="step-number">✓</div>
+                    <div class="step-content">
+                        <strong>Verify Model Selection UI:</strong>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r8-1">
+                            <label for="r8-1">"Layout Detection Model" section exists</label>
+                        </div>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r8-2">
+                            <label for="r8-2">Model dropdown shows "Global Base Model" selected</label>
+                        </div>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r8-3">
+                            <label for="r8-3">"Copy from Another Book" button exists</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step action">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <strong>Click "Copy from Another Book" button</strong>
+                    </div>
+                </div>
+                
+                <div class="step verify">
+                    <div class="step-number">✓</div>
+                    <div class="step-content">
+                        <strong>Verify Copy Modal:</strong>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r8-4">
+                            <label for="r8-4">Modal opens</label>
+                        </div>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r8-5">
+                            <label for="r8-5">Shows list of books (or "No books with trained models")</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step action">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <strong>Close modal and navigate to Layout Training</strong>
+                        <div class="url">http://localhost:8888/layout-training?book_id=1</div>
+                    </div>
+                </div>
+                
+                <div class="step verify">
+                    <div class="step-number">✓</div>
+                    <div class="step-content">
+                        <strong>Verify Training Page:</strong>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r8-6">
+                            <label for="r8-6">Layout Training page loads</label>
+                        </div>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r8-7">
+                            <label for="r8-7">Training statistics/readiness section visible</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test 5: Cross-Book Audit (R5) -->
+        <div class="test-card r5">
+            <div class="test-header">
+                <h2>📊 Test 5: Cross-Book Audit & Template Reference</h2>
+                <span class="badge">Requirement 5</span>
+            </div>
+            <div class="test-body">
+                <div class="step action">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <strong>Navigate to Cross-Book Audit page</strong>
+                        <div class="url">http://localhost:8888/cross-book-audit</div>
+                    </div>
+                </div>
+                
+                <div class="step verify">
+                    <div class="step-number">✓</div>
+                    <div class="step-content">
+                        <strong>Verify Audit Log Page:</strong>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r5-1">
+                            <label for="r5-1">Page loads successfully</label>
+                        </div>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r5-2">
+                            <label for="r5-2">Audit log table is visible</label>
+                        </div>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r5-3">
+                            <label for="r5-3">Filter dropdowns exist (source/target book)</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step action">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <strong>Navigate to Pipeline Config</strong>
+                        <div class="url">http://localhost:8888/pipeline-config?book_id=1</div>
+                    </div>
+                </div>
+                
+                <div class="step action">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <strong>Find a textarea field and type "@" to trigger autocomplete</strong>
+                        <p>Look for prompt template or description fields</p>
+                    </div>
+                </div>
+                
+                <div class="step verify">
+                    <div class="step-number">✓</div>
+                    <div class="step-content">
+                        <strong>Verify @ Autocomplete:</strong>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r5-4">
+                            <label for="r5-4">Typing "@" shows autocomplete dropdown</label>
+                        </div>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="r5-5">
+                            <label for="r5-5">"Browse All" button exists in dropdown</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Final Checklist -->
+        <div class="summary-card">
+            <h2>📝 Final Test Summary</h2>
+            <div class="checklist">
+                <h4>✅ All Tests Completed?</h4>
+                <div class="checklist-item">
+                    <input type="checkbox" id="final-1">
+                    <label for="final-1"><strong>Test 1 (R4):</strong> Title Hierarchy in Book Settings & Auto-Slicer</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="final-2">
+                    <label for="final-2"><strong>Test 2 (R6):</strong> Delete Book flow with two-step confirmation</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="final-3">
+                    <label for="final-3"><strong>Test 3 (R7):</strong> KU Grouping & Tag Mapping UI</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="final-4">
+                    <label for="final-4"><strong>Test 4 (R8):</strong> YOLO Model Management & Copy Modal</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="final-5">
+                    <label for="final-5"><strong>Test 5 (R5):</strong> Cross-Book Audit & @ Autocomplete</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Generated: January 31, 2026 | Knowledge Extraction System E2E Tests</p>
+            <p>Server: http://localhost:8888</p>
+        </div>
+    </div>
+
+    <script>
+        // Save checkbox state to localStorage
+        document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            const saved = localStorage.getItem(cb.id);
+            if (saved === 'true') cb.checked = true;
+            
+            cb.addEventListener('change', () => {
+                localStorage.setItem(cb.id, cb.checked);
+            });
+        });
+    </script>
+</body>
+</html>

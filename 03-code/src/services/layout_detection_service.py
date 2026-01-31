@@ -238,7 +238,7 @@ class LayoutDetectionService:
 
         Args:
             model_path: Optional explicit path to model
-            book_id: Optional book ID for fine-tuned model
+            book_id: Optional book ID for book-specific model
             model_version: Optional specific version
 
         Returns:
@@ -266,9 +266,14 @@ class LayoutDetectionService:
             )
             return False
 
-        # Determine model path
+        # Determine model path - check for book-specific model first
         if model_path:
             path = Path(model_path)
+        elif book_id:
+            # Check if book has a specific model in database
+            path = self._get_book_model_path(book_id)
+            if path is None:
+                path = self.get_model_path(book_id, model_version)
         else:
             path = self.get_model_path(book_id, model_version)
 
@@ -298,6 +303,8 @@ class LayoutDetectionService:
             # Determine version from filename
             if "book_" in path.name and "_v" in path.name:
                 self.model_version = path.stem.split("_v")[-1]
+            elif "book_" in path.name:
+                self.model_version = "book_specific"
             else:
                 self.model_version = "base"
 
@@ -311,6 +318,39 @@ class LayoutDetectionService:
             self.model = None
             self.is_loaded = False
             return False
+    
+    def _get_book_model_path(self, book_id: int) -> Optional[Path]:
+        """
+        Get the model path for a book from the database.
+        
+        Args:
+            book_id: The book ID
+            
+        Returns:
+            Path to book-specific model, or None to use global
+        """
+        from sqlalchemy import text
+        from src.database.connection import engine
+        
+        sql = text("""
+            SELECT yolo_model_path
+            FROM books_metadata
+            WHERE book_id = :book_id
+        """)
+        
+        with engine.connect() as conn:
+            result = conn.execute(sql, {"book_id": book_id}).fetchone()
+            
+            if result and result[0]:
+                path = Path(result[0])
+                if path.exists():
+                    logger.info(f"Using book-specific model for book {book_id}: {path}")
+                    return path
+                else:
+                    logger.warning(f"Book {book_id} model path set but file missing: {path}, falling back to global")
+        
+        # Return None to indicate use global model
+        return None
 
     def unload_model(self):
         """Unload model and free GPU memory."""

@@ -1016,3 +1016,328 @@ function showToast(message, type) {
         setTimeout(() => toast.remove(), 300);
     }, 5000);
 }
+
+
+// ============================================================================
+// YOLO Model Management Functions (Requirement 8)
+// ============================================================================
+
+/**
+ * Load YOLO model info for the current book
+ */
+async function loadYoloModelInfo() {
+    if (!currentBookId) return;
+
+    try {
+        const response = await fetch(`/api/books/${currentBookId}/yolo-model`);
+        if (!response.ok) {
+            console.log('Could not load YOLO model info');
+            document.getElementById('yolo-model-info').innerHTML = `
+                <p style="color: #999;">YOLO model info not available</p>
+            `;
+            return;
+        }
+
+        const data = await response.json();
+        displayYoloModelInfo(data);
+
+        // Set dropdown value
+        const select = document.getElementById('yolo-model-select');
+        if (select) {
+            select.value = data.model_type;
+            
+            // Disable book_specific option if no trained model exists
+            const bookSpecificOption = select.querySelector('option[value="book_specific"]');
+            if (bookSpecificOption) {
+                if (data.model_type === 'global' && !data.model_exists) {
+                    // Check if book has a trained model file
+                    bookSpecificOption.disabled = true;
+                    bookSpecificOption.textContent = "This Book's Trained Model (not trained yet)";
+                } else if (data.model_type === 'book_specific') {
+                    bookSpecificOption.disabled = false;
+                    bookSpecificOption.textContent = "This Book's Trained Model";
+                }
+            }
+        }
+
+    } catch (error) {
+        console.error('Error loading YOLO model info:', error);
+        document.getElementById('yolo-model-info').innerHTML = `
+            <p style="color: #f44336;">Error loading model info</p>
+        `;
+    }
+}
+
+/**
+ * Display YOLO model info in the UI
+ */
+function displayYoloModelInfo(data) {
+    const container = document.getElementById('yolo-model-info');
+    
+    let html = '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">';
+    
+    // Model type
+    const modelTypeLabel = data.model_type === 'book_specific' ? '📘 Book-Specific Model' : '🌐 Global Base Model';
+    html += `
+        <div style="padding: 10px; background: #f5f5f5; border-radius: 4px;">
+            <div style="font-size: 12px; color: #666;">Current Model</div>
+            <div style="font-weight: bold; color: #333;">${modelTypeLabel}</div>
+        </div>
+    `;
+    
+    // Model status
+    const statusIcon = data.model_exists ? '✅' : '❌';
+    const statusText = data.model_exists ? 'Available' : 'Not Found';
+    html += `
+        <div style="padding: 10px; background: #f5f5f5; border-radius: 4px;">
+            <div style="font-size: 12px; color: #666;">Status</div>
+            <div style="font-weight: bold; color: ${data.model_exists ? '#4CAF50' : '#f44336'};">${statusIcon} ${statusText}</div>
+        </div>
+    `;
+    
+    // Model size
+    if (data.model_size_bytes) {
+        const sizeMB = (data.model_size_bytes / (1024 * 1024)).toFixed(1);
+        html += `
+            <div style="padding: 10px; background: #f5f5f5; border-radius: 4px;">
+                <div style="font-size: 12px; color: #666;">Model Size</div>
+                <div style="font-weight: bold; color: #333;">${sizeMB} MB</div>
+            </div>
+        `;
+    }
+    
+    // Training date (if book-specific)
+    if (data.model_type === 'book_specific' && data.trained_at) {
+        const trainedDate = new Date(data.trained_at).toLocaleDateString();
+        html += `
+            <div style="padding: 10px; background: #f5f5f5; border-radius: 4px;">
+                <div style="font-size: 12px; color: #666;">Trained On</div>
+                <div style="font-weight: bold; color: #333;">${trainedDate}</div>
+            </div>
+        `;
+    }
+    
+    html += '</div>';
+    
+    // Model path (collapsed)
+    if (data.model_path) {
+        html += `
+            <details style="margin-top: 10px;">
+                <summary style="cursor: pointer; color: #666; font-size: 12px;">Show model path</summary>
+                <code style="display: block; margin-top: 5px; padding: 8px; background: #f5f5f5; border-radius: 4px; font-size: 11px; word-break: break-all;">
+                    ${data.model_path}
+                </code>
+            </details>
+        `;
+    }
+    
+    container.innerHTML = html;
+}
+
+/**
+ * Save YOLO model selection
+ */
+async function saveYoloModelSelection() {
+    if (!currentBookId) {
+        alert('Please select a book first');
+        return;
+    }
+
+    const select = document.getElementById('yolo-model-select');
+    const modelType = select.value;
+
+    try {
+        const response = await fetch(`/api/books/${currentBookId}/yolo-model`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model_type: modelType })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.detail || 'Failed to save model selection');
+        }
+
+        showToast('Model selection saved successfully!', 'success');
+        loadYoloModelInfo(); // Refresh display
+
+    } catch (error) {
+        console.error('Error saving YOLO model selection:', error);
+        showToast('Error: ' + error.message, 'error');
+    }
+}
+
+/**
+ * Show the copy model modal
+ */
+async function showCopyModelModal() {
+    if (!currentBookId) {
+        alert('Please select a book first');
+        return;
+    }
+
+    document.getElementById('copy-model-modal').classList.add('active');
+    
+    // Load books with trained models
+    try {
+        const response = await fetch('/api/yolo-models/books');
+        const data = await response.json();
+        
+        const container = document.getElementById('copy-model-list');
+        
+        if (!data.books || data.books.length === 0) {
+            container.innerHTML = `
+                <p style="color: #666; text-align: center; padding: 20px;">
+                    No books with trained YOLO models found.<br>
+                    Train a model on a book first using the Layout Training page.
+                </p>
+            `;
+            return;
+        }
+        
+        // Filter out current book
+        const otherBooks = data.books.filter(b => b.book_id !== parseInt(currentBookId));
+        
+        if (otherBooks.length === 0) {
+            container.innerHTML = `
+                <p style="color: #666; text-align: center; padding: 20px;">
+                    No other books with trained models available to copy from.
+                </p>
+            `;
+            return;
+        }
+        
+        let html = '';
+        otherBooks.forEach(book => {
+            const sizeMB = (book.model_size_bytes / (1024 * 1024)).toFixed(1);
+            html += `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #f5f5f5; border-radius: 4px; margin-bottom: 10px;">
+                    <div>
+                        <div style="font-weight: bold; color: #333;">${book.book_name}</div>
+                        <div style="font-size: 12px; color: #666;">Model size: ${sizeMB} MB</div>
+                    </div>
+                    <button onclick="copyModelFromBook(${book.book_id})" style="
+                        background: #4CAF50;
+                        color: white;
+                        padding: 8px 16px;
+                        border: none;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-weight: bold;
+                    ">📋 Copy</button>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Error loading books with models:', error);
+        document.getElementById('copy-model-list').innerHTML = `
+            <p style="color: #f44336;">Error loading books: ${error.message}</p>
+        `;
+    }
+}
+
+/**
+ * Close the copy model modal
+ */
+function closeCopyModelModal() {
+    document.getElementById('copy-model-modal').classList.remove('active');
+}
+
+/**
+ * Copy model from another book
+ */
+async function copyModelFromBook(sourceBookId) {
+    if (!currentBookId) return;
+
+    try {
+        const response = await fetch(`/api/books/${currentBookId}/copy-yolo-model`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ source_book_id: sourceBookId })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.detail || 'Failed to copy model');
+        }
+
+        closeCopyModelModal();
+        showToast('Model copied successfully!', 'success');
+        loadYoloModelInfo(); // Refresh display
+
+    } catch (error) {
+        console.error('Error copying model:', error);
+        showToast('Error: ' + error.message, 'error');
+    }
+}
+
+// Update loadBookData to include YOLO model info
+const originalLoadBookData = loadBookData;
+loadBookData = function() {
+    originalLoadBookData();
+    loadYoloModelInfo();
+};
+
+// Update showDeleteSummaryModal to show YOLO model option
+const originalShowDeleteSummaryModal = showDeleteSummaryModal;
+showDeleteSummaryModal = function(data) {
+    originalShowDeleteSummaryModal(data);
+    
+    // Show/hide YOLO model option based on whether book has one
+    const yoloOption = document.getElementById('yolo-model-option');
+    if (yoloOption) {
+        if (data.has_yolo_model) {
+            yoloOption.style.display = 'block';
+            document.getElementById('delete-yolo-model-checkbox').checked = true;
+        } else {
+            yoloOption.style.display = 'none';
+        }
+    }
+};
+
+// Update executeDelete to include YOLO model deletion
+const originalExecuteDelete = executeDelete;
+executeDelete = async function() {
+    const deleteChromadb = document.getElementById('delete-chromadb-checkbox').checked;
+    const deleteYoloModel = document.getElementById('delete-yolo-model-checkbox')?.checked ?? true;
+    const code = document.getElementById('confirmation-code-input').value;
+    const bookName = deleteBookData.book_name;
+    
+    // Disable button to prevent double-click
+    document.getElementById('btn-confirm-delete').disabled = true;
+    document.getElementById('btn-confirm-delete').textContent = '⏳ Deleting...';
+    
+    try {
+        const response = await fetch(`/api/books/${deleteBookData.book_id}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                delete_chromadb: deleteChromadb,
+                delete_yolo_model: deleteYoloModel,
+                confirmation_code: code
+            })
+        });
+        
+        const result = await response.json();
+        
+        closeDeleteModals();
+        
+        if (result.success) {
+            showToast(`Book "${bookName}" deleted successfully`, 'success');
+            // Redirect to Library after a short delay
+            setTimeout(() => {
+                window.location.href = '/library';
+            }, 1500);
+        } else {
+            showToast(result.error || result.detail || 'Deletion failed', 'error');
+        }
+    } catch (error) {
+        closeDeleteModals();
+        showToast('Error: ' + error.message, 'error');
+    }
+};

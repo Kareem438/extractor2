@@ -937,9 +937,10 @@
             <div class="info-box" style="background: #e8f5e9; border-left-color: #4CAF50;">
                 <strong>📋 Recommended Workflow:</strong><br>
                 1. <strong>Page Scanning</strong> (Book Settings) - Render PDF pages at 600 DPI<br>
-                2. <strong>Layout Detection</strong> (This Page) - Run YOLO to detect regions automatically<br>
-                3. <strong>Layout Review</strong> - Review and correct detected regions<br>
-                4. <strong>Extraction</strong> - Run OCR on detected regions to extract text
+                2. <strong>Title Configuration</strong> (This Page) - Configure L1/L2 titles with page ranges (required before Layout Detection)<br>
+                3. <strong>Layout Detection</strong> (This Page) - Run YOLO to detect regions automatically<br>
+                4. <strong>Layout Review</strong> - Review and correct detected regions<br>
+                5. <strong>Extraction</strong> - Run OCR on detected regions to extract text
             </div>
             
             <!-- Scanning Status Warning -->
@@ -948,9 +949,102 @@
                 This book has not been scanned yet. Please go to <a href="/book-settings" style="color: #e65100; font-weight: bold;">Book Settings</a> and run Page Scanning first to render pages at 600 DPI quality.
             </div>
 
+            <!-- Page Viewer Section -->
+            <div class="section">
+                <h2>Page Viewer</h2>
+                <p style="color: #666; margin-bottom: 15px;">
+                    Browse pages to identify title locations. Draw a rectangle to extract text for titles.
+                </p>
+                <div class="form-row" style="margin-bottom: 15px;">
+                    <button type="button" class="btn btn-secondary" onclick="prevViewerPage()" id="viewer-prev-btn">← Previous</button>
+                    <div class="form-group" style="margin: 0;">
+                        <input type="number" id="viewer-page-input" min="1" value="1" style="width: 80px; text-align: center;" onchange="goToViewerPage()">
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="nextViewerPage()" id="viewer-next-btn">Next →</button>
+                    <span id="viewer-page-info" style="padding: 10px; color: #666;">Page 1 of ?</span>
+                    <select id="viewer-zoom" onchange="updateViewerZoom()" style="padding: 8px;">
+                        <option value="0.1" selected>10%</option>
+                        <option value="0.15">15%</option>
+                        <option value="0.2">20%</option>
+                        <option value="0.25">25%</option>
+                        <option value="0.3">30%</option>
+                        <option value="0.5">50%</option>
+                        <option value="0.75">75%</option>
+                        <option value="1">100%</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 20px;">
+                    <div style="flex: 1; max-height: 600px; overflow: auto; border: 2px solid #ddd; border-radius: 4px;">
+                        <canvas id="viewer-canvas" width="800" height="1000" style="cursor: crosshair;"></canvas>
+                    </div>
+                    <div style="width: 300px;">
+                        <div style="background: #f5f5f5; padding: 15px; border-radius: 4px; margin-bottom: 15px;">
+                            <strong>Extracted Text:</strong>
+                            <textarea id="viewer-extracted-text" rows="6" style="width: 100%; margin-top: 10px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="Draw a rectangle on the page to extract text..."></textarea>
+                        </div>
+                        <div style="background: #e8f5e9; padding: 15px; border-radius: 4px;">
+                            <strong>Add as Title:</strong>
+                            <div style="margin-top: 10px;">
+                                <select id="viewer-title-level" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+                                    <option value="level1">Level 1 Title</option>
+                                    <option value="level2">Level 2 Title</option>
+                                    <option value="level3">Level 3 Title</option>
+                                </select>
+                                <button type="button" class="btn btn-add" onclick="addExtractedAsTitle()" style="width: 100%;">
+                                    Add Title from Extracted Text
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Title Configuration Section -->
+            <div class="section" id="title-hierarchy-section">
+                <h2>Title Configuration</h2>
+                <p style="color: #666; margin-bottom: 20px;">
+                    Define hierarchical titles that will be applied to pages based on their page number ranges.
+                    <strong style="color: #f44336;">L1 and L2 titles are required before running Layout Detection.</strong>
+                </p>
+
+                <!-- Level 1 Titles -->
+                <div class="title-level level-1">
+                    <h3>Level 1 Titles (e.g., Parts, Sections)</h3>
+                    <div class="dynamic-rows" id="level1-titles"></div>
+                    <button type="button" class="btn btn-add" onclick="addTitleRow('level1')">+ Add Level 1 Title</button>
+                </div>
+
+                <!-- Level 2 Titles -->
+                <div class="title-level level-2">
+                    <h3>Level 2 Titles (e.g., Chapters)</h3>
+                    <div class="dynamic-rows" id="level2-titles"></div>
+                    <button type="button" class="btn btn-add" onclick="addTitleRow('level2')">+ Add Level 2 Title</button>
+                </div>
+
+                <!-- Level 3 Titles -->
+                <div class="title-level level-3">
+                    <h3>Level 3 Titles (e.g., Subsections)</h3>
+                    <div class="dynamic-rows" id="level3-titles"></div>
+                    <button type="button" class="btn btn-add" onclick="addTitleRow('level3')">+ Add Level 3 Title</button>
+                </div>
+                
+                <!-- Validation Status -->
+                <div id="title-validation-status" style="display: none; margin-top: 20px; padding: 15px; border-radius: 8px;"></div>
+                
+                <!-- Validate Button -->
+                <div style="margin-top: 15px;">
+                    <button type="button" class="btn btn-secondary" onclick="validateTitleCoverage()">
+                        🔍 Validate Title Coverage
+                    </button>
+                </div>
+            </div>
+
             <!-- Page Range Section -->
             <div class="section">
                 <h2>Page Range</h2>
+                <p style="color: #666; margin-bottom: 15px;">
+                    Define the page range for Layout Detection. All pages in this range must be covered by L1 and L2 titles.
+                </p>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="start-page">Start Page:</label>
@@ -1027,6 +1121,25 @@
                 </div>
             </div>
 
+            <!-- Action Buttons -->
+            <div class="section" style="text-align: center;">
+                <button type="button" class="btn btn-secondary" onclick="saveConfig()" style="margin-right: 10px;">
+                    Save Configuration
+                </button>
+                <button type="button" class="btn" id="detect-layout-btn" onclick="detectLayout()"
+                        style="margin-right: 10px; background: #9C27B0; color: white; padding: 15px 30px; font-size: 16px;">
+                    🔍 Run Layout Detection (YOLO)
+                </button>
+                <button type="button" class="btn" id="review-layout-btn" onclick="openLayoutReview()"
+                        style="margin-right: 10px; background: #673AB7; color: white; display: none;">
+                    📋 Review Layout Detection
+                </button>
+                <button type="button" class="btn" id="extract-knowledge-btn" onclick="openExtractKnowledge()"
+                        style="margin-right: 10px; background: #00897B; color: white; display: none;">
+                    📊 Extraction Dashboard
+                </button>
+            </div>
+
             <!-- Layout Detection Thumbnails Section -->
             <div class="section" id="layout-thumbnails-section" style="display: none;">
                 <h2 style="border-color: #9C27B0;">Layout Detection Thumbnails</h2>
@@ -1066,105 +1179,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="section" style="text-align: center;">
-                <button type="button" class="btn btn-secondary" onclick="saveConfig()" style="margin-right: 10px;">
-                    Save Configuration
-                </button>
-                <button type="button" class="btn" id="detect-layout-btn" onclick="detectLayout()"
-                        style="margin-right: 10px; background: #9C27B0; color: white; padding: 15px 30px; font-size: 16px;">
-                    🔍 Run Layout Detection (YOLO)
-                </button>
-                <button type="button" class="btn" id="review-layout-btn" onclick="openLayoutReview()"
-                        style="margin-right: 10px; background: #673AB7; color: white; display: none;">
-                    📋 Review Layout Detection
-                </button>
-                <button type="button" class="btn" id="extract-knowledge-btn" onclick="openExtractKnowledge()"
-                        style="margin-right: 10px; background: #00897B; color: white; display: none;">
-                    📊 Extraction Dashboard
-                </button>
-            </div>
-
-            <!-- Page Viewer Section -->
-            <div class="section">
-                <h2>Page Viewer</h2>
-                <p style="color: #666; margin-bottom: 15px;">
-                    Browse pages to identify title locations. Draw a rectangle to extract text for titles.
-                </p>
-                <div class="form-row" style="margin-bottom: 15px;">
-                    <button type="button" class="btn btn-secondary" onclick="prevViewerPage()" id="viewer-prev-btn">← Previous</button>
-                    <div class="form-group" style="margin: 0;">
-                        <input type="number" id="viewer-page-input" min="1" value="1" style="width: 80px; text-align: center;" onchange="goToViewerPage()">
-                    </div>
-                    <button type="button" class="btn btn-secondary" onclick="nextViewerPage()" id="viewer-next-btn">Next →</button>
-                    <span id="viewer-page-info" style="padding: 10px; color: #666;">Page 1 of ?</span>
-                    <select id="viewer-zoom" onchange="updateViewerZoom()" style="padding: 8px;">
-                        <option value="0.1" selected>10%</option>
-                        <option value="0.15">15%</option>
-                        <option value="0.2">20%</option>
-                        <option value="0.25">25%</option>
-                        <option value="0.3">30%</option>
-                        <option value="0.5">50%</option>
-                        <option value="0.75">75%</option>
-                        <option value="1">100%</option>
-                    </select>
-                </div>
-                <div style="display: flex; gap: 20px;">
-                    <div style="flex: 1; max-height: 600px; overflow: auto; border: 2px solid #ddd; border-radius: 4px;">
-                        <canvas id="viewer-canvas" width="800" height="1000" style="cursor: crosshair;"></canvas>
-                    </div>
-                    <div style="width: 300px;">
-                        <div style="background: #f5f5f5; padding: 15px; border-radius: 4px; margin-bottom: 15px;">
-                            <strong>Extracted Text:</strong>
-                            <textarea id="viewer-extracted-text" rows="6" style="width: 100%; margin-top: 10px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="Draw a rectangle on the page to extract text..."></textarea>
-                        </div>
-                        <div style="background: #e8f5e9; padding: 15px; border-radius: 4px;">
-                            <strong>Add as Title:</strong>
-                            <div style="margin-top: 10px;">
-                                <select id="viewer-title-level" style="width: 100%; padding: 8px; margin-bottom: 10px;">
-                                    <option value="level1">Level 1 Title</option>
-                                    <option value="level2">Level 2 Title</option>
-                                    <option value="level3">Level 3 Title</option>
-                                </select>
-                                <button type="button" class="btn btn-add" onclick="addExtractedAsTitle()" style="width: 100%;">
-                                    Add Title from Extracted Text
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Title Configuration Section -->
-            <div class="section">
-                <h2>Title Configuration</h2>
-                <p style="color: #666; margin-bottom: 20px;">
-                    Define hierarchical titles that will be applied to pages based on their page number ranges.
-                    At least one title at any level is required.
-                </p>
-
-                <!-- Level 1 Titles -->
-                <div class="title-level level-1">
-                    <h3>Level 1 Titles (e.g., Parts, Sections)</h3>
-                    <div class="dynamic-rows" id="level1-titles"></div>
-                    <button type="button" class="btn btn-add" onclick="addTitleRow('level1')">+ Add Level 1 Title</button>
-                </div>
-
-                <!-- Level 2 Titles -->
-                <div class="title-level level-2">
-                    <h3>Level 2 Titles (e.g., Chapters)</h3>
-                    <div class="dynamic-rows" id="level2-titles"></div>
-                    <button type="button" class="btn btn-add" onclick="addTitleRow('level2')">+ Add Level 2 Title</button>
-                </div>
-
-                <!-- Level 3 Titles -->
-                <div class="title-level level-3">
-                    <h3>Level 3 Titles (e.g., Subsections)</h3>
-                    <div class="dynamic-rows" id="level3-titles"></div>
-                    <button type="button" class="btn btn-add" onclick="addTitleRow('level3')">+ Add Level 3 Title</button>
                 </div>
             </div>
 

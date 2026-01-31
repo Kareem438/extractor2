@@ -2,19 +2,93 @@
 
 **Feature:** Hierarchical Title System with Custom Attributes  
 **Created:** January 26, 2026  
-**Last Updated:** January 26, 2026
+**Last Updated:** January 31, 2026
 
 ---
 
-## Overall Status: 🟢 Implementation Complete (Pending Testing)
+## Overall Status: 🟢 All Bugs Fixed - Ready for Final Testing
 
 | Phase | Status | Progress |
 |-------|--------|----------|
 | Requirements | ✅ Complete | 100% |
 | Design | ✅ Complete | 100% |
 | Implementation | ✅ Complete | 100% |
-| Testing | 🔴 Not Started | 0% |
+| Testing | 🟡 In Progress | 60% |
 | Documentation | 🔴 Not Started | 0% |
+
+---
+
+## 🔴 CRITICAL BUGS FOUND (Session 2026-01-31)
+
+### Bug 3: Extraction Results Not Appearing
+**Status:** ✅ FULLY FIXED (Symptom + Root Cause)
+**Reported:** 2026-01-31
+**Fixed:** 2026-01-31
+**Description:** User extracted page 7 but nothing appears on the extraction page.
+
+**Root Cause:**
+- Missing `is_skipped` column in `raw_book2_high_2_pages` table
+- Migration `migrate_add_title_fk_columns.py` hadn't been run for book 2
+- **ROOT CAUSE:** The `table_creator.py` didn't include required columns when creating new book tables
+
+**Fix Applied (Symptom):**
+- [x] Ran migration script to add `is_skipped` and `is_ready_for_extraction` columns
+- [x] Also added `l1_title_id`, `l2_title_id` columns to layout_detections, paragraph_images, diagram_images tables
+
+**Root Cause Fix Applied:**
+- [x] Updated `create_raw_pages_table()` to include `is_skipped` and `is_ready_for_extraction` columns
+- [x] Updated `create_raw_paragraph_images_table()` to include `l1_title_id`, `l2_title_id` columns
+- [x] Updated `create_raw_diagram_images_table()` to include `l1_title_id`, `l2_title_id` columns
+- [x] Updated `create_layout_detections_table()` to include `l1_title_id`, `l2_title_id` columns
+- [x] Updated `create_level1_titles_table()` to include `external_writable_start`, `external_writable_end` columns
+- [x] Updated `create_level2_titles_table()` to include `external_writable_start`, `external_writable_end` columns
+
+### Bug 1: "Attr" Button Shows "Not Found" Error
+**Status:** ✅ FIXED
+**Reported:** 2026-01-31
+**Fixed:** 2026-01-31
+**Description:** When clicking "Attr" button for L1/L2 titles in Auto-Slicer, user gets `{"detail":"Not Found"}`
+
+**Root Cause:**
+1. Route mismatch: `openAttributeEditor()` was opening `/book/{book_id}/l1-title/{title_id}/attributes`
+2. Actual route is: `/l1-title-attributes?book_id={}&title_id={}`
+3. Titles created in JSON config didn't have DB IDs until "Save Config" was clicked
+4. After saving, UI didn't refresh to show the new DB IDs
+
+**Fix Applied:**
+- [x] Fixed `openAttributeEditor()` to use correct URL format: `/${levelNum}-title-attributes?book_id=${currentBookId}&title_id=${titleId}`
+- [x] Added `reloadTitlesFromDatabase()` function to reload titles with IDs after save
+- [x] Modified `saveConfig()` to call `reloadTitlesFromDatabase()` after sync
+- [x] Added validation in `openAttributeEditor()` to show helpful message if title not saved yet
+
+### Bug 2: Layout Detection Validation Blocks Valid Configuration
+**Status:** ✅ FIXED
+**Reported:** 2026-01-31
+**Fixed:** 2026-01-31
+**Description:** User configured L1 (pages 5-80) and L2 (pages 5-40) for book "High", set page range to 5-40, but still gets error: "Please configure L1 and L2 titles to cover all pages in the selected range before running Layout Detection."
+
+**Root Cause:**
+1. Error message was too generic - didn't show which pages were missing
+2. Validation status section existed but wasn't being scrolled to
+3. User didn't know what specific pages needed coverage
+
+**Fix Applied:**
+- [x] Improved `displayValidationResult()` to show detailed breakdown:
+  - Shows which pages are missing L1 coverage
+  - Shows which pages are missing L2 coverage
+  - Shows step-by-step instructions on how to fix
+- [x] Updated `detectLayout()` alert to reference the validation status section
+- [x] Added scroll-to-validation-status when detection is blocked
+
+---
+
+## Next Actions (Priority Order)
+
+1. **✅ DONE:** Bug 1 - Fixed `openAttributeEditor()` URL and DB sync
+2. **✅ DONE:** Bug 2 - Improved validation error messages with detailed page info
+3. **✅ DONE:** Ran migration for book 2 to add `external_writable_start/end` columns
+4. **🔄 IN PROGRESS:** User re-testing both bugs to confirm fixes work
+5. **PENDING:** Update session summary with bug fixes
 
 ---
 

@@ -3,7 +3,7 @@
 **Project Name:** Knowledge Extraction System (13-extractor2)  
 **Version:** 1.0  
 **Status:** 95% Complete - Production Ready (Core System)  
-**Last Updated:** 2026-01-22
+**Last Updated:** 2026-01-31
 
 ---
 
@@ -609,6 +609,38 @@ python "07-Chroma Backup.py"
 
 ---
 
-**Last Updated**: 2026-01-21  
+**Last Updated**: 2026-01-31  
 **Project Status**: 95% Complete - Production Ready (Core System)  
 **Next Milestone**: Complete Worker Process Implementation (5% remaining)
+
+---
+
+## 📋 Recent Session Updates (2026-01-31)
+
+### E2E Testing & Bug Fixes
+- Completed E2E testing for Requirements 4-8
+- Fixed 3 critical bugs in Auto-Slicer and Extraction workflow
+- Applied root cause fix to `table_creator.py` for new book creation
+
+### Bug Fixes Applied
+1. **"Attr" Button URL Fix** - Fixed URL format in `openAttributeEditor()` 
+2. **Validation Error Messages** - Improved to show specific pages missing coverage
+3. **Extraction Results Fix** - Added missing columns to `table_creator.py`
+
+### Database Schema Updates (table_creator.py)
+New books now automatically include all required columns:
+- `raw_{prefix}_pages`: `is_skipped`, `is_ready_for_extraction`
+- `raw_{prefix}_paragraph_images`: `l1_title_id`, `l2_title_id`
+- `raw_{prefix}_diagram_images`: `l1_title_id`, `l2_title_id`
+- `raw_{prefix}_layout_detections`: `l1_title_id`, `l2_title_id`
+- `{prefix}_level1_titles`: `external_writable_start`, `external_writable_end`
+- `{prefix}_level2_titles`: `external_writable_start`, `external_writable_end`
+
+### Auto-Slicer Page Reorganization
+New section order:
+1. Recommended Workflow
+2. Page Viewer
+3. Title Configuration
+4. Page Range
+5. YOLO Detection Classes
+6. Action Buttons

@@ -436,6 +436,9 @@ async function saveConfig() {
             // Also sync L1/L2 titles to database
             await syncTitlesToDatabase(config.titles);
             
+            // Reload titles from database to get the IDs (for Attr buttons)
+            await reloadTitlesFromDatabase();
+            
             showMessage('Configuration saved successfully', 'success');
             currentConfig = config;
         } else {
@@ -468,6 +471,46 @@ async function syncTitlesToDatabase(titles) {
     } catch (error) {
         console.error('Error syncing titles to database:', error);
         // Don't show error to user - JSON save succeeded, DB sync is secondary
+    }
+}
+
+async function reloadTitlesFromDatabase() {
+    /**
+     * Reload L1/L2 titles from database to get their IDs.
+     * This enables the "Attr" buttons to work after saving.
+     */
+    try {
+        // Fetch L1 titles from database
+        const l1Response = await fetch(`/api/books/${currentBookId}/l1-titles`);
+        const l1Data = await l1Response.json();
+        
+        // Fetch L2 titles from database
+        const l2Response = await fetch(`/api/books/${currentBookId}/l2-titles`);
+        const l2Data = await l2Response.json();
+        
+        // Clear existing title rows
+        document.getElementById('level1-titles').innerHTML = '';
+        document.getElementById('level2-titles').innerHTML = '';
+        
+        // Re-add L1 titles with their database IDs
+        if (l1Data.titles) {
+            l1Data.titles.forEach(t => {
+                addTitleRow('level1', t.title_text, t.start_page, t.end_page, t.id, 
+                    t.external_writable_start, t.external_writable_end);
+            });
+        }
+        
+        // Re-add L2 titles with their database IDs
+        if (l2Data.titles) {
+            l2Data.titles.forEach(t => {
+                addTitleRow('level2', t.title_text, t.start_page, t.end_page, t.id,
+                    t.external_writable_start, t.external_writable_end);
+            });
+        }
+        
+        console.log('Reloaded titles from database with IDs');
+    } catch (error) {
+        console.error('Error reloading titles from database:', error);
     }
 }
 
@@ -556,8 +599,12 @@ function openAttributeEditor(level, titleId) {
     /**
      * Open the attribute editor page for an L1 or L2 title.
      */
+    if (!titleId) {
+        alert('Please save the configuration first to create the title in the database, then click "Attr" again.');
+        return;
+    }
     const levelNum = level === 'level1' ? 'l1' : 'l2';
-    window.open(`/book/${currentBookId}/${levelNum}-title/${titleId}/attributes`, '_blank');
+    window.open(`/${levelNum}-title-attributes?book_id=${currentBookId}&title_id=${titleId}`, '_blank');
 }
 
 function addBatchRow(startPage = '', endPage = '') {
@@ -2008,7 +2055,13 @@ async function detectLayout() {
     // Validate title coverage before detection
     const validationPassed = await checkTitleValidationBeforeDetection();
     if (!validationPassed) {
-        alert('Please configure L1 and L2 titles to cover all pages in the selected range before running Layout Detection.');
+        // The detailed error is already shown in the validation status section
+        // Just scroll to it and show a brief alert
+        const statusEl = document.getElementById('title-validation-status');
+        if (statusEl) {
+            statusEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        alert(`Layout Detection blocked: Title coverage validation failed.\n\nPlease check the validation status above for details on which pages need L1/L2 title coverage.\n\nPage Range: ${startPage} - ${endPage}`);
         return;
     }
 
@@ -3352,17 +3405,39 @@ function displayValidationResult(data, startPage, endPage) {
         `;
     } else {
         statusEl.className = 'validation-error';
-        let message = `<strong>❌ Validation Failed</strong><br>`;
+        let message = `<strong>❌ Validation Failed for Page Range ${startPage}-${endPage}</strong><br>`;
+        message += `<br><strong>Required:</strong> All pages in the range must be covered by BOTH L1 and L2 titles.`;
         
         if (!data.l1_valid && data.uncovered_l1_pages?.length > 0) {
-            message += `<br><strong>L1 Coverage Missing:</strong> Pages ${data.uncovered_l1_pages.join(', ')}`;
+            const pages = data.uncovered_l1_pages;
+            if (pages.length <= 10) {
+                message += `<br><br><strong>❌ L1 Coverage Missing:</strong> Pages ${pages.join(', ')}`;
+            } else {
+                message += `<br><br><strong>❌ L1 Coverage Missing:</strong> ${pages.length} pages (${pages[0]}-${pages[pages.length-1]})`;
+            }
+            message += `<br><em>→ Add or extend an L1 title to cover these pages</em>`;
+        } else if (data.l1_valid) {
+            message += `<br><br><strong>✅ L1 Coverage:</strong> OK`;
         }
         
         if (!data.l2_valid && data.uncovered_l2_pages?.length > 0) {
-            message += `<br><strong>L2 Coverage Missing:</strong> Pages ${data.uncovered_l2_pages.join(', ')}`;
+            const pages = data.uncovered_l2_pages;
+            if (pages.length <= 10) {
+                message += `<br><br><strong>❌ L2 Coverage Missing:</strong> Pages ${pages.join(', ')}`;
+            } else {
+                message += `<br><br><strong>❌ L2 Coverage Missing:</strong> ${pages.length} pages (${pages[0]}-${pages[pages.length-1]})`;
+            }
+            message += `<br><em>→ Add or extend an L2 title to cover these pages</em>`;
+        } else if (data.l2_valid) {
+            message += `<br><br><strong>✅ L2 Coverage:</strong> OK`;
         }
         
-        message += `<br><br><em>Please configure titles to cover all pages before running Layout Detection.</em>`;
+        message += `<br><br><strong>How to fix:</strong>`;
+        message += `<br>1. In the Title Configuration section above, add or modify L1/L2 titles`;
+        message += `<br>2. Ensure the page ranges cover all pages from ${startPage} to ${endPage}`;
+        message += `<br>3. Click "Save Config" to save your changes`;
+        message += `<br>4. Click "Validate" again to check`;
+        
         statusEl.innerHTML = message;
     }
 }

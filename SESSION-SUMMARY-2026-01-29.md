@@ -1,5 +1,57 @@
 # Session Summary - January 29, 2026
 
+## Part 3: E2E Testing - Requirements 5 & 6
+
+### Requirement 5: Multi-PDF Upload & Cross-Book Attribute Access
+
+**API Tests - All Passed:**
+| Endpoint | Result | Details |
+|----------|--------|---------|
+| GET /api/books/{id}/pdf-uploads | ✅ PASS | Returns 1 PDF |
+| GET /api/books/{id}/suggested-start-page | ✅ PASS | Returns 273 |
+| GET /api/cross-book/books | ✅ PASS | Returns 1 book with L1/L2 titles |
+| GET /api/cross-book/audit-log | ✅ PASS | Returns empty log (expected) |
+| GET /api/template-reference/search | ✅ PASS | Returns 20 results |
+| GET /api/template-reference/tree | ✅ PASS | Returns 1 book tree |
+
+**Frontend Tests - All Passed:**
+| Page | Result | Features Verified |
+|------|--------|-------------------|
+| /upload | ✅ PASS | Multi-PDF section, existing PDFs list |
+| /cross-book-audit | ✅ PASS | Audit log page loads |
+| /pipeline-config | ✅ PASS | @ autocomplete, tree browser modal |
+
+### Requirement 6: Delete Book Feature
+
+**API Tests - All Passed:**
+| Endpoint | Result | Details |
+|----------|--------|---------|
+| GET /api/books/{id}/deletion-preview | ✅ PASS | Returns counts, confirmation code |
+
+**Deletion Preview Data:**
+- Book: "01-Wessam Explanation 2026"
+- Pages: 272
+- Knowledge Units: 54
+- Images: 5
+- Can Delete: true
+- Confirmation Code: Generated
+
+**Frontend Tests - All Passed:**
+| Page | Result | Features Verified |
+|------|--------|-------------------|
+| /library | ✅ PASS | Delete button in Actions column |
+| /book-settings | ✅ PASS | Danger Zone section, PDF path display |
+
+### Summary
+
+**Total Tests: 12/12 Passed**
+- API Tests: 7/7 ✅
+- Frontend Tests: 5/5 ✅
+
+Both Requirements 5 and 6 are fully implemented and E2E verified.
+
+---
+
 ## Part 1: Delete Book Feature - Bug Fix & Cleanup
 
 ### Issues Fixed
