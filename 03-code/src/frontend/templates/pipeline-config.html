@@ -702,6 +702,63 @@
             </table>
         </div>
 
+        <!-- LLM Providers Section (V2 Cloud Extraction) -->
+        <div class="variables-section" id="llmProvidersSection">
+            <h2>🤖 LLM Providers (V2 Cloud Extraction)</h2>
+            <p style="color: #7f8c8d; margin-bottom: 15px; font-size: 14px;">
+                Configure API keys and models for cloud-based V2 extraction. These are global settings shared across all books.
+            </p>
+            <div id="llmProvidersList"></div>
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <select id="newProviderSelect" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; min-width: 200px;">
+                    <option value="">-- Add Provider --</option>
+                    <option value="openai">OpenAI ChatGPT</option>
+                    <option value="dashscope">DashScope Qwen</option>
+                    <option value="anthropic">Anthropic Claude</option>
+                    <option value="google">Google Gemini</option>
+                </select>
+                <button class="btn btn-primary" onclick="showAddProviderForm()">+ Add Provider</button>
+            </div>
+            <!-- Add/Edit Provider Form (hidden by default) -->
+            <div id="providerFormContainer" style="display: none; margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; border: 1px solid #ddd;">
+                <h3 style="margin-bottom: 10px; font-size: 15px;" id="providerFormTitle">Add Provider</h3>
+                <div class="step-grid">
+                    <div class="form-group">
+                        <label>Provider Name</label>
+                        <input type="text" id="providerFormName" readonly style="background: #eee;">
+                    </div>
+                    <div class="form-group">
+                        <label>Display Name</label>
+                        <input type="text" id="providerFormDisplayName" placeholder="e.g., OpenAI ChatGPT 5">
+                    </div>
+                    <div class="form-group">
+                        <label>API Key</label>
+                        <input type="password" id="providerFormApiKey" placeholder="Enter API key">
+                    </div>
+                    <div class="form-group">
+                        <label>Model Name</label>
+                        <input type="text" id="providerFormModel" placeholder="e.g., gpt-5">
+                    </div>
+                    <div class="form-group">
+                        <label>Base URL</label>
+                        <input type="text" id="providerFormBaseUrl" placeholder="Auto-filled from defaults">
+                    </div>
+                    <div class="form-group">
+                        <label>Auth Style</label>
+                        <select id="providerFormAuthStyle">
+                            <option value="bearer">Bearer Token</option>
+                            <option value="x-api-key">X-API-Key (Anthropic)</option>
+                            <option value="x-goog-api-key">X-Goog-API-Key (Google)</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="margin-top: 10px; display: flex; gap: 10px;">
+                    <button class="btn btn-success" onclick="saveProvider()">Save Provider</button>
+                    <button class="btn btn-secondary" onclick="hideProviderForm()">Cancel</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Tag Mapping Section (Requirement 7A) -->
         <div class="tag-mapping-section" id="tagMappingSection" style="display: none;">
             <h2>🏷️ Multi-Tag XML Extraction</h2>
@@ -1143,7 +1200,197 @@
 
         // Initialize on page load
         init();
+        loadLLMProviders();  // Load LLM providers (global, not book-specific)
         
+        // =====================================================
+        // LLM Providers Functions (V2 Cloud Extraction)
+        // =====================================================
+
+        let llmProviderDefaults = {};
+        let editingProviderId = null;
+
+        async function loadLLMProviders() {
+            try {
+                // Load defaults
+                const defResp = await fetch('/api/llm-providers/defaults');
+                const defData = await defResp.json();
+                llmProviderDefaults = defData.defaults;
+
+                // Load configured providers
+                const resp = await fetch('/api/llm-providers');
+                const data = await resp.json();
+                renderLLMProviders(data.providers);
+            } catch (error) {
+                console.error('Error loading LLM providers:', error);
+            }
+        }
+
+        function renderLLMProviders(providers) {
+            const container = document.getElementById('llmProvidersList');
+            if (providers.length === 0) {
+                container.innerHTML = '<p style="color: #95a5a6; text-align: center; padding: 20px;">No LLM providers configured yet. Add one below to enable V2 cloud extraction.</p>';
+                return;
+            }
+
+            container.innerHTML = providers.map(p => `
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; margin-bottom: 8px; background: ${p.enabled ? '#f0fff0' : '#fff5f5'}; border: 1px solid ${p.enabled ? '#c3e6cb' : '#f5c6cb'}; border-radius: 6px;">
+                    <div style="flex: 1;">
+                        <span style="font-weight: 600;">${p.display_name}</span>
+                        <span style="color: #7f8c8d; margin-left: 10px; font-size: 13px;">(${p.provider_name})</span>
+                        <br>
+                        <span style="font-size: 13px; color: #555;">Model: <code>${p.model_name}</code> | Key: <code>${p.api_key_masked}</code></span>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <label style="font-size: 13px; cursor: pointer;">
+                            <input type="checkbox" ${p.enabled ? 'checked' : ''} onchange="toggleProvider(${p.id}, this.checked)"> Enabled
+                        </label>
+                        <button class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="testProvider('${p.provider_name}')">Test</button>
+                        <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="editProvider(${p.id}, '${p.provider_name}')">Edit</button>
+                        <button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;" onclick="deleteProvider(${p.id}, '${p.display_name}')">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showAddProviderForm() {
+            const providerName = document.getElementById('newProviderSelect').value;
+            if (!providerName) {
+                showAlert('Select a provider type first', 'error');
+                return;
+            }
+
+            editingProviderId = null;
+            const defaults = llmProviderDefaults[providerName] || {};
+
+            document.getElementById('providerFormTitle').textContent = 'Add Provider';
+            document.getElementById('providerFormName').value = providerName;
+            document.getElementById('providerFormDisplayName').value = defaults.display_name || '';
+            document.getElementById('providerFormApiKey').value = '';
+            document.getElementById('providerFormModel').value = defaults.model_name || '';
+            document.getElementById('providerFormBaseUrl').value = defaults.base_url || '';
+            document.getElementById('providerFormAuthStyle').value = defaults.auth_header_style || 'bearer';
+            document.getElementById('providerFormContainer').style.display = 'block';
+        }
+
+        function hideProviderForm() {
+            document.getElementById('providerFormContainer').style.display = 'none';
+            editingProviderId = null;
+        }
+
+        async function saveProvider() {
+            const providerName = document.getElementById('providerFormName').value;
+            const apiKey = document.getElementById('providerFormApiKey').value;
+
+            if (!apiKey && !editingProviderId) {
+                showAlert('API key is required', 'error');
+                return;
+            }
+
+            try {
+                if (editingProviderId) {
+                    // Update existing
+                    const updates = {
+                        display_name: document.getElementById('providerFormDisplayName').value,
+                        model_name: document.getElementById('providerFormModel').value,
+                        base_url: document.getElementById('providerFormBaseUrl').value,
+                        auth_header_style: document.getElementById('providerFormAuthStyle').value
+                    };
+                    if (apiKey) updates.api_key = apiKey;
+
+                    const resp = await fetch(`/api/llm-providers/${editingProviderId}`, {
+                        method: 'PUT',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(updates)
+                    });
+                    if (!resp.ok) throw new Error((await resp.json()).detail);
+                    showAlert('Provider updated', 'success');
+                } else {
+                    // Create new
+                    const resp = await fetch('/api/llm-providers', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            provider_name: providerName,
+                            display_name: document.getElementById('providerFormDisplayName').value,
+                            api_key: apiKey,
+                            model_name: document.getElementById('providerFormModel').value,
+                            base_url: document.getElementById('providerFormBaseUrl').value,
+                            auth_header_style: document.getElementById('providerFormAuthStyle').value
+                        })
+                    });
+                    if (!resp.ok) throw new Error((await resp.json()).detail);
+                    showAlert('Provider added', 'success');
+                }
+
+                hideProviderForm();
+                await loadLLMProviders();
+            } catch (error) {
+                showAlert(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function editProvider(id, providerName) {
+            editingProviderId = id;
+            const defaults = llmProviderDefaults[providerName] || {};
+
+            // Fetch current data
+            try {
+                const resp = await fetch(`/api/llm-providers/${id}`);
+                const p = await resp.json();
+
+                document.getElementById('providerFormTitle').textContent = 'Edit Provider';
+                document.getElementById('providerFormName').value = p.provider_name;
+                document.getElementById('providerFormDisplayName').value = p.display_name;
+                document.getElementById('providerFormApiKey').value = '';
+                document.getElementById('providerFormApiKey').placeholder = 'Leave blank to keep current key';
+                document.getElementById('providerFormModel').value = p.model_name;
+                document.getElementById('providerFormBaseUrl').value = p.base_url || '';
+                document.getElementById('providerFormAuthStyle').value = p.auth_header_style;
+                document.getElementById('providerFormContainer').style.display = 'block';
+            } catch (error) {
+                showAlert('Error loading provider', 'error');
+            }
+        }
+
+        async function deleteProvider(id, displayName) {
+            if (!confirm(`Delete provider "${displayName}"?`)) return;
+            try {
+                const resp = await fetch(`/api/llm-providers/${id}`, { method: 'DELETE' });
+                if (!resp.ok) throw new Error((await resp.json()).detail);
+                showAlert('Provider deleted', 'success');
+                await loadLLMProviders();
+            } catch (error) {
+                showAlert(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function toggleProvider(id, enabled) {
+            try {
+                await fetch(`/api/llm-providers/${id}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ enabled })
+                });
+            } catch (error) {
+                showAlert('Error toggling provider', 'error');
+            }
+        }
+
+        async function testProvider(providerName) {
+            showAlert(`Testing connection to ${providerName}...`, 'info');
+            try {
+                const resp = await fetch(`/api/llm-providers/${providerName}/test`, { method: 'POST' });
+                const data = await resp.json();
+                if (resp.ok) {
+                    showAlert(`✅ ${data.message}`, 'success');
+                } else {
+                    showAlert(`❌ ${data.detail}`, 'error');
+                }
+            } catch (error) {
+                showAlert(`❌ Test failed: ${error.message}`, 'error');
+            }
+        }
+
         // =====================================================
         // Help Section Toggle
         // =====================================================

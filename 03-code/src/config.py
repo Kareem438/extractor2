@@ -93,6 +93,16 @@ class Settings(BaseSettings):
         description="Anthropic API key for Claude Vision (optional)"
     )
 
+    # DashScope API (Qwen VL models for cloud OCR)
+    DASHSCOPE_API_KEY: str = Field(
+        default="",
+        description="DashScope API key for Qwen VL models (optional)"
+    )
+    DASHSCOPE_BASE_URL: str = Field(
+        default="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+        description="DashScope API base URL"
+    )
+
     class Config:
         """Pydantic configuration"""
         env_file = ".env"

@@ -3514,3 +3514,621 @@ onBookSelect = async function() {
     await originalOnBookSelect.apply(this, arguments);
     await loadTitleHierarchy();
 };
+
+// =============================================================================
+// Cloud Extraction (Qwen VL via DashScope)
+// =============================================================================
+
+let cloudPollingInterval = null;
+
+async function startCloudExtraction() {
+    if (!currentBookId) {
+        showMessage('No book selected', 'error');
+        return;
+    }
+    
+    const model = document.getElementById('cloud-model-select').value;
+    
+    try {
+        const response = await fetch(`/api/cloud-ocr/start/${currentBookId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model })
+        });
+        
+        const result = await response.json();
+        if (!response.ok) {
+            showMessage(result.detail || 'Failed to start cloud extraction', 'error');
+            return;
+        }
+        
+        showMessage(`Cloud extraction started: ${result.total_pages} pages, ${result.few_shot_pages.length} samples`, 'success');
+        updateCloudUI('running');
+        startCloudPolling();
+    } catch (error) {
+        showMessage('Failed to start cloud extraction: ' + error.message, 'error');
+    }
+}
+
+async function pauseCloudExtraction() {
+    if (!currentBookId) return;
+    
+    try {
+        const response = await fetch(`/api/cloud-ocr/pause/${currentBookId}`, { method: 'POST' });
+        const result = await response.json();
+        if (result.success) {
+            document.getElementById('cloud-pause-btn').textContent = 'Resume';
+            document.getElementById('cloud-pause-btn').onclick = resumeCloudExtraction;
+            updateCloudUI('paused');
+        }
+    } catch (error) {
+        showMessage('Failed to pause: ' + error.message, 'error');
+    }
+}
+
+async function resumeCloudExtraction() {
+    if (!currentBookId) return;
+    
+    try {
+        const response = await fetch(`/api/cloud-ocr/resume/${currentBookId}`, { method: 'POST' });
+        const result = await response.json();
+        if (result.success) {
+            document.getElementById('cloud-pause-btn').textContent = 'Pause';
+            document.getElementById('cloud-pause-btn').onclick = pauseCloudExtraction;
+            updateCloudUI('running');
+            startCloudPolling();
+        }
+    } catch (error) {
+        showMessage('Failed to resume: ' + error.message, 'error');
+    }
+}
+
+async function cancelCloudExtraction() {
+    if (!currentBookId) return;
+    
+    try {
+        const response = await fetch(`/api/cloud-ocr/cancel/${currentBookId}`, { method: 'POST' });
+        const result = await response.json();
+        if (result.success) {
+            updateCloudUI('cancelled');
+            stopCloudPolling();
+        }
+    } catch (error) {
+        showMessage('Failed to cancel: ' + error.message, 'error');
+    }
+}
+
+async function retryFailedPages() {
+    if (!currentBookId) return;
+    
+    try {
+        const response = await fetch(`/api/cloud-ocr/retry-failed/${currentBookId}`, { method: 'POST' });
+        const result = await response.json();
+        if (!response.ok) {
+            showMessage(result.detail || 'No failed pages to retry', 'error');
+            return;
+        }
+        showMessage(`Retrying ${result.count} failed page(s)`, 'success');
+        updateCloudUI('running');
+        startCloudPolling();
+    } catch (error) {
+        showMessage('Failed to retry: ' + error.message, 'error');
+    }
+}
+
+function startCloudPolling() {
+    stopCloudPolling();
+    cloudPollingInterval = setInterval(pollCloudStatus, 3000);
+    pollCloudStatus(); // immediate first poll
+}
+
+function stopCloudPolling() {
+    if (cloudPollingInterval) {
+        clearInterval(cloudPollingInterval);
+        cloudPollingInterval = null;
+    }
+}
+
+async function pollCloudStatus() {
+    if (!currentBookId) return;
+    
+    try {
+        const response = await fetch(`/api/cloud-ocr/status/${currentBookId}`);
+        const data = await response.json();
+        
+        updateCloudProgress(data);
+        
+        if (data.status === 'completed' || data.status === 'cancelled' || data.status === 'failed') {
+            stopCloudPolling();
+            updateCloudUI(data.status);
+            
+            if (data.status === 'completed') {
+                showMessage('Cloud extraction completed!', 'success');
+                // Show review link
+                const reviewLink = document.getElementById('cloud-review-link');
+                const reviewAnchor = document.getElementById('cloud-review-anchor');
+                if (reviewLink && reviewAnchor) {
+                    reviewAnchor.href = `/knowledge-page-review?book_id=${currentBookId}`;
+                    reviewLink.style.display = 'block';
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Cloud status poll error:', error);
+    }
+}
+
+function updateCloudProgress(data) {
+    const progressDiv = document.getElementById('cloud-progress');
+    if (progressDiv) progressDiv.style.display = 'block';
+    
+    const total = data.total_pages || 1;
+    const completed = data.pages_completed || 0;
+    const failed = data.pages_failed || 0;
+    const pending = data.pages_pending || 0;
+    const percent = Math.round((completed + failed) / total * 100);
+    
+    const statusEl = document.getElementById('cloud-status-text');
+    const pageEl = document.getElementById('cloud-page-text');
+    const barEl = document.getElementById('cloud-progress-bar');
+    const completedEl = document.getElementById('cloud-completed-text');
+    const failedEl = document.getElementById('cloud-failed-text');
+    const pendingEl = document.getElementById('cloud-pending-text');
+    
+    if (statusEl) statusEl.textContent = data.status ? data.status.charAt(0).toUpperCase() + data.status.slice(1) : 'Idle';
+    if (pageEl) pageEl.textContent = data.current_page ? `Page ${data.current_page}` : '-';
+    if (barEl) barEl.style.width = percent + '%';
+    if (completedEl) completedEl.textContent = `${completed} completed`;
+    if (failedEl) failedEl.textContent = `${failed} failed`;
+    if (pendingEl) pendingEl.textContent = `${pending} pending`;
+}
+
+function updateCloudUI(status) {
+    const startBtn = document.getElementById('cloud-start-btn');
+    const pauseBtn = document.getElementById('cloud-pause-btn');
+    const cancelBtn = document.getElementById('cloud-cancel-btn');
+    const retryBtn = document.getElementById('cloud-retry-btn');
+    
+    if (status === 'running') {
+        if (startBtn) startBtn.style.display = 'none';
+        if (pauseBtn) { pauseBtn.style.display = 'inline-block'; pauseBtn.textContent = 'Pause'; pauseBtn.onclick = pauseCloudExtraction; }
+        if (cancelBtn) cancelBtn.style.display = 'inline-block';
+        if (retryBtn) retryBtn.style.display = 'none';
+    } else if (status === 'paused') {
+        if (startBtn) startBtn.style.display = 'none';
+        if (pauseBtn) { pauseBtn.style.display = 'inline-block'; pauseBtn.textContent = 'Resume'; pauseBtn.onclick = resumeCloudExtraction; }
+        if (cancelBtn) cancelBtn.style.display = 'inline-block';
+        if (retryBtn) retryBtn.style.display = 'none';
+    } else {
+        // idle, completed, cancelled, failed
+        if (startBtn) startBtn.style.display = 'inline-block';
+        if (pauseBtn) pauseBtn.style.display = 'none';
+        if (cancelBtn) cancelBtn.style.display = 'none';
+        if (retryBtn) retryBtn.style.display = (status === 'completed' || status === 'failed') ? 'inline-block' : 'none';
+    }
+}
+
+// Load cloud status on book select
+const originalOnBookSelectForCloud = onBookSelect;
+onBookSelect = async function() {
+    await originalOnBookSelectForCloud.apply(this, arguments);
+    if (currentBookId) {
+        pollCloudStatus();
+    }
+};
+
+
+// =============================================================================
+// V2 Cloud Extraction (Rolling Window)
+// =============================================================================
+
+let v2PollingInterval = null;
+let currentExtractionMethod = 'v2';
+
+/**
+ * Initialize V2 extraction UI when book is selected
+ */
+async function v2InitForBook() {
+    if (!currentBookId) return;
+
+    // Get book's extraction method
+    try {
+        const resp = await fetch(`/api/books/${currentBookId}`);
+        const book = await resp.json();
+        currentExtractionMethod = book.extraction_method || 'v2';
+    } catch (e) {
+        currentExtractionMethod = 'v2';
+    }
+
+    // Toggle L3 title section visibility based on extraction method
+    v2ToggleL3Visibility();
+
+    // Toggle V2 section visibility
+    const v2Section = document.getElementById('v2-extraction-section');
+    if (v2Section) {
+        v2Section.style.display = (currentExtractionMethod === 'v2' || currentExtractionMethod === 'both') ? 'block' : 'none';
+    }
+
+    // Load V2 data if applicable
+    if (currentExtractionMethod === 'v2' || currentExtractionMethod === 'both') {
+        await v2LoadProviders();
+        await v2CheckPrerequisites();
+        await v2PollStatus();
+    }
+}
+
+/**
+ * Toggle L3 title section visibility based on extraction method
+ * V2: L3 is hidden (LLM extracts L3)
+ * V1: L3 is visible
+ * Both: Radio button to switch
+ */
+function v2ToggleL3Visibility() {
+    const l3Section = document.querySelector('.title-level.level-3');
+    const l3YoloCheckbox = document.getElementById('yolo-class-title-l3');
+
+    if (currentExtractionMethod === 'v2') {
+        // Hide L3 for V2-only books
+        if (l3Section) l3Section.style.display = 'none';
+        if (l3YoloCheckbox) l3YoloCheckbox.closest('label').style.display = 'none';
+    } else {
+        // Show L3 for V1 or both
+        if (l3Section) l3Section.style.display = '';
+        if (l3YoloCheckbox) l3YoloCheckbox.closest('label').style.display = '';
+    }
+}
+
+/**
+ * Load enabled LLM providers into dropdown
+ */
+async function v2LoadProviders() {
+    const select = document.getElementById('v2-provider-select');
+    if (!select) return;
+
+    try {
+        const resp = await fetch('/api/llm-providers/enabled');
+        const data = await resp.json();
+
+        select.innerHTML = '<option value="">-- Select Provider --</option>';
+        data.providers.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.provider_name;
+            opt.textContent = `${p.display_name} (${p.model_name})`;
+            select.appendChild(opt);
+        });
+    } catch (e) {
+        select.innerHTML = '<option value="">Error loading providers</option>';
+    }
+}
+
+/**
+ * Check and display prerequisites
+ */
+async function v2CheckPrerequisites() {
+    const container = document.getElementById('v2-prereq-list');
+    if (!container || !currentBookId) return;
+
+    try {
+        const resp = await fetch(`/api/v2/books/${currentBookId}/extraction/prerequisites`);
+        const data = await resp.json();
+
+        const checks = data.checks;
+        container.innerHTML = Object.entries(checks).map(([key, ok]) => {
+            const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            return `<span style="margin-right: 12px;">${ok ? '✅' : '❌'} ${label}</span>`;
+        }).join('');
+
+        // Enable/disable start button
+        const startBtn = document.getElementById('v2-start-btn');
+        if (startBtn) startBtn.disabled = !data.ready;
+    } catch (e) {
+        container.innerHTML = '<span style="color: #e74c3c;">Failed to check prerequisites</span>';
+    }
+}
+
+
+/**
+ * Start V2 extraction
+ */
+async function v2StartExtraction() {
+    if (!currentBookId) return;
+
+    const provider = document.getElementById('v2-provider-select').value;
+    if (!provider) {
+        showMessage('Select an LLM provider first', 'error');
+        return;
+    }
+
+    const minDelay = parseFloat(document.getElementById('v2-min-delay').value) || 5;
+
+    try {
+        const resp = await fetch(`/api/v2/books/${currentBookId}/extraction/start`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ provider_name: provider, min_delay: minDelay })
+        });
+        const result = await resp.json();
+        if (!resp.ok) {
+            showMessage(result.detail || 'Failed to start extraction', 'error');
+            return;
+        }
+        showMessage(`V2 extraction started: ${result.total_pages} pages`, 'success');
+        v2UpdateUI('running');
+        v2StartPolling();
+    } catch (e) {
+        showMessage('Failed to start V2 extraction: ' + e.message, 'error');
+    }
+}
+
+async function v2PauseExtraction() {
+    if (!currentBookId) return;
+    try {
+        const resp = await fetch(`/api/v2/books/${currentBookId}/extraction/pause`, { method: 'POST' });
+        const result = await resp.json();
+        if (resp.ok) {
+            v2UpdateUI('paused');
+            showMessage('V2 extraction paused', 'info');
+        }
+    } catch (e) { showMessage('Failed to pause: ' + e.message, 'error'); }
+}
+
+async function v2ResumeExtraction() {
+    if (!currentBookId) return;
+    try {
+        const resp = await fetch(`/api/v2/books/${currentBookId}/extraction/resume`, { method: 'POST' });
+        if (resp.ok) {
+            v2UpdateUI('running');
+            v2StartPolling();
+            showMessage('V2 extraction resumed', 'info');
+        }
+    } catch (e) { showMessage('Failed to resume: ' + e.message, 'error'); }
+}
+
+async function v2CancelExtraction() {
+    if (!currentBookId) return;
+    if (!confirm('Cancel V2 extraction? Completed work will be kept.')) return;
+    try {
+        const resp = await fetch(`/api/v2/books/${currentBookId}/extraction/cancel`, { method: 'POST' });
+        if (resp.ok) {
+            v2UpdateUI('idle');
+            v2StopPolling();
+            showMessage('V2 extraction cancelled', 'info');
+        }
+    } catch (e) { showMessage('Failed to cancel: ' + e.message, 'error'); }
+}
+
+function v2StartPolling() {
+    v2StopPolling();
+    v2PollingInterval = setInterval(v2PollStatus, 3000);
+}
+
+function v2StopPolling() {
+    if (v2PollingInterval) {
+        clearInterval(v2PollingInterval);
+        v2PollingInterval = null;
+    }
+}
+
+async function v2PollStatus() {
+    if (!currentBookId) return;
+    try {
+        const resp = await fetch(`/api/v2/books/${currentBookId}/extraction/status`);
+        const data = await resp.json();
+        const state = data.state;
+
+        // Update progress display
+        const progressDiv = document.getElementById('v2-progress');
+        if (progressDiv) progressDiv.style.display = 'block';
+
+        document.getElementById('v2-status-text').textContent = state.status.toUpperCase();
+        document.getElementById('v2-page-text').textContent = state.total_pages > 0 ? `Page ${state.current_page} / ${state.total_pages}` : '-';
+
+        const pct = state.total_pages > 0 ? (state.current_page / state.total_pages * 100) : 0;
+        document.getElementById('v2-progress-bar').style.width = pct + '%';
+
+        document.getElementById('v2-kp-count').textContent = state.knowledge_pages_extracted;
+        document.getElementById('v2-api-calls').textContent = state.total_api_calls;
+        document.getElementById('v2-total-cost').textContent = '$' + state.total_cost.toFixed(4);
+
+        const cacheRate = (state.total_input_tokens > 0) ?
+            ((state.total_cached_tokens / state.total_input_tokens) * 100).toFixed(1) : '0';
+        document.getElementById('v2-cache-rate').textContent = cacheRate + '%';
+
+        v2UpdateUI(state.status);
+
+        // Show review link if KPs exist
+        const reviewLink = document.getElementById('v2-review-link');
+        if (reviewLink && state.knowledge_pages_extracted > 0) {
+            reviewLink.style.display = 'inline-block';
+            reviewLink.href = `/v2-knowledge-review?book_id=${currentBookId}`;
+        }
+
+        if (state.status === 'completed') {
+            showMessage('V2 extraction completed!', 'success');
+            v2StopPolling();
+        } else if (state.status === 'error') {
+            showMessage('V2 extraction error: ' + (state.last_error || 'Unknown'), 'error');
+            v2StopPolling();
+        }
+    } catch (e) {
+        console.error('V2 poll error:', e);
+    }
+}
+
+function v2UpdateUI(status) {
+    const startBtn = document.getElementById('v2-start-btn');
+    const pauseBtn = document.getElementById('v2-pause-btn');
+    const cancelBtn = document.getElementById('v2-cancel-btn');
+
+    if (status === 'running') {
+        if (startBtn) startBtn.style.display = 'none';
+        if (pauseBtn) { pauseBtn.style.display = 'inline-block'; pauseBtn.textContent = 'Pause'; pauseBtn.onclick = v2PauseExtraction; }
+        if (cancelBtn) cancelBtn.style.display = 'inline-block';
+    } else if (status === 'paused') {
+        if (startBtn) startBtn.style.display = 'none';
+        if (pauseBtn) { pauseBtn.style.display = 'inline-block'; pauseBtn.textContent = 'Resume'; pauseBtn.onclick = v2ResumeExtraction; }
+        if (cancelBtn) cancelBtn.style.display = 'inline-block';
+    } else {
+        if (startBtn) startBtn.style.display = 'inline-block';
+        if (pauseBtn) pauseBtn.style.display = 'none';
+        if (cancelBtn) cancelBtn.style.display = 'none';
+    }
+}
+
+
+// Few-Shot Management
+async function v2LoadFewShots() {
+    const panel = document.getElementById('v2-fewshot-panel');
+    if (!panel) return;
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    if (panel.style.display === 'none') return;
+
+    if (!currentBookId) return;
+    try {
+        const resp = await fetch(`/api/v2/books/${currentBookId}/few-shots`);
+        const data = await resp.json();
+        const list = document.getElementById('v2-fewshot-list');
+
+        if (data.examples.length === 0) {
+            list.innerHTML = '<span style="color: #888;">No examples added yet.</span>';
+        } else {
+            list.innerHTML = data.examples.map(ex => `
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; padding: 4px 8px; background: #1a1a2e; border-radius: 4px;">
+                    <span>Page ${ex.page_number}</span>
+                    <span style="color: #888; font-size: 12px;">${ex.cache_name || ''}</span>
+                    <span style="color: ${ex.sent_to_llm ? '#4db6ac' : '#ffb74d'}; font-size: 12px;">${ex.sent_to_llm ? '✅ Sent' : '⏳ Not sent'}</span>
+                    <button onclick="v2DeleteFewShot(${ex.id})" style="margin-left: auto; background: #c62828; color: white; border: none; padding: 2px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">×</button>
+                </div>
+            `).join('');
+        }
+    } catch (e) {
+        console.error('Failed to load few-shots:', e);
+    }
+}
+
+async function v2AddFewShot() {
+    if (!currentBookId) return;
+    const page = parseInt(document.getElementById('v2-fewshot-page').value);
+    const cacheName = document.getElementById('v2-fewshot-cache').value || null;
+    if (!page) { showMessage('Enter a page number', 'error'); return; }
+
+    try {
+        const resp = await fetch(`/api/v2/books/${currentBookId}/few-shots`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ page_number: page, cache_name: cacheName })
+        });
+        if (resp.ok) {
+            showMessage(`Few-shot example added: page ${page}`, 'success');
+            document.getElementById('v2-fewshot-page').value = '';
+            document.getElementById('v2-fewshot-cache').value = '';
+            await v2LoadFewShots();
+            await v2CheckPrerequisites();
+        }
+    } catch (e) { showMessage('Failed to add few-shot: ' + e.message, 'error'); }
+}
+
+async function v2DeleteFewShot(exampleId) {
+    if (!currentBookId) return;
+    try {
+        await fetch(`/api/v2/books/${currentBookId}/few-shots/${exampleId}`, { method: 'DELETE' });
+        await v2LoadFewShots();
+        await v2CheckPrerequisites();
+    } catch (e) { showMessage('Failed to delete: ' + e.message, 'error'); }
+}
+
+// Dry Run
+function v2ShowDryRun() {
+    const panel = document.getElementById('v2-dryrun-panel');
+    if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+async function v2RunDryRun() {
+    if (!currentBookId) return;
+    const provider = document.getElementById('v2-provider-select').value;
+    if (!provider) { showMessage('Select a provider first', 'error'); return; }
+    const page = parseInt(document.getElementById('v2-dryrun-page').value);
+    if (!page) { showMessage('Enter a page number', 'error'); return; }
+
+    const btn = document.getElementById('v2-dryrun-btn');
+    const resultPre = document.getElementById('v2-dryrun-result');
+    btn.disabled = true;
+    btn.textContent = 'Running...';
+    resultPre.style.display = 'block';
+    resultPre.textContent = 'Sending request to LLM...';
+
+    try {
+        const resp = await fetch(`/api/v2/books/${currentBookId}/extraction/dry-run`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ provider_name: provider, page_number: page })
+        });
+        const data = await resp.json();
+        if (data.error) {
+            resultPre.textContent = 'ERROR: ' + data.error;
+        } else {
+            resultPre.textContent = `XML Valid: ${data.xml_valid}\n` +
+                `Tokens: ${data.input_tokens} in / ${data.output_tokens} out (${data.cached_tokens} cached)\n` +
+                `Time: ${data.processing_time_ms}ms\n` +
+                `L1: ${data.l1_title || 'N/A'} | L2: ${data.l2_title || 'N/A'}\n` +
+                `---\n${data.raw_response}`;
+        }
+    } catch (e) {
+        resultPre.textContent = 'ERROR: ' + e.message;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Run Dry Run';
+    }
+}
+
+// Prompt Editor
+async function v2ShowPromptEditor() {
+    const panel = document.getElementById('v2-prompt-panel');
+    if (!panel) return;
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    if (panel.style.display === 'none') return;
+
+    if (!currentBookId) return;
+    try {
+        const resp = await fetch(`/api/v2/books/${currentBookId}/extraction/prompts`);
+        const data = await resp.json();
+        document.getElementById('v2-system-prompt').value = data.system_prompt;
+        document.getElementById('v2-extraction-prompt').value = data.extraction_prompt;
+    } catch (e) { showMessage('Failed to load prompts', 'error'); }
+}
+
+async function v2SavePrompts() {
+    if (!currentBookId) return;
+    const systemPrompt = document.getElementById('v2-system-prompt').value;
+    const extractionPrompt = document.getElementById('v2-extraction-prompt').value;
+
+    try {
+        const resp = await fetch(`/api/v2/books/${currentBookId}/extraction/prompts`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ system_prompt: systemPrompt, extraction_prompt: extractionPrompt })
+        });
+        if (resp.ok) showMessage('Prompts saved', 'success');
+    } catch (e) { showMessage('Failed to save prompts: ' + e.message, 'error'); }
+}
+
+async function v2ResetPrompts() {
+    if (!currentBookId) return;
+    if (!confirm('Reset prompts to defaults?')) return;
+    try {
+        const resp = await fetch(`/api/v2/books/${currentBookId}/extraction/prompts/reset`, { method: 'POST' });
+        if (resp.ok) {
+            showMessage('Prompts reset to defaults', 'success');
+            await v2ShowPromptEditor(); // Reload
+        }
+    } catch (e) { showMessage('Failed to reset: ' + e.message, 'error'); }
+}
+
+// Hook V2 init into book selection
+const originalOnBookSelectForV2 = onBookSelect;
+onBookSelect = async function() {
+    await originalOnBookSelectForV2.apply(this, arguments);
+    if (currentBookId) {
+        await v2InitForBook();
+    }
+};

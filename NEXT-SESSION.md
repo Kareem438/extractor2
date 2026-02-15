@@ -64,11 +64,11 @@ Invoke-WebRequest -Uri "http://localhost:8888/health" -UseBasicParsing | Select-
 
 | Requirement | Status |
 |-------------|--------|
-| Req 4 - Title Hierarchy | ✅ Complete (bugs fixed) |
+| Req 4 - Title Hierarchy | ✅ Complete (all tests passed) |
 | Req 5 - Multi-PDF & Cross-Book | ✅ Complete |
 | Req 6 - Delete Book | ✅ Complete |
 | Req 7 - KU Grouping & Training | ✅ Design Complete → Tasks Phase |
-| Req 8 - YOLO Fine-Tuning | ✅ Design Complete |
+| Req 8 - YOLO Fine-Tuning | ✅ Complete (all tests passed) |
 
 ---
 

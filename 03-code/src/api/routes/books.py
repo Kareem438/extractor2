@@ -165,6 +165,7 @@ async def list_books(
                 "upload_date": book.upload_date.isoformat() if book.upload_date else None,
                 "file_readable": file_readable,
                 "file_path": book.file_path,
+                "extraction_method": getattr(book, 'extraction_method', 'v2'),
                 "progress": progress_info
             })
 
@@ -216,7 +217,8 @@ async def get_book(book_id: int):
             "total_pages": book.total_pages,
             "processing_status": book.processing_status,
             "upload_date": book.upload_date.isoformat() if book.upload_date else None,
-            "file_path": book.file_path
+            "file_path": book.file_path,
+            "extraction_method": getattr(book, 'extraction_method', 'v2')
         }
 
     finally:

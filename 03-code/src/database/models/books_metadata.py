@@ -5,7 +5,7 @@ SQLAlchemy model for books_metadata table.
 This table stores metadata for all books in the system.
 """
 
-from sqlalchemy import Column, Integer, String, BigInteger, TIMESTAMP, func
+from sqlalchemy import Column, Integer, String, BigInteger, TIMESTAMP, func, Boolean
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -41,6 +41,14 @@ class BooksMetadata(Base):
         nullable=False,
         default="uploaded",
         server_default="uploaded"
+    )
+
+    # Extraction method (v1, v2, or both)
+    extraction_method = Column(
+        String(10),
+        nullable=False,
+        default="v2",
+        server_default="v2"
     )
 
     def __repr__(self):

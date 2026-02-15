@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Extraction System — Solution Description</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f0f23; color: #e0e0e0; line-height: 1.6; }
+
+        .hero {
+            background: linear-gradient(135deg, #1a1a3e 0%, #0f3460 50%, #16213e 100%);
+            padding: 60px 40px; text-align: center; border-bottom: 3px solid #4fc3f7;
+        }
+        .hero h1 { font-size: 36px; color: #4fc3f7; margin-bottom: 10px; }
+        .hero p { font-size: 18px; color: #aaa; max-width: 800px; margin: 0 auto; }
+        .hero .meta { margin-top: 20px; display: flex; justify-content: center; gap: 30px; font-size: 13px; color: #666; }
+        .hero .meta span { background: #1a1a3e; padding: 4px 12px; border-radius: 12px; border: 1px solid #333; }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+
+        .overview {
+            background: #16213e; border-radius: 12px; padding: 30px; margin-bottom: 40px;
+            border: 1px solid #0f3460;
+        }
+        .overview h2 { color: #4fc3f7; margin-bottom: 15px; font-size: 22px; }
+        .overview p { color: #bbb; font-size: 15px; }
+
+        .flow-diagram {
+            background: #1a1a3e; border-radius: 12px; padding: 30px; margin-bottom: 40px;
+            border: 1px solid #333; text-align: center;
+        }
+        .flow-diagram h2 { color: #4fc3f7; margin-bottom: 20px; }
+        .flow-steps { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; align-items: center; }
+        .flow-step {
+            background: #0f3460; padding: 10px 18px; border-radius: 8px; font-size: 13px;
+            color: #4fc3f7; border: 1px solid #1a4a7a; white-space: nowrap;
+        }
+        .flow-step.new { background: #1b5e20; border-color: #4caf50; color: #a5d6a7; }
+        .flow-arrow { color: #555; font-size: 20px; }
+
+        .pages-grid { display: grid; grid-template-columns: 1fr; gap: 24px; margin-bottom: 40px; }
+
+        .page-card {
+            background: #16213e; border-radius: 12px; overflow: hidden;
+            border: 1px solid #0f3460; transition: border-color 0.2s;
+        }
+        .page-card:hover { border-color: #4fc3f7; }
+        .page-card.new-feature { border-color: #4caf50; }
+        .page-card.new-feature .page-header { background: linear-gradient(135deg, #1b5e20, #2e7d32); }
+
+        .page-header {
+            background: linear-gradient(135deg, #0f3460, #1a4a7a);
+            padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .page-header h3 { font-size: 18px; color: white; }
+        .page-header .page-url { font-size: 12px; color: #81d4fa; font-family: monospace; background: rgba(0,0,0,0.3); padding: 3px 10px; border-radius: 4px; }
+        .page-header .badge-new { background: #4caf50; color: white; font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-left: 8px; }
+
+        .page-body { padding: 20px 24px; }
+        .page-body .purpose { color: #4fc3f7; font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+
+        .layout-section { margin-bottom: 16px; }
+        .layout-section h4 { color: #ff9800; font-size: 13px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        .layout-section ul { list-style: none; padding: 0; }
+        .layout-section li { padding: 4px 0; padding-left: 16px; position: relative; color: #bbb; font-size: 14px; }
+        .layout-section li::before { content: "›"; position: absolute; left: 0; color: #4fc3f7; font-weight: bold; }
+
+        .ux-section { background: #0d1b2a; border-radius: 8px; padding: 16px; margin-top: 12px; }
+        .ux-section h4 { color: #a5d6a7; font-size: 13px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        .ux-section p { color: #999; font-size: 13px; }
+
+        .tech-stack {
+            background: #16213e; border-radius: 12px; padding: 30px; margin-bottom: 40px;
+            border: 1px solid #0f3460;
+        }
+        .tech-stack h2 { color: #4fc3f7; margin-bottom: 20px; }
+        .tech-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+        .tech-item { background: #0d1b2a; padding: 12px 16px; border-radius: 6px; display: flex; justify-content: space-between; }
+        .tech-item .label { color: #aaa; font-size: 13px; }
+        .tech-item .value { color: #4fc3f7; font-size: 13px; font-weight: 600; }
+
+        .section-divider { text-align: center; margin: 40px 0; color: #333; font-size: 24px; letter-spacing: 8px; }
+
+        @media (max-width: 768px) {
+            .hero { padding: 30px 20px; }
+            .hero h1 { font-size: 24px; }
+            .flow-steps { flex-direction: column; }
+            .flow-arrow { transform: rotate(90deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="hero">
+    <h1>Knowledge Extraction System</h1>
+    <p>AI-powered PDF knowledge extraction and processing system for Arabic books. Transforms scanned documents into structured, searchable knowledge units through multi-stage pipelines with human verification.</p>
+    <div class="meta">
+        <span>Version 1.0</span>
+        <span>Server: localhost:8888</span>
+        <span>18 Pages</span>
+        <span>26 API Route Modules</span>
+        <span>Updated: 2026-02-14</span>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- Overview -->
+    <div class="overview">
+        <h2>System Overview</h2>
+        <p>A web-based system running as a FastAPI server with PostgreSQL + ChromaDB backends. Users upload Arabic PDF books, run AI-powered layout detection and OCR (local or cloud), verify results through canvas-based review interfaces, configure Claude AI enrichment pipelines, and export structured knowledge units. All pages are vanilla HTML/CSS/JS with Canvas API for image annotation.</p>
+    </div>
+
+    <!-- Data Flow -->
+    <div class="flow-diagram">
+        <h2>Processing Workflow</h2>
+        <div class="flow-steps">
+            <div class="flow-step">1. Upload PDF</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">2. Scan Pages (600 DPI)</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">3. YOLO Layout Detection</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">4. Review Regions</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">5a. Local OCR</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">6. Verify & Edit</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">7. AI Pipeline</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">8. Export</div>
+        </div>
+        <div style="margin-top: 16px; display: flex; justify-content: center; gap: 8px; align-items: center;">
+            <div class="flow-step new">5b. Cloud OCR (Qwen VL)</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step new">Review Knowledge Pages</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step new">Convert to KU</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">7. AI Pipeline</div>
+        </div>
+        <p style="margin-top: 12px; font-size: 12px; color: #666;">Green = New Cloud OCR path (Phase 1)</p>
+    </div>
+
+    <div class="section-divider">· · · · ·</div>
+
+    <!-- Pages -->
+    <div class="pages-grid">
+
+        <!-- 1. Library -->
+        <div class="page-card">
+            <div class="page-header">
+                <h3>1. Book Library</h3>
+                <span class="page-url">/library</span>
+            </div>
+            <div class="page-body">
+                <div class="purpose">Central hub for managing all uploaded books</div>
+                <div class="layout-section">
+                    <h4>Layout</h4>
+                    <ul>
+                        <li>Header with gradient background, total book count and statistics</li>
+                        <li>Action bar with search input and "Upload New Book" button</li>
+                        <li>Book cards grid: name, page count, status badge, progress bar, action buttons</li>
+                        <li>OCR model status indicators (Surya, EasyOCR, YOLO)</li>
+                    </ul>
+                </div>
+                <div class="ux-section">
+                    <h4>User Experience</h4>
+                    <p>User sees all books at a glance with processing status. Search/filter to find books. Click a card to navigate to settings or processing. Quick actions: Verify, View, Pause, Monitor, Delete.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Upload -->
+        <div class="page-card">
+            <div class="page-header">
+                <h3>2. Upload</h3>
+                <span class="page-url">/upload</span>
+            </div>
+            <div class="page-body">
+                <div class="purpose">Upload PDF documents and configure initial processing settings</div>
+                <div class="layout-section">
+                    <h4>Layout</h4>
+                    <ul>
+                        <li>Top navigation bar with links to all major pages</li>
+                        <li>Drag-and-drop upload zone with file browser fallback</li>
+                        <li>Processing preset selector (Quick / Balanced / Deep)</li>
+                        <li>Language configuration (Arabic, English, mixed)</li>
+                        <li>Custom attribute configuration panel (up to 72 user-defined fields)</li>
+                        <li>Multi-PDF upload modal for batch processing</li>
+                    </ul>
+                </div>
+                <div class="ux-section">
+                    <h4>User Experience</h4>
+                    <p>Drag a PDF onto the upload zone, select processing preset and language, configure custom attributes, click Upload. File is stored and pages scanned at 600 DPI. Warning banner if scanning hasn't run. Redirects to Book Settings or Auto-Slicer after upload.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Book Settings -->
+        <div class="page-card">
+            <div class="page-header">
+                <h3>3. Book Settings</h3>
+                <span class="page-url">/book-settings?book_id=X</span>
+            </div>
+            <div class="page-body">
+                <div class="purpose">Per-book configuration: page scanning, OCR areas, extraction prompts</div>
+                <div class="layout-section">
+                    <h4>Layout</h4>
+                    <ul>
+                        <li>Book info section (name, page count, table prefix)</li>
+                        <li>Page Scanning section with DPI controls and page range</li>
+                        <li>OCR Text Area and Manual Text Area mapping sections</li>
+                        <li>Extraction prompt configuration</li>
+                        <li>Custom attribute renaming (72 user-defined fields)</li>
+                        <li>Danger Zone: permanent book deletion with confirmation</li>
+                    </ul>
+                </div>
+                <div class="ux-section">
+                    <h4>User Experience</h4>
+                    <p>Select a book, trigger page scanning (600 DPI), configure text/diagram areas per page, set extraction prompts, rename custom attributes. Danger zone for permanent deletion.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Auto-Slicer -->
+        <div class="page-card">
+            <div class="page-header">
+                <h3>4. Auto-Slicer</h3>
+                <span class="page-url">/auto-slicer?book_id=X</span>
+            </div>
+            <div class="page-body">
+                <div class="purpose">Bulk page processing with YOLO layout detection, title hierarchy, and cloud extraction</div>
+                <div class="layout-section">
+                    <h4>Layout</h4>
+                    <ul>
+                        <li>Recommended Workflow guide</li>
+                        <li>Page Viewer with zoom controls and page navigation</li>
+                        <li>Title Configuration (L1 Chapter / L2 Topic / L3 Sub-topic hierarchy)</li>
+                        <li>Page Range selector and YOLO Detection Classes toggles</li>
+                        <li>Action buttons: Run Detection, Run OCR, Auto-Boundaries</li>
+                        <li>Cloud Extraction section: model dropdown (qwen-vl-max, qwen3-vl-plus, qwen3-vl-flash), Start/Pause/Cancel, progress bar, review link</li>
+                    </ul>
+                </div>
+                <div class="ux-section">
+                    <h4>User Experience</h4>
+                    <p>Select a book, configure title hierarchy and detection classes, run YOLO detection on page ranges. For cloud path: select Qwen model, start extraction, monitor progress with real-time polling. After completion, link appears to Knowledge Page Review.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Layout Review -->
+        <div class="page-card">
+            <div class="page-header">
+                <h3>5. Layout Review</h3>
+                <span class="page-url">/layout-review?book_id=X</span>
+            </div>
+            <div class="page-body">
+                <div class="purpose">Canvas-based review and editing of YOLO-detected regions</div>
+                <div class="layout-section">
+                    <h4>Layout</h4>
+                    <ul>
+                        <li>Three-panel layout: region list (left), canvas (center), editor (right)</li>
+                        <li>Canvas shows page image with colored bounding box overlays per detection class</li>
+                        <li>Region list with class labels, selection tools, link mode toggle</li>
+                        <li>Editor panel: region details, context menu, advanced tools</li>
+                        <li>Toolbar: zoom, Arabic mode, keyboard shortcuts, "Ready for Extraction" toggle</li>
+                    </ul>
+                </div>
+                <div class="ux-section">
+                    <h4>User Experience</h4>
+                    <p>Navigate page by page. Click regions to select, drag to resize/move, right-click for context menu. Merge/split regions, change class types, link diagrams to paragraphs, link paragraphs to L3 titles. Mark pages "Ready for Extraction" as few-shot examples for cloud OCR. Skip pages to exclude from processing.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. Knowledge Page Review (NEW) -->
+        <div class="page-card new-feature">
+            <div class="page-header">
+                <h3>6. Knowledge Page Review <span class="badge-new">NEW</span></h3>
+                <span class="page-url">/knowledge-page-review?book_id=X</span>
+            </div>
+            <div class="page-body">
+                <div class="purpose">Review cloud OCR results grouped by L3 title before converting to KU records</div>
+                <div class="layout-section">
+                    <h4>Layout</h4>
+                    <ul>
+                        <li>Top nav: book name, KP count, overall status, "Convert All Ready → KU" button</li>
+                        <li>Left sidebar: KP navigator (prev/next), status filter, element cards list, "Add Element" button</li>
+                        <li>Center: Canvas with page image + color-coded bbox overlays, page selector, zoom, show/hide toggles</li>
+                        <li>Right panel: Element editor — type dropdown, Arabic text (RTL), page number, order, confidence, bbox, move/delete</li>
+                        <li>Bottom bar: Save, Ready toggle, Convert button</li>
+                    </ul>
+                </div>
+                <div class="ux-section">
+                    <h4>User Experience</h4>
+                    <p>Navigate between knowledge pages (grouped by L3 title). Each shows title, page range, element count, status (extracted → reviewed → ready_to_convert → converted). Click elements to edit text, type, order, bbox. Add/remove elements. Save persists changes. "Ready" toggle marks for conversion. "Convert All Ready" batch-creates KU + paragraph records. Filter by status. Color-coded bbox overlays by element type (paragraph=green, heading=orange, footnote=purple, etc.).</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. Verify Pages -->
+        <div class="page-card">
+            <div class="page-header">
+                <h3>7. Verify Pages</h3>
+                <span class="page-url">/verify-pages?book_id=X</span>
+            </div>
+            <div class="page-body">
+                <div class="purpose">Split-screen verification of OCR results against original page images</div>
+                <div class="layout-section">
+                    <h4>Layout</h4>
+                    <ul>
+                        <li>Controls bar: book selector, page navigation, OCR mode selector</li>
+                        <li>Left panel: original page image with highlighted extraction regions</li>
+                        <li>Right panel: extracted text with editable fields, metadata, confidence scores</li>
+                        <li>Navigation: Previous, Next, Approve & Next</li>
+                    </ul>
+                </div>
+                <div class="ux-section">
+                    <h4>User Experience</h4>
+                    <p>Navigate page by page. Left shows scanned image with colored highlights. Right shows editable extracted text. Switch between OCR engines to compare. Merge/split records, link diagrams. "Approve & Next" confirms and advances.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8. Edit Paragraphs -->
+        <div class="page-card">
+            <div class="page-header">
+                <h3>8. Edit Paragraphs</h3>
+                <span class="page-url">/edit-paragraphs?book_id=X</span>
+            </div>
+            <div class="page-body">
+                <div class="purpose">Paragraph-level editing with thumbnail gallery and attribute management</div>
+                <div class="layout-section">
+                    <h4>Layout</h4>
+                    <ul>
+                        <li>Book selector with back button</li>
+                        <li>Paragraph gallery: thumbnail grid of cropped paragraph images</li>
+                        <li>Detail modal: full paragraph view with all 80 attributes, text, hierarchy</li>
+                    </ul>
+                </div>
+                <div class="ux-section">
+                    <h4>User Experience</h4>
+                    <p>Browse paragraph clips as thumbnails. Click to open detail modal. Edit text, assign chapter/topic/sub-topic, manage attributes, merge paragraphs, link to diagrams.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 9. Edit Diagrams -->
+        <div class="page-card">
+            <div class="page-header">
+                <h3>9. Edit Diagrams</h3>
+                <span class="page-url">/edit-diagrams?book_id=X</span>
+            </div>
+            <div class="page-body">
+                <div class="purpose">Diagram review, AI description refinement, and text linking</div>
+                <div class="layout-section">
+                    <h4>Layout</h4>
+                    <ul>
+                        <li>Diagram gallery with AI-generated descriptions</li>
+                        <li>Detail view with description editor and linked text display</li>
+                    </ul>
+                </div>
+                <div class="ux-section">
+                    <h4>User Experience</h4>
+                    <p>Review extracted diagrams. Edit or regenerate AI descriptions. Link diagrams to related text paragraphs. Manage metadata.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 10. Review Raw -->
+        <div class="page-card">
+            <div class="page-header">
+                <h3>10. Review Raw</h3>
+                <span class="page-url">/review-raw?book_id=X</span>
+            </div>
+            <div class="page-body">
+                <div class="purpose">Compare raw OCR results from multiple engines side by side</div>
+                <div class="layout-section">
+                    <h4>Layout</h4>
+                    <ul>
+                        <li>Book and page selector</li>
+                        <li>Multi-column comparison: results from each OCR engine</li>
+                        <li>Confidence scores per engine, manual correction interface</li>
+                    </ul>
+                </div>
+                <div class="ux-section">
+                    <h4>User Experience</h4>
+                    <p>Select a page, see OCR results from all engines side by side. Confidence scores identify best engine. Manually correct where all engines failed.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 11. Extract Knowledge -->
+        <div class="page-card">
+            <div class="page-header">
+                <h3>11. Extract Knowledge</h3>
+                <span class="page-url">/extract-knowledge?book_id=X</span>
+            </div>
+            <div class="page-body">
+                <div class="purpose">Create structured KU records from verified raw data</div>
+                <div class="layout-section">
+                    <h4>Layout</h4>
+                    <ul>
+                        <li>Book selector and extraction controls</li>
+                        <li>Results display with created knowledge units</li>
+                    </ul>
+                </div>
+                <div class="ux-section">
+                    <h4>User Experience</h4>
+                    <p>Trigger KU creation from verified data. System creates structured records with chapter/topic/sub-topic hierarchy.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 12. Extraction Dashboard -->
+        <div class="page-card">
+            <div class="page-header">
+                <h3>12. Extraction Dashboard</h3>
+                <span class="page-url">/extraction-dashboard?book_id=X</span>
+            </div>
+            <div class="page-body">
+                <div class="purpose">Real-time monitoring of the extraction process</div>
+                <div class="layout-section">
+                    <h4>Layout</h4>
+                    <ul>
+                        <li>Progress metrics dashboard</li>
+                        <li>Page-by-page extraction status grid</li>
+                        <li>Error log and retry controls</li>
+                    </ul>
+                </div>
+                <div class="ux-section">
+                    <h4>User Experience</h4>
+                    <p>Monitor extraction in real-time. See which pages succeeded, failed, or are pending. Retry failed pages. View progress statistics and timing.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 13. Pipeline Configuration -->
+        <div class="page-card">
+            <div class="page-header">
+                <h3>13. Pipeline Configuration</h3>
+                <span class="page-url">/pipeline-config?book_id=X</span>
+            </div>
+            <div class="page-body">
+                <div class="purpose">Configure Claude AI multi-step processing workflows</div>
+                <div class="layout-section">
+                    <h4>Layout</h4>
+                    <ul>
+                        <li>Dark theme with book selector</li>
+                        <li>Variables section: all available template variables</li>
+                        <li>Pipeline steps editor: ordered list with model selector, prompt template, I/O field mapping</li>
+                        <li>Tag mapping configuration for XML extraction</li>
+                    </ul>
+                </div>
+                <div class="ux-section">
+                    <h4>User Experience</h4>
+                    <p>Configure multi-step Claude AI pipeline per book. Each step: model (Sonnet/Opus/Haiku), prompt with template variables (e.g. {{text_content}}), input/output field mapping. Configure tag mapping for XML parsing. Save for reuse.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 14. Pipeline Dashboard -->
+        <div class="page-card">
+            <div class="page-header">
+                <h3>14. Pipeline Dashboard</h3>
+                <span class="page-url">/pipeline-dashboard?book_id=X</span>
+            </div>
+            <div class="page-body">
+                <div class="purpose">Real-time monitoring of Claude AI pipeline execution</div>
+                <div class="layout-section">
+                    <h4>Layout</h4>
+                    <ul>
+                        <li>Top nav with book info and API mode toggle</li>
+                        <li>Worker status section with heartbeat and throughput</li>
+                        <li>KU creation controls and statistics</li>
+                        <li>Diagram analysis execution panel</li>
+                        <li>KU grouping preview</li>
+                        <li>Per-step progress bars with success/failure counts</li>
+                    </ul>
+                </div>
+                <div class="ux-section">
+                    <h4>User Experience</h4>
+                    <p>Start pipeline and monitor in real-time. Worker status shows heartbeat and current task. Create KUs, execute diagram analysis, run KU grouping. Per-step progress bars. Pause/resume/cancel execution.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 15. L1 Title Attributes -->
+        <div class="page-card">
+            <div class="page-header">
+                <h3>15. L1 Title Attributes</h3>
+                <span class="page-url">/l1-title-attributes?book_id=X</span>
+            </div>
+            <div class="page-body">
+                <div class="purpose">Edit Level 1 (Chapter) title attributes and page ranges</div>
+                <div class="layout-section">
+                    <h4>Layout</h4>
+                    <ul>
+                        <li>Title list with page range editors</li>
+                        <li>Attribute fields per title, external writable ranges</li>
+                    </ul>
+                </div>
+                <div class="ux-section">
+                    <h4>User Experience</h4>
+                    <p>Manage chapter-level titles. Set start/end page ranges, edit title text and attributes.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 16. L2 Title Attributes -->
+        <div class="page-card">
+            <div class="page-header">
+                <h3>16. L2 Title Attributes</h3>
+                <span class="page-url">/l2-title-attributes?book_id=X</span>
+            </div>
+            <div class="page-body">
+                <div class="purpose">Edit Level 2 (Topic) title attributes and page ranges</div>
+                <div class="layout-section">
+                    <h4>Layout</h4>
+                    <ul>
+                        <li>Topic title list with parent L1 association</li>
+                        <li>Page range editors and attribute fields</li>
+                    </ul>
+                </div>
+                <div class="ux-section">
+                    <h4>User Experience</h4>
+                    <p>Manage topic-level titles within chapters. Set page ranges, parent chapter, edit text and attributes.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 17. Cross-Book Audit -->
+        <div class="page-card">
+            <div class="page-header">
+                <h3>17. Cross-Book Audit</h3>
+                <span class="page-url">/cross-book-audit</span>
+            </div>
+            <div class="page-body">
+                <div class="purpose">Audit log for cross-book operations and data access</div>
+                <div class="layout-section">
+                    <h4>Layout</h4>
+                    <ul>
+                        <li>Audit log table with filters (book, operation type, date range)</li>
+                        <li>Operation details per entry</li>
+                    </ul>
+                </div>
+                <div class="ux-section">
+                    <h4>User Experience</h4>
+                    <p>Review all cross-book data access operations. Filter by book, type, date. See what data was accessed.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 18. Layout Training -->
+        <div class="page-card">
+            <div class="page-header">
+                <h3>18. Layout Training</h3>
+                <span class="page-url">/layout-training</span>
+            </div>
+            <div class="page-body">
+                <div class="purpose">Fine-tune the YOLO layout detection model with custom training data</div>
+                <div class="layout-section">
+                    <h4>Layout</h4>
+                    <ul>
+                        <li>Training configuration panel (epochs, learning rate, etc.)</li>
+                        <li>Dataset management from reviewed layout detections</li>
+                        <li>Training progress and metrics display</li>
+                        <li>Model evaluation results</li>
+                    </ul>
+                </div>
+                <div class="ux-section">
+                    <h4>User Experience</h4>
+                    <p>Prepare training data from reviewed detections. Configure parameters, start training, monitor progress. Evaluate new model and deploy for future detections.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Tech Stack -->
+    <div class="tech-stack">
+        <h2>Technology Stack</h2>
+        <div class="tech-grid">
+            <div class="tech-item"><span class="label">Backend</span><span class="value">Python 3.9+, FastAPI</span></div>
+            <div class="tech-item"><span class="label">Database</span><span class="value">PostgreSQL 16</span></div>
+            <div class="tech-item"><span class="label">Vector DB</span><span class="value">ChromaDB</span></div>
+            <div class="tech-item"><span class="label">OCR (Local)</span><span class="value">Surya, EasyOCR, Tesseract</span></div>
+            <div class="tech-item"><span class="label">OCR (Cloud)</span><span class="value">Qwen VL via DashScope</span></div>
+            <div class="tech-item"><span class="label">Layout Detection</span><span class="value">DocLayout-YOLO</span></div>
+            <div class="tech-item"><span class="label">AI Pipeline</span><span class="value">Claude API (Sonnet/Opus/Haiku)</span></div>
+            <div class="tech-item"><span class="label">Frontend</span><span class="value">Vanilla HTML/CSS/JS, Canvas API</span></div>
+            <div class="tech-item"><span class="label">GPU</span><span class="value">NVIDIA RTX 4070 (CUDA 12.6)</span></div>
+            <div class="tech-item"><span class="label">Server Port</span><span class="value">8888</span></div>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

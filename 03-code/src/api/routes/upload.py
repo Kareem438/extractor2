@@ -38,6 +38,7 @@ async def upload_file(
     partial_processing_pages: int = Form(0),
     checkpoint_frequency: int = Form(10),
     attribute_keys: str = Form("{}"),  # JSON string
+    extraction_method: str = Form("v2"),  # v1, v2, or both
 ):
     """
     Upload file and create book metadata.
@@ -198,7 +199,8 @@ async def upload_file(
                 total_pages=total_pages,
                 file_path=temp_path,
                 processing_status='pending',
-                upload_date=datetime.now()
+                upload_date=datetime.now(),
+                extraction_method=extraction_method
             )
             db.add(book)
             db.commit()
@@ -208,8 +210,8 @@ async def upload_file(
 
             # Create book-specific tables
             from src.database.table_creator import create_book_tables
-            create_book_tables(book_id, sanitized, total_pages)
-            logger.info(f"Book tables created for book {book_id}")
+            create_book_tables(book_id, sanitized, total_pages, extraction_method)
+            logger.info(f"Book tables created for book {book_id} (extraction_method={extraction_method})")
 
             # Settings table already created with defaults by insert_default_settings()
             logger.info(f"Book settings initialized with defaults for book {book_id}")
@@ -228,6 +230,7 @@ async def upload_file(
                 "book_name": book_name,
                 "file_type": file_type,
                 "total_pages": total_pages,
+                "extraction_method": extraction_method,
                 "message": "Book uploaded successfully"
             }
 

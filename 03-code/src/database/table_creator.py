@@ -901,71 +901,67 @@ def insert_default_attribute_keys(table_prefix: str):
         conn.commit()
 
 
-def create_book_tables(book_id: int, sanitized_name: str, total_pages: int):
+def create_book_tables(book_id: int, sanitized_name: str, total_pages: int, extraction_method: str = "v2"):
     """
-    Create all 14 book-specific tables (4 raw + 7 processed + 3 worker system).
-
-    Creates the following tables with the prefix book{N}_{sanitized_name}:
-
-    RAW DATA TABLES (4):
-    1. raw_pages - Original page images from PDF
-    2. raw_knowledge_units - Unsplit OCR results (full page text per engine)
-    3. raw_paragraph_images - User-selected paragraph image clips
-    4. raw_diagram_images - User-selected diagram image clips
-
-    PROCESSED DATA TABLES (7):
-    5. knowledge_units - Semantic text chunks (split from raw)
-    6. pages - Page-level information with marking rectangles
-    7. images - Extracted images with AI analysis
-    8. processing_state - Processing progress (single row)
-    9. settings - Book settings (single row)
-    10. hierarchy - Document structure
-    11. attribute_keys - Custom attributes (80 rows)
-
-    WORKER SYSTEM TABLES (3):
-    12. pipeline_config - Claude pipeline step definitions
-    13. task_queue - Pending/running/completed tasks
-    14. step_progress - Per-record step completion tracking
+    Create book-specific tables based on extraction method.
 
     Args:
         book_id: Unique book identifier
         sanitized_name: Sanitized book name for table prefix
         total_pages: Total number of pages in the book
+        extraction_method: 'v1', 'v2', or 'both' (default: 'v2')
+
+    Tables created for ALL methods:
+    - raw_pages (page images from PDF)
+    - pages (page-level info with marking rectangles)
+    - processing_state (processing progress)
+    - settings (book settings)
+    - level1_titles, level2_titles (title hierarchy)
+
+    Additional tables for V1:
+    - raw_knowledge_units, raw_paragraph_images, raw_diagram_images
+    - knowledge_units, images, hierarchy, attribute_keys
+    - pipeline_config, task_queue, step_progress
+    - layout_detections, knowledge_pages, cloud_ocr_pages
+
+    Additional tables for V2:
+    - v2_knowledge_pages, v2_extraction_log, v2_few_shot_examples, v2_attribute_keys
     """
     # Generate table prefix
     table_prefix = generate_table_prefix(book_id, sanitized_name)
 
-    # Create RAW tables FIRST (must exist before processed tables due to FK constraints)
+    # === SHARED TABLES (always created) ===
     create_raw_pages_table(table_prefix)
-    create_raw_knowledge_units_table(table_prefix)
-    create_raw_paragraph_images_table(table_prefix)
-    create_raw_diagram_images_table(table_prefix)
-
-    # Create PROCESSED tables (with FK references to raw tables)
-    create_knowledge_units_table(table_prefix)
     create_pages_table(table_prefix)
-    create_images_table(table_prefix)
     create_processing_state_table(table_prefix)
     create_settings_table(table_prefix)
-    create_hierarchy_table(table_prefix)
-    create_attribute_keys_table(table_prefix)
-
-    # Create WORKER SYSTEM tables
-    create_pipeline_config_table(table_prefix)
-    create_task_queue_table(table_prefix)
-    create_step_progress_table(table_prefix)
-
-    # Insert default data into single-row tables
     insert_default_processing_state(table_prefix, total_pages)
     insert_default_settings(table_prefix)
-    insert_default_attribute_keys(table_prefix)
 
-    # Create LAYOUT DETECTION table (for Automatic Boundaries feature)
-    create_layout_detections_table(table_prefix)
-
-    # Create HIERARCHICAL TITLE tables (for Title Hierarchy feature)
+    # Title hierarchy tables (needed for both V1 and V2)
     create_level1_titles_table(table_prefix)
     create_level2_titles_table(table_prefix)
+
+    # === V1 TABLES ===
+    if extraction_method in ('v1', 'both'):
+        create_raw_knowledge_units_table(table_prefix)
+        create_raw_paragraph_images_table(table_prefix)
+        create_raw_diagram_images_table(table_prefix)
+        create_knowledge_units_table(table_prefix)
+        create_images_table(table_prefix)
+        create_hierarchy_table(table_prefix)
+        create_attribute_keys_table(table_prefix)
+        create_pipeline_config_table(table_prefix)
+        create_task_queue_table(table_prefix)
+        create_step_progress_table(table_prefix)
+        insert_default_attribute_keys(table_prefix)
+        create_layout_detections_table(table_prefix)
+        create_knowledge_pages_table(table_prefix)
+        create_cloud_ocr_pages_table(table_prefix)
+
+    # === V2 TABLES ===
+    if extraction_method in ('v2', 'both'):
+        create_v2_book_tables(table_prefix)
 
 
 def create_layout_detections_table(table_prefix: str):
@@ -1169,3 +1165,328 @@ def create_level2_titles_table(table_prefix: str):
         conn.commit()
     finally:
         conn.close()
+
+
+def create_knowledge_pages_table(table_prefix: str):
+    """Create knowledge_pages table for Qwen VL structured output grouped by L3 title."""
+    table_name = f"{table_prefix}_knowledge_pages"
+
+    sql = text(f"""
+    CREATE TABLE IF NOT EXISTS {table_name} (
+        id SERIAL PRIMARY KEY,
+        l3_title TEXT,
+        start_page INTEGER NOT NULL,
+        end_page INTEGER NOT NULL,
+        l1_title_id INTEGER,
+        l2_title_id INTEGER,
+        l1_title_text VARCHAR(500),
+        l2_title_text VARCHAR(500),
+        content JSONB NOT NULL,
+        ocr_engine VARCHAR(50) DEFAULT 'qwen-cloud',
+        model_name VARCHAR(100),
+        cached_tokens INTEGER DEFAULT 0,
+        total_input_tokens INTEGER DEFAULT 0,
+        total_output_tokens INTEGER DEFAULT 0,
+        status VARCHAR(30) DEFAULT 'extracted',
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+    )
+    """)
+
+    conn = engine.connect()
+    try:
+        conn.execute(sql)
+        conn.commit()
+
+        indexes = [
+            f"CREATE INDEX IF NOT EXISTS idx_{table_prefix}_kp_pages ON {table_name}(start_page, end_page)",
+            f"CREATE INDEX IF NOT EXISTS idx_{table_prefix}_kp_status ON {table_name}(status)",
+            f"CREATE INDEX IF NOT EXISTS idx_{table_prefix}_kp_l3 ON {table_name}(l3_title)"
+        ]
+        for index_sql in indexes:
+            conn.execute(text(index_sql))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def create_cloud_ocr_pages_table(table_prefix: str):
+    """Create cloud_ocr_pages table for per-page cloud extraction tracking."""
+    table_name = f"{table_prefix}_cloud_ocr_pages"
+
+    sql = text(f"""
+    CREATE TABLE IF NOT EXISTS {table_name} (
+        id SERIAL PRIMARY KEY,
+        page_number INTEGER NOT NULL UNIQUE,
+        status VARCHAR(20) DEFAULT 'pending',
+        error_message TEXT,
+        input_tokens INTEGER,
+        output_tokens INTEGER,
+        cached_tokens INTEGER,
+        processing_time_ms INTEGER,
+        model_name VARCHAR(100),
+        attempt_count INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+    )
+    """)
+
+    conn = engine.connect()
+    try:
+        conn.execute(sql)
+        conn.commit()
+
+        indexes = [
+            f"CREATE INDEX IF NOT EXISTS idx_{table_prefix}_cop_status ON {table_name}(status)",
+            f"CREATE INDEX IF NOT EXISTS idx_{table_prefix}_cop_page ON {table_name}(page_number)"
+        ]
+        for index_sql in indexes:
+            conn.execute(text(index_sql))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+
+# ============================================================================
+# V2 EXTRACTION TABLES
+# ============================================================================
+
+def create_v2_knowledge_pages_table(table_prefix: str):
+    """Create V2 knowledge_pages table for cloud LLM extraction results.
+    
+    Stores knowledge pages (content between consecutive L3 titles) with:
+    - Dedicated queryable columns for key fields
+    - Raw XML from LLM response
+    - Parsed JSON for enrichment queries
+    - 80 user-defined attributes
+    """
+    table_name = f"v2_{table_prefix}_knowledge_pages"
+
+    # Build 80 attribute columns
+    attr_columns = ",\n        ".join(
+        [f"attr{i}_value TEXT" for i in range(1, 81)]
+    )
+
+    sql = text(f"""
+    CREATE TABLE IF NOT EXISTS {table_name} (
+        id SERIAL PRIMARY KEY,
+
+        -- Title hierarchy (queryable, FK IDs)
+        l1_title_id INTEGER,
+        l2_title_id INTEGER,
+        l3_title_text VARCHAR(500),
+        l3_title_end_text VARCHAR(500),
+
+        -- Page range (queryable)
+        start_page INTEGER NOT NULL,
+        end_page INTEGER NOT NULL,
+
+        -- Summary (queryable)
+        summary TEXT,
+
+        -- Classification (queryable)
+        difficulty_score INTEGER,
+        concept_type VARCHAR(50),
+        bloom_taxonomy_level VARCHAR(20),
+        physics_domain VARCHAR(50),
+        exam_relevance VARCHAR(10),
+        extraction_confidence VARCHAR(10),
+        has_worked_example BOOLEAN DEFAULT FALSE,
+        has_problem_set BOOLEAN DEFAULT FALSE,
+        element_count INTEGER DEFAULT 0,
+
+        -- Review (queryable)
+        verified BOOLEAN DEFAULT FALSE,
+        notes TEXT,
+        record_status VARCHAR(20) DEFAULT 'enabled',
+
+        -- Full content storage
+        raw_xml TEXT,
+        parsed_json JSONB,
+
+        -- 80 user-defined attributes
+        {attr_columns},
+
+        -- Extraction metadata
+        llm_provider VARCHAR(50),
+        model_name VARCHAR(100),
+        window_pages TEXT,
+
+        -- Timestamps
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+    )
+    """)
+
+    conn = engine.connect()
+    try:
+        conn.execute(sql)
+        conn.commit()
+
+        indexes = [
+            f"CREATE INDEX IF NOT EXISTS idx_v2_{table_prefix}_kp_pages ON {table_name}(start_page, end_page)",
+            f"CREATE INDEX IF NOT EXISTS idx_v2_{table_prefix}_kp_l1 ON {table_name}(l1_title_id)",
+            f"CREATE INDEX IF NOT EXISTS idx_v2_{table_prefix}_kp_l2 ON {table_name}(l2_title_id)",
+            f"CREATE INDEX IF NOT EXISTS idx_v2_{table_prefix}_kp_l3 ON {table_name}(l3_title_text)",
+            f"CREATE INDEX IF NOT EXISTS idx_v2_{table_prefix}_kp_status ON {table_name}(record_status)",
+            f"CREATE INDEX IF NOT EXISTS idx_v2_{table_prefix}_kp_verified ON {table_name}(verified)",
+            f"CREATE INDEX IF NOT EXISTS idx_v2_{table_prefix}_kp_difficulty ON {table_name}(difficulty_score)",
+            f"CREATE INDEX IF NOT EXISTS idx_v2_{table_prefix}_kp_domain ON {table_name}(physics_domain)",
+            f"CREATE INDEX IF NOT EXISTS idx_v2_{table_prefix}_kp_concept ON {table_name}(concept_type)",
+        ]
+        for index_sql in indexes:
+            conn.execute(text(index_sql))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def create_v2_extraction_log_table(table_prefix: str):
+    """Create V2 extraction_log table for per-API-call tracking."""
+    table_name = f"v2_{table_prefix}_extraction_log"
+
+    sql = text(f"""
+    CREATE TABLE IF NOT EXISTS {table_name} (
+        id SERIAL PRIMARY KEY,
+        window_start_page INTEGER NOT NULL,
+        window_end_page INTEGER NOT NULL,
+        window_pages TEXT,
+        knowledge_page_id INTEGER,
+
+        -- Token tracking
+        input_tokens_cached INTEGER DEFAULT 0,
+        input_tokens_uncached INTEGER DEFAULT 0,
+        output_tokens INTEGER DEFAULT 0,
+
+        -- Cost tracking
+        cost_input_cached NUMERIC(10,6) DEFAULT 0,
+        cost_input_uncached NUMERIC(10,6) DEFAULT 0,
+        cost_output NUMERIC(10,6) DEFAULT 0,
+        cost_total NUMERIC(10,6) DEFAULT 0,
+
+        -- Timing
+        processing_time_ms INTEGER,
+
+        -- Status
+        status VARCHAR(20) DEFAULT 'success',
+        error_message TEXT,
+        attempt_number INTEGER DEFAULT 1,
+        retry_phase INTEGER DEFAULT 1,
+
+        -- Model info
+        llm_provider VARCHAR(50),
+        model_name VARCHAR(100),
+
+        created_at TIMESTAMP DEFAULT NOW()
+    )
+    """)
+
+    conn = engine.connect()
+    try:
+        conn.execute(sql)
+        conn.commit()
+
+        indexes = [
+            f"CREATE INDEX IF NOT EXISTS idx_v2_{table_prefix}_elog_status ON {table_name}(status)",
+            f"CREATE INDEX IF NOT EXISTS idx_v2_{table_prefix}_elog_pages ON {table_name}(window_start_page, window_end_page)",
+        ]
+        for index_sql in indexes:
+            conn.execute(text(index_sql))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def create_v2_few_shot_examples_table(table_prefix: str):
+    """Create V2 few_shot_examples table for annotated training pages."""
+    table_name = f"v2_{table_prefix}_few_shot_examples"
+
+    sql = text(f"""
+    CREATE TABLE IF NOT EXISTS {table_name} (
+        id SERIAL PRIMARY KEY,
+        page_number INTEGER NOT NULL,
+        annotated_image_path TEXT,
+        annotation_data JSONB,
+        cache_name VARCHAR(200),
+        sent_to_llm BOOLEAN DEFAULT FALSE,
+        sent_at TIMESTAMP,
+        llm_provider VARCHAR(50),
+        model_name VARCHAR(100),
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+    )
+    """)
+
+    conn = engine.connect()
+    try:
+        conn.execute(sql)
+        conn.commit()
+
+        indexes = [
+            f"CREATE INDEX IF NOT EXISTS idx_v2_{table_prefix}_fs_page ON {table_name}(page_number)",
+            f"CREATE INDEX IF NOT EXISTS idx_v2_{table_prefix}_fs_sent ON {table_name}(sent_to_llm)",
+        ]
+        for index_sql in indexes:
+            conn.execute(text(index_sql))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def create_v2_attribute_keys_table(table_prefix: str):
+    """Create V2 attribute_keys table for 80 attributes (independent from V1).
+    
+    Each attribute has a key_name that can be referenced in LLM prompt templates
+    via the TemplateEngine pattern: {{key_name}} -> attrN_value column.
+    """
+    table_name = f"v2_{table_prefix}_attribute_keys"
+
+    sql = text(f"""
+    CREATE TABLE IF NOT EXISTS {table_name} (
+        id SERIAL PRIMARY KEY,
+        attr_number INTEGER NOT NULL UNIQUE CHECK (attr_number BETWEEN 1 AND 80),
+        key_name VARCHAR(100),
+        is_system_reserved BOOLEAN DEFAULT false,
+        is_editable BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+    )
+    """)
+
+    conn = engine.connect()
+    try:
+        conn.execute(sql)
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def insert_default_v2_attribute_keys(table_prefix: str):
+    """Insert default V2 attribute keys (80 rows, no system-reserved for V2)."""
+    table_name = f"v2_{table_prefix}_attribute_keys"
+
+    conn = engine.connect()
+    try:
+        for i in range(1, 81):
+            sql = text(f"""
+                INSERT INTO {table_name} (attr_number, key_name, is_system_reserved, is_editable)
+                VALUES (:num, NULL, false, true)
+                ON CONFLICT (attr_number) DO NOTHING
+            """)
+            conn.execute(sql, {"num": i})
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def create_v2_book_tables(table_prefix: str):
+    """Create all V2-specific tables for a book.
+    
+    Called when extraction_method is 'v2' or 'both'.
+    """
+    create_v2_knowledge_pages_table(table_prefix)
+    create_v2_extraction_log_table(table_prefix)
+    create_v2_few_shot_examples_table(table_prefix)
+    create_v2_attribute_keys_table(table_prefix)
+    insert_default_v2_attribute_keys(table_prefix)
