@@ -933,6 +933,115 @@
 
         <!-- Book Content -->
         <div class="book-content" id="book-content">
+
+            <!-- V2 Cloud Extraction Section (visible for V2 books) -->
+            <div class="section" id="v2-extraction-section" style="border: 2px solid #00695c; background: #f0fdf4; padding: 20px; border-radius: 8px;">
+                <h2 style="margin: 0 0 5px 0; color: #00695c; border: none; padding: 0;">🚀 V2 Cloud Extraction (Rolling Window)</h2>
+                <p style="color: #666; margin: 0 0 15px 0; font-size: 13px;">Extract knowledge pages using cloud LLM providers. <a href="/pipeline-config#llm-providers" style="color: #00695c; font-weight: 600;">⚙️ Configure LLM Providers</a></p>
+
+                <!-- Prerequisites Check -->
+                <div id="v2-prereqs" style="margin-bottom: 15px; padding: 12px; background: #e8f5e9; border-radius: 6px; border: 1px solid #a5d6a7;">
+                    <div style="font-weight: 600; margin-bottom: 8px; color: #2e7d32;">Prerequisites:</div>
+                    <div id="v2-prereq-list" style="font-size: 13px; color: #555;">Loading...</div>
+                </div>
+
+                <!-- Provider & Controls -->
+                <div class="form-row" style="align-items: flex-end; gap: 15px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>LLM Provider:</label>
+                        <select id="v2-provider-select" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                            <option value="">Loading providers...</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="width: 120px;">
+                        <label>Min Delay (s):</label>
+                        <input type="number" id="v2-min-delay" value="5" min="1" max="60" step="1" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="btn btn-primary" id="v2-start-btn" onclick="v2StartExtraction()" style="background: #00695c;">
+                            Start V2 Extraction
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="v2-pause-btn" onclick="v2PauseExtraction()" style="display: none;">Pause</button>
+                        <button type="button" class="btn btn-secondary" id="v2-cancel-btn" onclick="v2CancelExtraction()" style="display: none; background: #c62828;">Cancel</button>
+                    </div>
+                </div>
+
+                <!-- Progress Dashboard -->
+                <div id="v2-progress" style="display: none; margin-top: 15px; padding: 12px; background: #e0f2f1; border-radius: 6px; border: 1px solid #00695c;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span id="v2-status-text" style="color: #00695c; font-weight: 600;">Idle</span>
+                        <span id="v2-page-text" style="color: #666;">-</span>
+                    </div>
+                    <div style="background: #c8e6c9; border-radius: 4px; height: 8px; overflow: hidden;">
+                        <div id="v2-progress-bar" style="background: #00695c; height: 100%; width: 0%; transition: width 0.3s;"></div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; font-size: 12px;">
+                        <div style="text-align: center; padding: 6px; background: white; border-radius: 4px; border: 1px solid #e0e0e0;">
+                            <div style="color: #00695c; font-weight: 600;" id="v2-kp-count">0</div>
+                            <div style="color: #888;">KPs Extracted</div>
+                        </div>
+                        <div style="text-align: center; padding: 6px; background: white; border-radius: 4px; border: 1px solid #e0e0e0;">
+                            <div style="color: #1565c0; font-weight: 600;" id="v2-api-calls">0</div>
+                            <div style="color: #888;">API Calls</div>
+                        </div>
+                        <div style="text-align: center; padding: 6px; background: white; border-radius: 4px; border: 1px solid #e0e0e0;">
+                            <div style="color: #e65100; font-weight: 600;" id="v2-total-cost">$0.00</div>
+                            <div style="color: #888;">Total Cost</div>
+                        </div>
+                        <div style="text-align: center; padding: 6px; background: white; border-radius: 4px; border: 1px solid #e0e0e0;">
+                            <div style="color: #2e7d32; font-weight: 600;" id="v2-cache-rate">0%</div>
+                            <div style="color: #888;">Cache Hit</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-secondary" onclick="v2LoadFewShots()" style="font-size: 12px; padding: 6px 12px;">📸 Few-Shot Examples</button>
+                    <button type="button" class="btn btn-secondary" onclick="v2ShowDryRun()" style="font-size: 12px; padding: 6px 12px;">🧪 Dry Run</button>
+                    <button type="button" class="btn btn-secondary" onclick="v2ShowPromptEditor()" style="font-size: 12px; padding: 6px 12px;">📝 Edit Prompts</button>
+                    <a id="v2-review-link" href="#" style="display: none; color: #00695c; text-decoration: underline; font-size: 13px; padding: 6px 12px;">→ Review V2 Knowledge Pages</a>
+                </div>
+
+                <!-- Few-Shot Panel (hidden by default) -->
+                <div id="v2-fewshot-panel" style="display: none; margin-top: 12px; padding: 12px; background: #e8f5e9; border-radius: 6px; border: 1px solid #a5d6a7;">
+                    <h4 style="color: #2e7d32; margin-bottom: 8px;">📸 Few-Shot Examples</h4>
+                    <div id="v2-fewshot-list" style="margin-bottom: 10px; font-size: 13px; color: #555;">No examples added yet.</div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="number" id="v2-fewshot-page" placeholder="Page #" min="1" style="width: 80px; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                        <input type="text" id="v2-fewshot-cache" placeholder="Cache name (optional)" style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                        <button class="btn btn-primary" onclick="v2AddFewShot()" style="font-size: 12px; padding: 6px 12px; background: #00695c;">Add</button>
+                    </div>
+                </div>
+
+                <!-- Dry Run Panel (hidden by default) -->
+                <div id="v2-dryrun-panel" style="display: none; margin-top: 12px; padding: 12px; background: #e8f5e9; border-radius: 6px; border: 1px solid #a5d6a7;">
+                    <h4 style="color: #2e7d32; margin-bottom: 8px;">🧪 Dry Run (Single Page Test)</h4>
+                    <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 10px;">
+                        <input type="number" id="v2-dryrun-page" placeholder="Page #" min="1" style="width: 80px; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
+                        <button class="btn btn-primary" onclick="v2RunDryRun()" id="v2-dryrun-btn" style="font-size: 12px; padding: 6px 12px; background: #00695c;">Run Dry Run</button>
+                    </div>
+                    <pre id="v2-dryrun-result" style="display: none; max-height: 400px; overflow: auto; padding: 10px; background: #263238; color: #a5d6a7; border-radius: 4px; font-size: 12px; white-space: pre-wrap;"></pre>
+                </div>
+
+                <!-- Prompt Editor Panel (hidden by default) -->
+                <div id="v2-prompt-panel" style="display: none; margin-top: 12px; padding: 12px; background: #e8f5e9; border-radius: 6px; border: 1px solid #a5d6a7;">
+                    <h4 style="color: #2e7d32; margin-bottom: 8px;">📝 Prompt Editor</h4>
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label style="color: #555; font-size: 13px;">System Prompt:</label>
+                        <textarea id="v2-system-prompt" rows="6" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; font-size: 12px;"></textarea>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label style="color: #555; font-size: 13px;">Extraction Prompt:</label>
+                        <textarea id="v2-extraction-prompt" rows="8" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; font-size: 12px;"></textarea>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-primary" onclick="v2SavePrompts()" style="font-size: 12px; padding: 6px 12px; background: #00695c;">Save Prompts</button>
+                        <button class="btn btn-secondary" onclick="v2ResetPrompts()" style="font-size: 12px; padding: 6px 12px;">Reset to Default</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Workflow Info Box -->
             <div class="info-box" style="background: #e8f5e9; border-left-color: #4CAF50;">
                 <strong>📋 Recommended Workflow:</strong><br>
@@ -1450,114 +1559,9 @@
                         </div>
                     </div>
 
-                    <!-- V2 Cloud Extraction Section -->
-                    <div class="section" id="v2-extraction-section" style="margin-top: 30px; border-top: 2px solid #00695c; padding-top: 20px;">
-                        <h3 style="color: #4db6ac; margin-bottom: 15px;">🚀 V2 Cloud Extraction (Rolling Window)</h3>
-                        
-                        <!-- Prerequisites Check -->
-                        <div id="v2-prereqs" style="margin-bottom: 15px; padding: 12px; background: #0d1b2a; border-radius: 6px; border: 1px solid #1a4a7a;">
-                            <div style="font-weight: 600; margin-bottom: 8px; color: #4db6ac;">Prerequisites:</div>
-                            <div id="v2-prereq-list" style="font-size: 13px; color: #aaa;">Loading...</div>
-                        </div>
-
-                        <!-- Provider & Controls -->
-                        <div class="form-row" style="align-items: flex-end; gap: 15px;">
-                            <div class="form-group" style="flex: 1;">
-                                <label>LLM Provider:</label>
-                                <select id="v2-provider-select" style="width: 100%; padding: 8px; background: #1a1a2e; color: #eee; border: 1px solid #333; border-radius: 4px;">
-                                    <option value="">Loading providers...</option>
-                                </select>
-                            </div>
-                            <div class="form-group" style="width: 120px;">
-                                <label>Min Delay (s):</label>
-                                <input type="number" id="v2-min-delay" value="5" min="1" max="60" step="1" style="width: 100%; padding: 8px; background: #1a1a2e; color: #eee; border: 1px solid #333; border-radius: 4px;">
-                            </div>
-                            <div style="display: flex; gap: 8px;">
-                                <button type="button" class="btn btn-primary" id="v2-start-btn" onclick="v2StartExtraction()" style="background: #00695c;">
-                                    Start V2 Extraction
-                                </button>
-                                <button type="button" class="btn btn-secondary" id="v2-pause-btn" onclick="v2PauseExtraction()" style="display: none;">Pause</button>
-                                <button type="button" class="btn btn-secondary" id="v2-cancel-btn" onclick="v2CancelExtraction()" style="display: none; background: #c62828;">Cancel</button>
-                            </div>
-                        </div>
-
-                        <!-- Progress Dashboard -->
-                        <div id="v2-progress" style="display: none; margin-top: 15px; padding: 12px; background: #0d1b2a; border-radius: 6px; border: 1px solid #00695c;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                <span id="v2-status-text" style="color: #4db6ac;">Idle</span>
-                                <span id="v2-page-text" style="color: #aaa;">-</span>
-                            </div>
-                            <div style="background: #1a1a2e; border-radius: 4px; height: 8px; overflow: hidden;">
-                                <div id="v2-progress-bar" style="background: #00695c; height: 100%; width: 0%; transition: width 0.3s;"></div>
-                            </div>
-                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; font-size: 12px;">
-                                <div style="text-align: center; padding: 6px; background: #1a1a2e; border-radius: 4px;">
-                                    <div style="color: #4db6ac; font-weight: 600;" id="v2-kp-count">0</div>
-                                    <div style="color: #888;">KPs Extracted</div>
-                                </div>
-                                <div style="text-align: center; padding: 6px; background: #1a1a2e; border-radius: 4px;">
-                                    <div style="color: #4fc3f7; font-weight: 600;" id="v2-api-calls">0</div>
-                                    <div style="color: #888;">API Calls</div>
-                                </div>
-                                <div style="text-align: center; padding: 6px; background: #1a1a2e; border-radius: 4px;">
-                                    <div style="color: #ffb74d; font-weight: 600;" id="v2-total-cost">$0.00</div>
-                                    <div style="color: #888;">Total Cost</div>
-                                </div>
-                                <div style="text-align: center; padding: 6px; background: #1a1a2e; border-radius: 4px;">
-                                    <div style="color: #81c784; font-weight: 600;" id="v2-cache-rate">0%</div>
-                                    <div style="color: #888;">Cache Hit</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Quick Actions -->
-                        <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
-                            <button type="button" class="btn btn-secondary" onclick="v2LoadFewShots()" style="font-size: 12px; padding: 6px 12px;">📸 Few-Shot Examples</button>
-                            <button type="button" class="btn btn-secondary" onclick="v2ShowDryRun()" style="font-size: 12px; padding: 6px 12px;">🧪 Dry Run</button>
-                            <button type="button" class="btn btn-secondary" onclick="v2ShowPromptEditor()" style="font-size: 12px; padding: 6px 12px;">📝 Edit Prompts</button>
-                            <a id="v2-review-link" href="#" style="display: none; color: #4db6ac; text-decoration: underline; font-size: 13px; padding: 6px 12px;">→ Review V2 Knowledge Pages</a>
-                        </div>
-
-                        <!-- Few-Shot Panel (hidden by default) -->
-                        <div id="v2-fewshot-panel" style="display: none; margin-top: 12px; padding: 12px; background: #0d1b2a; border-radius: 6px; border: 1px solid #333;">
-                            <h4 style="color: #4db6ac; margin-bottom: 8px;">📸 Few-Shot Examples</h4>
-                            <div id="v2-fewshot-list" style="margin-bottom: 10px; font-size: 13px; color: #aaa;">No examples added yet.</div>
-                            <div style="display: flex; gap: 8px; align-items: center;">
-                                <input type="number" id="v2-fewshot-page" placeholder="Page #" min="1" style="width: 80px; padding: 6px; background: #1a1a2e; color: #eee; border: 1px solid #333; border-radius: 4px;">
-                                <input type="text" id="v2-fewshot-cache" placeholder="Cache name (optional)" style="flex: 1; padding: 6px; background: #1a1a2e; color: #eee; border: 1px solid #333; border-radius: 4px;">
-                                <button class="btn btn-primary" onclick="v2AddFewShot()" style="font-size: 12px; padding: 6px 12px;">Add</button>
-                            </div>
-                        </div>
-
-                        <!-- Dry Run Panel (hidden by default) -->
-                        <div id="v2-dryrun-panel" style="display: none; margin-top: 12px; padding: 12px; background: #0d1b2a; border-radius: 6px; border: 1px solid #333;">
-                            <h4 style="color: #4db6ac; margin-bottom: 8px;">🧪 Dry Run (Single Page Test)</h4>
-                            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 10px;">
-                                <input type="number" id="v2-dryrun-page" placeholder="Page #" min="1" style="width: 80px; padding: 6px; background: #1a1a2e; color: #eee; border: 1px solid #333; border-radius: 4px;">
-                                <button class="btn btn-primary" onclick="v2RunDryRun()" id="v2-dryrun-btn" style="font-size: 12px; padding: 6px 12px;">Run Dry Run</button>
-                            </div>
-                            <pre id="v2-dryrun-result" style="display: none; max-height: 400px; overflow: auto; padding: 10px; background: #111; color: #4db6ac; border-radius: 4px; font-size: 12px; white-space: pre-wrap;"></pre>
-                        </div>
-
-                        <!-- Prompt Editor Panel (hidden by default) -->
-                        <div id="v2-prompt-panel" style="display: none; margin-top: 12px; padding: 12px; background: #0d1b2a; border-radius: 6px; border: 1px solid #333;">
-                            <h4 style="color: #4db6ac; margin-bottom: 8px;">📝 Prompt Editor</h4>
-                            <div class="form-group" style="margin-bottom: 10px;">
-                                <label style="color: #aaa; font-size: 13px;">System Prompt:</label>
-                                <textarea id="v2-system-prompt" rows="6" style="width: 100%; padding: 8px; background: #1a1a2e; color: #eee; border: 1px solid #333; border-radius: 4px; font-family: monospace; font-size: 12px;"></textarea>
-                            </div>
-                            <div class="form-group" style="margin-bottom: 10px;">
-                                <label style="color: #aaa; font-size: 13px;">Extraction Prompt:</label>
-                                <textarea id="v2-extraction-prompt" rows="8" style="width: 100%; padding: 8px; background: #1a1a2e; color: #eee; border: 1px solid #333; border-radius: 4px; font-family: monospace; font-size: 12px;"></textarea>
-                            </div>
-                            <div style="display: flex; gap: 8px;">
-                                <button class="btn btn-primary" onclick="v2SavePrompts()" style="font-size: 12px; padding: 6px 12px;">Save Prompts</button>
-                                <button class="btn btn-secondary" onclick="v2ResetPrompts()" style="font-size: 12px; padding: 6px 12px;">Reset to Default</button>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
+
         </div>
     </div>
 

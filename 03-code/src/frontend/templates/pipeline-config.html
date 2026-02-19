@@ -293,7 +293,21 @@
         .alert {
             padding: 12px 16px;
             border-radius: 4px;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
+            animation: slideIn 0.3s ease;
+        }
+
+        #alertContainer {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            max-width: 450px;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
         }
 
         .alert-success {
@@ -704,7 +718,7 @@
 
         <!-- LLM Providers Section (V2 Cloud Extraction) -->
         <div class="variables-section" id="llmProvidersSection">
-            <h2>🤖 LLM Providers (V2 Cloud Extraction)</h2>
+            <h2 id="llm-providers">🤖 LLM Providers (V2 Cloud Extraction)</h2>
             <p style="color: #7f8c8d; margin-bottom: 15px; font-size: 14px;">
                 Configure API keys and models for cloud-based V2 extraction. These are global settings shared across all books.
             </p>
@@ -1201,6 +1215,14 @@
         // Initialize on page load
         init();
         loadLLMProviders();  // Load LLM providers (global, not book-specific)
+
+        // Scroll to section if hash is present (e.g., #llm-providers)
+        if (window.location.hash) {
+            setTimeout(() => {
+                const target = document.querySelector(window.location.hash);
+                if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 300);
+        }
         
         // =====================================================
         // LLM Providers Functions (V2 Cloud Extraction)
@@ -1377,17 +1399,37 @@
         }
 
         async function testProvider(providerName) {
+            // Find the button that was clicked and show inline feedback
+            const btns = document.querySelectorAll(`button[onclick="testProvider('${providerName}')"]`);
+            const btn = btns.length > 0 ? btns[0] : null;
+            const originalText = btn ? btn.textContent : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Testing...';
+            }
             showAlert(`Testing connection to ${providerName}...`, 'info');
             try {
                 const resp = await fetch(`/api/llm-providers/${providerName}/test`, { method: 'POST' });
                 const data = await resp.json();
                 if (resp.ok) {
                     showAlert(`✅ ${data.message}`, 'success');
+                    if (btn) { btn.textContent = '✅ OK'; btn.style.background = '#28a745'; }
                 } else {
                     showAlert(`❌ ${data.detail}`, 'error');
+                    if (btn) { btn.textContent = '❌ Fail'; btn.style.background = '#dc3545'; }
                 }
             } catch (error) {
                 showAlert(`❌ Test failed: ${error.message}`, 'error');
+                if (btn) { btn.textContent = '❌ Fail'; btn.style.background = '#dc3545'; }
+            } finally {
+                // Reset button after 3 seconds
+                setTimeout(() => {
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = originalText;
+                        btn.style.background = '';
+                    }
+                }, 3000);
             }
         }
 
