@@ -431,11 +431,18 @@ async def get_attribute_keys(book_id: int):
             raise HTTPException(status_code=404, detail="Book not found")
 
         table_prefix = book.table_prefix
+        extraction_method = getattr(book, 'extraction_method', 'v1') or 'v1'
+
+        # V2 books use v2_ prefixed attribute_keys table
+        if extraction_method == 'v2':
+            attr_table = f"v2_{table_prefix}_attribute_keys"
+        else:
+            attr_table = f"{table_prefix}_attribute_keys"
 
         # Query attribute_keys table
         sql = text(f"""
             SELECT attr_number, key_name, is_system_reserved, is_editable
-            FROM {table_prefix}_attribute_keys
+            FROM {attr_table}
             ORDER BY attr_number
         """)
 
@@ -490,6 +497,13 @@ async def update_attribute_keys(
             raise HTTPException(status_code=404, detail="Book not found")
 
         table_prefix = book.table_prefix
+        extraction_method = getattr(book, 'extraction_method', 'v1') or 'v1'
+
+        # V2 books use v2_ prefixed attribute_keys table
+        if extraction_method == 'v2':
+            attr_table = f"v2_{table_prefix}_attribute_keys"
+        else:
+            attr_table = f"{table_prefix}_attribute_keys"
 
         # Validate all updates before applying any
         for update in request.updates:
@@ -511,7 +525,7 @@ async def update_attribute_keys(
         updated_count = 0
         for update in request.updates:
             sql = text(f"""
-                UPDATE {table_prefix}_attribute_keys
+                UPDATE {attr_table}
                 SET key_name = :key_name,
                     updated_at = NOW()
                 WHERE attr_number = :attr_number

@@ -263,11 +263,20 @@ def get_book_counts(db, table_prefix: str, book_id: int) -> dict:
     except Exception:
         pass
     
-    # Count knowledge units
+    # Count knowledge units (V1 or V2)
     try:
         counts["knowledge_units"] = db.execute(
             text(f"SELECT COUNT(*) FROM {table_prefix}_knowledge_units")
         ).scalar() or 0
+    except Exception:
+        pass
+    
+    # Try V2 knowledge pages
+    try:
+        v2_count = db.execute(
+            text(f"SELECT COUNT(*) FROM v2_{table_prefix}_knowledge_pages")
+        ).scalar() or 0
+        counts["knowledge_units"] += v2_count
     except Exception:
         pass
     
@@ -339,6 +348,11 @@ def drop_book_tables(db, table_prefix: str) -> int:
         # Title hierarchy tables
         f"{table_prefix}_level1_titles",
         f"{table_prefix}_level2_titles",
+        # V2 tables
+        f"v2_{table_prefix}_knowledge_pages",
+        f"v2_{table_prefix}_extraction_log",
+        f"v2_{table_prefix}_few_shot_examples",
+        f"v2_{table_prefix}_attribute_keys",
     ]
     
     dropped = 0

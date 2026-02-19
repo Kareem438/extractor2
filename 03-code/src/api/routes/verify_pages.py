@@ -59,6 +59,16 @@ async def get_verify_pages(
         table_prefix = book.table_prefix
         total_pages = book.total_pages
 
+        # V2 books don't have V1 raw_knowledge_units tables
+        extraction_method = getattr(book, 'extraction_method', 'v1') or 'v1'
+        if extraction_method == 'v2':
+            return {
+                "message": "V2 books use cloud extraction. Use the V2 Knowledge Review page instead.",
+                "extraction_method": "v2",
+                "book_id": book_id,
+                "redirect": f"/v2-knowledge-review?book_id={book_id}"
+            }
+
         # Default to page 1 if not specified
         if page_number is None:
             page_number = 1

@@ -50,3 +50,32 @@ def get_table_name(book_id: int, table_type: str) -> str:
     """
     prefix = get_table_prefix(book_id)
     return f"{prefix}_{table_type}"
+
+
+def get_extraction_method(book_id: int) -> str:
+    """
+    Get extraction method for a book ('v1' or 'v2').
+
+    Args:
+        book_id: Book ID
+
+    Returns:
+        str: 'v1' or 'v2'
+    """
+    db = SessionLocal()
+    try:
+        result = db.execute(
+            text("SELECT extraction_method FROM books_metadata WHERE book_id = :book_id"),
+            {"book_id": book_id}
+        )
+        row = result.fetchone()
+        if not row:
+            raise ValueError(f"Book ID {book_id} not found")
+        return row[0] or 'v1'
+    finally:
+        db.close()
+
+
+def is_v2_book(book_id: int) -> bool:
+    """Check if a book uses V2 extraction method."""
+    return get_extraction_method(book_id) == 'v2'

@@ -849,6 +849,11 @@ async def run_surya_ocr_on_clip(request: ClipOCRRequest):
     logger.info(f"Running Surya OCR on clip for book_id={request.book_id}, page={request.page_number}")
 
     try:
+        # V2 books don't have V1 paragraph_images/knowledge_units tables
+        from src.database.utils import is_v2_book
+        if is_v2_book(request.book_id):
+            return {"success": False, "message": "V2 books use cloud extraction. Use the V2 extraction interface instead."}
+
         from src.services.ocr_sequential import run_surya_on_single_image
         from src.database.connection import SessionLocal, engine
         from sqlalchemy import text
@@ -1027,6 +1032,11 @@ async def update_clip_text(request: UpdateClipTextRequest):
     logger.info(f"Updating text for knowledge_unit {request.knowledge_unit_id} in book {request.book_id}")
 
     try:
+        # V2 books don't have V1 knowledge_units table
+        from src.database.utils import is_v2_book
+        if is_v2_book(request.book_id):
+            return {"success": False, "message": "V2 books use cloud extraction. Use the V2 extraction interface instead."}
+
         from src.database.connection import SessionLocal
         from sqlalchemy import text
 
@@ -1145,6 +1155,11 @@ async def analyze_diagram(request: DiagramAnalysisRequest):
     logger.info(f"Analyzing diagram for book_id={request.book_id}, page={request.page_number}")
 
     try:
+        # V2 books don't have V1 diagram_images/knowledge_units tables
+        from src.database.utils import is_v2_book
+        if is_v2_book(request.book_id):
+            return {"success": False, "message": "V2 books use cloud extraction. Use the V2 extraction interface instead."}
+
         from src.services.diagram_analyzer import analyze_diagram_full, format_diagram_description
         from src.database.connection import SessionLocal
         from sqlalchemy import text
@@ -1362,6 +1377,11 @@ async def update_diagram_description(request: UpdateDiagramDescriptionRequest):
     logger.info(f"Updating description for diagram {request.diagram_id} in book {request.book_id}")
 
     try:
+        # V2 books don't have V1 diagram_images table
+        from src.database.utils import is_v2_book
+        if is_v2_book(request.book_id):
+            return {"success": False, "message": "V2 books use cloud extraction. Use the V2 extraction interface instead."}
+
         from src.database.connection import SessionLocal
         from sqlalchemy import text
 
@@ -1437,6 +1457,11 @@ async def save_diagram_link(request: SaveDiagramLinkRequest):
     logger.info(f"Saving link for diagram {request.diagram_id} -> KU {request.knowledge_unit_id}")
 
     try:
+        # V2 books don't have V1 diagram_images/knowledge_units tables
+        from src.database.utils import is_v2_book
+        if is_v2_book(request.book_id):
+            return {"success": False, "message": "V2 books use cloud extraction. Use the V2 extraction interface instead."}
+
         from src.database.connection import SessionLocal
         from sqlalchemy import text
 
@@ -1535,6 +1560,11 @@ async def save_diagram_all(request: SaveDiagramAllRequest):
     logger.info(f"Saving all data for diagram {request.diagram_id} in book {request.book_id}")
 
     try:
+        # V2 books don't have V1 diagram_images/knowledge_units tables
+        from src.database.utils import is_v2_book
+        if is_v2_book(request.book_id):
+            return {"success": False, "message": "V2 books use cloud extraction. Use the V2 extraction interface instead."}
+
         from src.database.connection import SessionLocal
         from sqlalchemy import text
 
@@ -1641,6 +1671,11 @@ async def get_knowledge_units_for_page(book_id: int, page_number: int):
     Used to populate the dropdown for linking diagrams to paragraphs.
     """
     try:
+        # V2 books don't have V1 knowledge_units table
+        from src.database.utils import is_v2_book
+        if is_v2_book(book_id):
+            return {"success": True, "page_number": page_number, "knowledge_units": [], "message": "V2 books use cloud extraction"}
+
         from src.database.connection import SessionLocal
         from sqlalchemy import text
 
@@ -2027,6 +2062,11 @@ async def save_multi_ocr_result(request: SaveMultiOcrRequest):
     logger.info(f"Saving multi-OCR result for book_id={request.book_id}, engine={request.ocr_engine}")
 
     try:
+        # V2 books don't have V1 paragraph_images/knowledge_units tables
+        from src.database.utils import is_v2_book
+        if is_v2_book(request.book_id):
+            return {"success": False, "message": "V2 books use cloud extraction. Use the V2 extraction interface instead."}
+
         from src.database.connection import SessionLocal
         from sqlalchemy import text
         import base64
@@ -2428,6 +2468,11 @@ async def save_sequential_texts(request: SaveSequentialTextsRequest):
     logger.info(f"Saving sequential texts for diagram {request.diagram_id} in book {request.book_id}")
 
     try:
+        # V2 books don't have V1 diagram_images table
+        from src.database.utils import is_v2_book
+        if is_v2_book(request.book_id):
+            return {"success": False, "message": "V2 books use cloud extraction. Use the V2 extraction interface instead."}
+
         from src.database.connection import SessionLocal
         from sqlalchemy import text
 
@@ -2650,6 +2695,11 @@ async def link_diagram_to_paragraph(request: LinkDiagramToParagraphRequest):
     logger.info(f"Linking diagram {request.diagram_id} to paragraph {request.paragraph_id} in book {request.book_id}")
 
     try:
+        # V2 books don't have V1 diagram_images/knowledge_units tables
+        from src.database.utils import is_v2_book
+        if is_v2_book(request.book_id):
+            return {"success": False, "message": "V2 books use cloud extraction. Use the V2 extraction interface instead."}
+
         from src.database.connection import SessionLocal
         from sqlalchemy import text
 
@@ -2771,6 +2821,11 @@ async def unlink_diagram_from_paragraph(request: UnlinkDiagramFromParagraphReque
     logger.info(f"Unlinking diagram {request.diagram_id} from paragraph {request.paragraph_id} in book {request.book_id}")
 
     try:
+        # V2 books don't have V1 diagram_images/knowledge_units tables
+        from src.database.utils import is_v2_book
+        if is_v2_book(request.book_id):
+            return {"success": False, "message": "V2 books use cloud extraction. Use the V2 extraction interface instead."}
+
         from src.database.connection import SessionLocal
         from sqlalchemy import text
 
@@ -2836,6 +2891,11 @@ async def get_recent_paragraphs_for_linking(book_id: int, limit: int = 5):
     logger.info(f"Getting recent paragraphs for book {book_id}, limit={limit}")
 
     try:
+        # V2 books don't have V1 knowledge_units/paragraph_images tables
+        from src.database.utils import is_v2_book
+        if is_v2_book(book_id):
+            return {"success": True, "paragraphs": [], "message": "V2 books use cloud extraction"}
+
         from src.database.connection import SessionLocal
         from sqlalchemy import text
         import base64
@@ -2909,6 +2969,11 @@ async def get_recent_diagrams_for_linking(book_id: int, limit: int = 5):
     logger.info(f"Getting recent diagrams for book {book_id}, limit={limit}")
 
     try:
+        # V2 books don't have V1 diagram_images table
+        from src.database.utils import is_v2_book
+        if is_v2_book(book_id):
+            return {"success": True, "diagrams": [], "message": "V2 books use cloud extraction"}
+
         from src.database.connection import SessionLocal
         from sqlalchemy import text
         import base64
@@ -2975,6 +3040,11 @@ async def link_diagram_to_paragraph_force(request: LinkDiagramToParagraphRequest
     logger.info(f"Force linking diagram {request.diagram_id} to paragraph {request.paragraph_id}")
 
     try:
+        # V2 books don't have V1 diagram_images/knowledge_units tables
+        from src.database.utils import is_v2_book
+        if is_v2_book(request.book_id):
+            return {"success": False, "message": "V2 books use cloud extraction. Use the V2 extraction interface instead."}
+
         from src.database.connection import SessionLocal
         from sqlalchemy import text
 

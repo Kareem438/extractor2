@@ -369,6 +369,7 @@ async function uploadFile() {
     // Add default/form field values
     formData.append('language_setting', document.getElementById('language-setting')?.value || 'auto');
     formData.append('llm_model', document.getElementById('llm-model')?.value || 'claude-sonnet-4-5-20250929');
+    formData.append('extraction_method', document.getElementById('extraction-method')?.value || 'v2');
     formData.append('min_chunk_size', '100');
     formData.append('max_chunk_size', '500');
     formData.append('overlap_size', '50');

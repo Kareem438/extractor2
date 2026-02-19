@@ -535,6 +535,11 @@ async def get_all_image_clips(book_id: int, clip_type: Optional[str] = None):
         clip_type: Optional - 'paragraph' or 'diagram' to filter by type
     """
     try:
+        # V2 books don't have paragraph/diagram image tables
+        from src.database.utils import get_extraction_method
+        if get_extraction_method(book_id) == 'v2':
+            return {"clips": [], "total": 0, "message": "V2 books use cloud extraction, no image clips"}
+
         # Get table prefix for this book
         table_prefix = get_table_prefix_from_book_id(book_id)
 

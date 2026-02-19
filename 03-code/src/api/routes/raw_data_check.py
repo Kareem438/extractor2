@@ -66,8 +66,47 @@ async def check_raw_data_status(book_id: int):
 
         table_prefix = book.table_prefix
         total_pages = book.total_pages
+        extraction_method = getattr(book, 'extraction_method', 'v1') or 'v1'
 
-        logger.info(f"Checking raw data status for book {book_id} ({book.book_name})")
+        logger.info(f"Checking raw data status for book {book_id} ({book.book_name}), extraction_method={extraction_method}")
+
+        # V2 books don't have V1 raw tables — still check raw pages but skip OCR tables
+        if extraction_method == 'v2':
+            # Raw pages table exists for V2 books (page scanning works)
+            raw_pages_query = text(f"""
+                SELECT page_number
+                FROM raw_{table_prefix}_pages
+                ORDER BY page_number
+            """)
+            raw_pages_result = db.execute(raw_pages_query).fetchall()
+            pages_with_data = [row[0] for row in raw_pages_result]
+            pages_without_data = [p for p in range(1, total_pages + 1) if p not in pages_with_data]
+
+            raw_page_status = {
+                "book_id": book_id,
+                "book_name": book.book_name,
+                "total_pages": total_pages,
+                "raw_pages_saved": len(pages_with_data),
+                "raw_pages_missing": len(pages_without_data),
+                "pages_with_data": pages_with_data,
+                "pages_without_data": pages_without_data,
+                "extraction_method": "v2"
+            }
+            # V2 books use cloud LLM extraction, not local OCR engines
+            ocr_status = {}
+            for engine in ['easyocr', 'surya', 'tesseract']:
+                ocr_status[engine] = {
+                    "engine": engine,
+                    "pages_processed": 0,
+                    "pages_missing": total_pages,
+                    "pages_with_ocr": [],
+                    "pages_without_ocr": list(range(1, total_pages + 1))
+                }
+            return {
+                "raw_page_status": raw_page_status,
+                "ocr_status": ocr_status,
+                "extraction_method": "v2"
+            }
 
         # 1. Check raw pages status
         raw_pages_query = text(f"""

@@ -430,6 +430,11 @@ async def update_grouping_config(book_id: int, request: GroupingConfigUpdate):
 async def get_grouping_preview(book_id: int):
     """Get preview of KU grouping by L1/L2 titles"""
     
+    # V2 books don't have V1 knowledge_units table
+    from src.database.utils import get_extraction_method
+    if get_extraction_method(book_id) == 'v2':
+        return {"preview": [], "total_groups": 0, "message": "V2 books use cloud extraction"}
+
     table_prefix = await _get_table_prefix(book_id)
     ku_table = f"{table_prefix}_knowledge_units"
     
@@ -470,6 +475,11 @@ async def get_grouping_preview(book_id: int):
 async def estimate_group_tokens(book_id: int, ku_ids: List[int]):
     """Estimate tokens for a group of KUs"""
     
+    # V2 books don't have V1 knowledge_units table
+    from src.database.utils import get_extraction_method
+    if get_extraction_method(book_id) == 'v2':
+        return {"input_tokens": 0, "estimated_output_tokens": 0, "total_kus": 0, "message": "V2 books use cloud extraction"}
+
     from src.services.claude_batch_service import estimate_tokens
     
     table_prefix = await _get_table_prefix(book_id)
@@ -711,6 +721,11 @@ async def create_knowledge_units(book_id: int, request: CreateKURequest):
     - Pages must have been extracted (records exist in raw_paragraph_images or raw_diagram_images)
     """
     try:
+        # V2 books don't have V1 raw paragraph/diagram tables
+        from src.database.utils import get_extraction_method
+        if get_extraction_method(book_id) == 'v2':
+            return {"success": False, "message": "V2 books use cloud extraction, not V1 KU creation", "paragraphs_created": 0, "diagrams_created": 0, "qa_pairs_created": 0, "errors": None}
+
         # Validate book exists
         table_prefix = await _get_table_prefix(book_id)
         
@@ -754,6 +769,11 @@ async def get_pipeline_page_status(book_id: int):
     - claude_done: bool
     """
     try:
+        # V2 books don't have V1 raw paragraph/diagram tables
+        from src.database.utils import get_extraction_method
+        if get_extraction_method(book_id) == 'v2':
+            return {"pages": []}
+
         # Validate book exists
         table_prefix = await _get_table_prefix(book_id)
         
@@ -794,6 +814,11 @@ async def get_pages_ready_for_ku(book_id: int):
     try:
         table_prefix = await _get_table_prefix(book_id)
         
+        # V2 books don't have V1 paragraph/diagram tables
+        from src.database.utils import get_extraction_method
+        if get_extraction_method(book_id) == 'v2':
+            return {"pages": [], "message": "V2 books use cloud extraction"}
+
         # Get pages with unlinked paragraphs
         para_sql = text(f"""
             SELECT DISTINCT page_number 
@@ -843,6 +868,11 @@ async def get_ku_statistics(book_id: int):
     - total: total count of all items without linked KU
     """
     try:
+        # V2 books don't have V1 raw paragraph/diagram tables
+        from src.database.utils import get_extraction_method
+        if get_extraction_method(book_id) == 'v2':
+            return {"success": True, "statistics": {"paragraphs": 0, "diagrams": 0, "tables": 0, "equations": 0, "lists": 0, "questions": 0, "answers": 0, "captions": 0, "references": 0, "total": 0}, "has_items_to_process": False, "message": "V2 books use cloud extraction"}
+
         table_prefix = await _get_table_prefix(book_id)
         
         # Count unlinked paragraphs
@@ -920,6 +950,11 @@ async def get_claude_analysis_statistics(book_id: int):
     try:
         table_prefix = await _get_table_prefix(book_id)
         
+        # V2 books don't have V1 knowledge_units table
+        from src.database.utils import get_extraction_method
+        if get_extraction_method(book_id) == 'v2':
+            return {"types": {}, "total": 0, "message": "V2 books use cloud extraction"}
+
         # Count KUs by class type that need Claude analysis
         # These are non-paragraph KUs where text_content is empty/null
         sql = text(f"""
@@ -986,6 +1021,11 @@ async def execute_pipeline(book_id: int, request: ExecutionRequest):
     - save_preview_to: Attribute to save preview (for dry run)
     """
     try:
+        # V2 books don't have V1 knowledge_units table
+        from src.database.utils import get_extraction_method
+        if get_extraction_method(book_id) == 'v2':
+            return {"success": False, "message": "V2 books use cloud extraction, not V1 pipeline execution"}
+
         from src.services.ku_grouper_service import execute_grouped_pipeline
         
         result = execute_grouped_pipeline(
@@ -1009,6 +1049,11 @@ async def get_incomplete_kus(book_id: int):
     Get list of incomplete KUs for retry.
     """
     try:
+        # V2 books don't have V1 knowledge_units table
+        from src.database.utils import get_extraction_method
+        if get_extraction_method(book_id) == 'v2':
+            return {"success": True, "incomplete_kus": [], "count": 0, "message": "V2 books use cloud extraction"}
+
         table_prefix = await _get_table_prefix(book_id)
         ku_table = f"{table_prefix}_knowledge_units"
         
